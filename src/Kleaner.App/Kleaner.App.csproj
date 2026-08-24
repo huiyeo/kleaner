@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kleaner.Core\Kleaner.Core.csproj" />
+    <ProjectReference Include="..\Kleaner.Executor\Kleaner.Executor.csproj" />
+    <ProjectReference Include="..\Kleaner.SpecialOps\Kleaner.SpecialOps.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>

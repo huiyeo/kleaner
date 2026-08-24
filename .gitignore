@@ -1,0 +1,21 @@
+# 构建产物
+bin/
+obj/
+artifacts/
+publish/
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+# 测试与覆盖率
+TestResults/
+coverage/
+*.coverage
+
+# 发布打包
+*.exe
+*.zip
+releases/

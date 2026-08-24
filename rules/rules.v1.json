@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "channel": "2026.08",
+  "defaults": {
+    "ageDays": 14,
+    "ageDaysByCategory": {
+      "temp": 14,
+      "browser-cache": 7,
+      "dev-cache": 14,
+      "system": 14
+    }
+  },
+  "rules": [
+    {
+      "id": "user-temp",
+      "name": "用户临时目录",
+      "category": "temp",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\Temp\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "Windows 与各应用写入的用户级临时目录，删除后按需自动重建。仅清理 14 天未修改的文件，跳过被占用文件（如安装未完成的临时文件）。",
+      "safetyDoc": "docs/safety-notes.md#user-temp"
+    },
+    {
+      "id": "chrome-http-cache",
+      "name": "Chrome HTTP 缓存与代码缓存",
+      "category": "browser-cache",
+      "risk": "low",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Cache\\**",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Code Cache\\**"
+      ],
+      "requiresElevation": false,
+      "safetyNotes": "Chrome 官方 HTTP 缓存与编译代码缓存目录，删除后自动重建，仅影响网页首次加载速度。不含 Cookie、登录态、历史记录与扩展数据，Chrome 运行中被锁定的文件自动跳过。",
+      "safetyDoc": "docs/safety-notes.md#chrome-http-cache"
+    },
+    {
+      "id": "edge-http-cache",
+      "name": "Edge HTTP 缓存与代码缓存",
+      "category": "browser-cache",
+      "risk": "low",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Cache\\**",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Code Cache\\**"
+      ],
+      "requiresElevation": false,
+      "safetyNotes": "Edge 官方 HTTP 缓存与编译代码缓存目录，删除后自动重建，仅影响网页首次加载速度。不含 Cookie、登录态、收藏与历史记录，Edge 运行中被锁定的文件自动跳过。",
+      "safetyDoc": "docs/safety-notes.md#edge-http-cache"
+    },
+    {
+      "id": "npm-cache",
+      "name": "npm 包下载缓存",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\npm-cache\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "npm 下载的包缓存（npm 官方命令 npm cache clean --force 即清除此目录），删除后下次 install 重新从 registry 下载，不影响已安装项目与全局包。",
+      "safetyDoc": "docs/safety-notes.md#npm-cache"
+    },
+    {
+      "id": "pip-cache",
+      "name": "pip 下载缓存",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\pip\\cache\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "pip 下载的 wheel/sdist 缓存（pip 官方命令 pip cache purge 即清除此目录），删除后下次安装重新下载，不影响已安装的 Python 环境。",
+      "safetyDoc": "docs/safety-notes.md#pip-cache"
+    },
+    {
+      "id": "kimi-desktop-updater",
+      "name": "Kimi 桌面版更新器残留",
+      "category": "updater",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\kimi-desktop-updater\\**"],
+      "keepNewest": 1,
+      "requiresElevation": false,
+      "safetyNotes": "Electron 应用 Kimi 桌面版的自动更新器下载目录，仅存放历史版本安装包，不含配置、会话与用户数据。保留最新 1 份安装包用于回滚，其余清除。",
+      "safetyDoc": "docs/safety-notes.md#kimi-desktop-updater"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kleaner.dev/rules/v1/kleaner-rules.schema.json",
+  "title": "Kleaner 白名单规则集 v1",
+  "description": "Kleaner 只执行本 schema 定义的严格白名单规则。每条规则必须给出 safetyNotes（为什么安全）。路径为绝对路径，以环境变量（%LOCALAPPDATA% 等）或盘符开头，支持 * 与 ** 通配。reparse point（OneDrive/云盘占位）在引擎层一律排除，规则中无需声明。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "rules"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "channel": { "type": "string", "description": "规则更新通道版本标识，如 2026.08" },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ageDays": { "type": "integer", "minimum": 1, "description": "全局默认年龄阈值（天）" },
+        "ageDaysByCategory": {
+          "type": "object",
+          "description": "按分类覆盖全局默认；规则级 ageDays 优先级最高",
+          "propertyNames": { "$ref": "#/$defs/category" },
+          "additionalProperties": { "type": "integer", "minimum": 1 }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "category": {
+      "enum": ["temp", "browser-cache", "dev-cache", "updater", "system", "application"]
+    },
+    "risk": { "enum": ["low", "medium"] },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "category", "risk", "paths", "requiresElevation", "safetyNotes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "maxLength": 64,
+          "description": "稳定标识，社区讨论与事故追溯均以此引用"
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "category": { "$ref": "#/$defs/category" },
+        "risk": { "$ref": "#/$defs/risk" },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "pattern": "^(%[A-Za-z_][A-Za-z0-9_]*%|[A-Za-z]:)[\\\\/].+",
+            "description": "以环境变量或盘符开头的绝对路径模式"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "type": "string" },
+          "description": "从命中结果中排除的路径模式，优先级高于 paths"
+        },
+        "ageDays": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "仅清理最后修改时间早于 N 天的文件；null=继承分类默认，再继承全局默认"
+        },
+        "keepNewest": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "按父目录内名称排序保留最新 N 份，其余清理；用于更新器残留。设置后可豁免年龄阈值"
+        },
+        "requiresElevation": {
+          "type": "boolean",
+          "description": "true 的规则仅在用户明确勾选系统级清理并通过 UAC 提权后执行"
+        },
+        "enabled": { "type": "boolean", "default": true },
+        "safetyNotes": {
+          "type": "string",
+          "minLength": 20,
+          "description": "文档化的安全性依据：目录用途、删除影响、验证方式。UI 中用户可查看"
+        },
+        "safetyDoc": {
+          "type": "string",
+          "description": "rules/docs/safety-notes.md 中对应条目的锚点链接，PR 必填"
+        },
+        "lockedFilePolicy": {
+          "enum": ["skip"],
+          "default": "skip",
+          "description": "v1 仅支持 skip：被占用文件跳过并在报告中提示"
+        }
+      }
+    }
+  }
+}
