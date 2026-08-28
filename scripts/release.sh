@@ -12,7 +12,7 @@ echo "== 发布 v$VERSION =="
   -p:PublishSingleFile=true -o publish
 
 echo "== Velopack 打包 =="
-vpk pack -u Kleaner -v "$VERSION" -p publish -e Kleaner.App.exe -o releases --packTitle Kleaner
+vpk pack -u Kleaner -v "$VERSION" -p publish -e Kleaner.App.exe -o releases --packTitle Kleaner --icon assets/icon/Kleaner.ico
 
 echo "== 产物 =="
 ls -la releases/

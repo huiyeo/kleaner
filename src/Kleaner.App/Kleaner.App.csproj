@@ -23,6 +23,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <StartupObject>Kleaner.App.Program</StartupObject>
+    <ApplicationIcon>..\..\assets\icon\Kleaner.ico</ApplicationIcon>
   </PropertyGroup>
 
 </Project>
