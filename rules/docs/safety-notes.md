@@ -33,10 +33,38 @@
 ## kimi-desktop-updater
 
 - **目录用途**：Kimi 桌面版（Electron）自动更新器存放历史版本安装包。
-- **删除影响**：不影响应用本体、配置与登录态；保留最新 1 份用于回滚。
-- **验证方式**：目录内仅为版本号命名的安装包文件；本机实测（2026-08-24）约 1.2 GB，为可回收大户。
+- **删除影响**：不影响应用本体、配置与登录态；仅匹配 `.exe`/`.nupkg` 安装包，保留最新 1 份用于回滚。
+- **验证方式**：目录内以版本号命名的安装包为主；本机实测（2026-08-24）目录约 1.2 GB，为可回收大户。
+
+## workbuddy-desktop-updater
+
+- 同类 Electron 更新器目录（`@genieworkbuddy-desktop-updater`）。仅匹配安装包扩展名，配置文件不受影响；本机实测（2026-08-24）目录约 388 MB。
+
+## qoder-updater
+
+- 同类 Electron 更新器目录（`qoder-work-cn-updater`）。仅匹配安装包扩展名；本机实测（2026-08-24）目录约 240 MB。
+
+## zcode-desktop-updater
+
+- 同类 Electron 更新器目录（`@zcodedesktop-updater`）。仅匹配安装包扩展名；本机实测（2026-08-24）目录约 141 MB。
+
+## quark-updater
+
+- 夸克网盘更新器目录（`QuarkCloudDriveUpdater`，本机实测约 48 MB）。**注意**：同级的 `QuarkCloudDriveMini`（约 300 MB）是应用数据目录，含用户配置，刻意不纳入任何规则——这是白名单纪律的边界示例。
+
+## windows-temp
+
+- **目录用途**：`%SystemRoot%\Temp`，系统服务与安装程序写入的临时文件。
+- **删除影响**：与 user-temp 相同；需管理员权限，14 天阈值。
+- **验证方式**：官方磁盘清理同样清理该目录。本机实测（2026-08-24）占用接近 0。
+
+## windows-update-download
+
+- **目录用途**：Windows Update 下载缓存（安装文件）。
+- **删除影响**：需要时自动重新下载，不影响已安装更新；官方"磁盘清理→Windows 更新清理"同类。
+- **验证方式**：本机实测（2026-08-24）占用接近 0（近期无待装更新）。
 
 ## 数据来源
 
-- 本机占用数据：2026-08-24 对 `C:\Users\13739` 相关目录的只读扫描（du 统计）。
-- 后续候选规则（待验证后进入规则库）：workbuddy / qoder / zcode 等 updater 目录、`Windows\SoftwareDistribution\Download`、`Windows\Temp`、ms-playwright 浏览器缓存。
+- 本机占用数据：2026-08-24 对 `C:\Users\13739` 及系统目录的只读扫描（du 统计）。
+- 后续候选规则（待验证后进入规则库）：ms-playwright 浏览器缓存（属开发工具二进制，删除导致下次重新下载，暂缓）、`%LOCALAPPDATA%\Microsoft\Windows\INetCache`（本机实测仅 0.1 MB，价值低）。

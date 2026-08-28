@@ -69,14 +69,93 @@
     },
     {
       "id": "kimi-desktop-updater",
-      "name": "Kimi 桌面版更新器残留",
+      "name": "Kimi 桌面版更新器安装包",
       "category": "updater",
       "risk": "low",
-      "paths": ["%LOCALAPPDATA%\\kimi-desktop-updater\\**"],
+      "paths": [
+        "%LOCALAPPDATA%\\kimi-desktop-updater\\**\\*.exe",
+        "%LOCALAPPDATA%\\kimi-desktop-updater\\**\\*.nupkg"
+      ],
       "keepNewest": 1,
       "requiresElevation": false,
-      "safetyNotes": "Electron 应用 Kimi 桌面版的自动更新器下载目录，仅存放历史版本安装包，不含配置、会话与用户数据。保留最新 1 份安装包用于回滚，其余清除。",
+      "safetyNotes": "Electron 应用 Kimi 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含配置、会话与用户数据。按版本规则保留最新 1 份用于回滚，其余清除。仅匹配安装包扩展名，更新器配置文件不受影响。",
       "safetyDoc": "docs/safety-notes.md#kimi-desktop-updater"
+    },
+    {
+      "id": "workbuddy-desktop-updater",
+      "name": "WorkBuddy 桌面版更新器安装包",
+      "category": "updater",
+      "risk": "low",
+      "paths": [
+        "%LOCALAPPDATA%\\@genieworkbuddy-desktop-updater\\**\\*.exe",
+        "%LOCALAPPDATA%\\@genieworkbuddy-desktop-updater\\**\\*.nupkg"
+      ],
+      "keepNewest": 1,
+      "requiresElevation": false,
+      "safetyNotes": "WorkBuddy 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含应用本体、配置与用户数据。保留最新 1 份用于回滚，其余清除。",
+      "safetyDoc": "docs/safety-notes.md#workbuddy-desktop-updater"
+    },
+    {
+      "id": "qoder-updater",
+      "name": "Qoder 更新器安装包",
+      "category": "updater",
+      "risk": "low",
+      "paths": [
+        "%LOCALAPPDATA%\\qoder-work-cn-updater\\**\\*.exe",
+        "%LOCALAPPDATA%\\qoder-work-cn-updater\\**\\*.nupkg"
+      ],
+      "keepNewest": 1,
+      "requiresElevation": false,
+      "safetyNotes": "Qoder 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含应用本体、配置与用户数据。保留最新 1 份用于回滚，其余清除。",
+      "safetyDoc": "docs/safety-notes.md#qoder-updater"
+    },
+    {
+      "id": "zcode-desktop-updater",
+      "name": "ZCode 桌面版更新器安装包",
+      "category": "updater",
+      "risk": "low",
+      "paths": [
+        "%LOCALAPPDATA%\\@zcodedesktop-updater\\**\\*.exe",
+        "%LOCALAPPDATA%\\@zcodedesktop-updater\\**\\*.nupkg"
+      ],
+      "keepNewest": 1,
+      "requiresElevation": false,
+      "safetyNotes": "ZCode 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含应用本体、配置与用户数据。保留最新 1 份用于回滚，其余清除。",
+      "safetyDoc": "docs/safety-notes.md#zcode-desktop-updater"
+    },
+    {
+      "id": "quark-updater",
+      "name": "夸克网盘更新器安装包",
+      "category": "updater",
+      "risk": "low",
+      "paths": [
+        "%LOCALAPPDATA%\\QuarkCloudDriveUpdater\\**\\*.exe",
+        "%LOCALAPPDATA%\\QuarkCloudDriveUpdater\\**\\*.nupkg"
+      ],
+      "keepNewest": 1,
+      "requiresElevation": false,
+      "safetyNotes": "夸克网盘自动更新器下载的历史安装包（.exe/.nupkg）。注意：同级的 QuarkCloudDriveMini 目录是应用数据，刻意不纳入任何规则。保留最新 1 份安装包，其余清除。",
+      "safetyDoc": "docs/safety-notes.md#quark-updater"
+    },
+    {
+      "id": "windows-temp",
+      "name": "系统临时目录",
+      "category": "system",
+      "risk": "low",
+      "paths": ["%SystemRoot%\\Temp\\**"],
+      "requiresElevation": true,
+      "safetyNotes": "Windows 系统级临时目录，官方磁盘清理/存储感知同样清理此位置。仅清理 14 天未修改的文件；需要管理员权限，未提权时不扫描。",
+      "safetyDoc": "docs/safety-notes.md#windows-temp"
+    },
+    {
+      "id": "windows-update-download",
+      "name": "Windows 更新下载残留",
+      "category": "system",
+      "risk": "low",
+      "paths": ["%SystemRoot%\\SoftwareDistribution\\Download\\**"],
+      "requiresElevation": true,
+      "safetyNotes": "Windows Update 已下载的安装文件缓存，官方磁盘清理的「Windows 更新清理」同类对象。清理后需要时自动重新下载；仅清理 14 天未修改的文件，需要管理员权限。",
+      "safetyDoc": "docs/safety-notes.md#windows-update-download"
     }
   ]
 }
