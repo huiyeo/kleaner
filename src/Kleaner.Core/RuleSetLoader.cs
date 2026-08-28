@@ -52,7 +52,7 @@ public static class RuleSetLoader
             AgeDays: TryGetNullableInt(e, "ageDays"),
             KeepNewest: TryGetNullableInt(e, "keepNewest"),
             RequiresElevation: e.GetProperty("requiresElevation").GetBoolean(),
-            Enabled: e.TryGetProperty("enabled", out var enabled) && enabled.GetBoolean(),
+            Enabled: !e.TryGetProperty("enabled", out var enabled) || enabled.GetBoolean(),
             SafetyNotes: e.GetProperty("safetyNotes").GetString()!,
             SafetyDoc: e.TryGetProperty("safetyDoc", out var sd) ? sd.GetString() : null);
     }
