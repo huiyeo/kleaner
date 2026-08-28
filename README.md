@@ -22,14 +22,26 @@
 
 ## 状态
 
-M0（仓库骨架 + 规则 schema v1 定稿）。里程碑：M1 引擎 → M2 GUI 主流程 → M3 规则在线更新 → M4 高级模式与首发。
+**初稿 v0.1（本仓库）**：M0–M4 全部里程碑已实现并通过测试——
+
+- 规则引擎：`%ENV%` + `*`/`**` 通配扫描、年龄阈值、keepNewest 版本保留、exclude、reparse point 一律排除、被占用文件跳过
+- 隔离区：删除即移入（默认剩余空间最大的非系统盘），manifest 记录原路径，整批还原（冲突不覆盖）、7 天保留手动清空
+- GUI 主流程：扫描（只读）→ 勾选 → 二次确认 → 移入隔离区 → 报告；隔离区管理窗口；设置窗口（隔离区位置、规则更新）
+- 规则库：12 条规则（temp/browser-cache/dev-cache/updater/system 六类），每条附安全性说明（`rules/docs/safety-notes.md`）
+- 规则在线更新：SHA512 校验 + 语义校验双闸门，通过才落盘用户目录
+- 高级模式：WSL vhdx 检测与压缩指引、休眠/还原点/WinSxS 引导（调起系统工具）、注册表卸载残留**只读**扫描
+
+质量：`dotnet test` 21/21 通过（含引擎端到端、隔离区还原/冲突/占用、更新校验、SpecialOps 冒烟）。
 
 ## 开发
 
 ```
 dotnet build Kleaner.slnx -c Release
 dotnet test tests/Kleaner.Core.Tests -c Release
+dotnet run --project src/Kleaner.App -c Release
 ```
+
+> .NET 装在非默认位置时（如用户目录安装），框架依赖启动需设置 `DOTNET_ROOT` 指向运行时目录。
 
 - `src/Kleaner.Core`：规则加载/校验/扫描匹配（纯逻辑，无 UI 依赖）
 - `src/Kleaner.Executor`：隔离区（manifest/移动/还原）、按需提权
