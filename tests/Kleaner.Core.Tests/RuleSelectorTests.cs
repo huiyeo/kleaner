@@ -27,7 +27,7 @@ public sealed class RuleSelectorTests
     }
 
     [Fact]
-    public void keepNewest_每组保留最新_豁免年龄()
+    public void keepNewest_规则范围内全局保留最新()
     {
         var rule = new Rule("r", "r", RuleCategory.Updater, RiskLevel.Low,
             new[] { "%TEMP%\\u\\**\\*.exe" }, Array.Empty<string>(),
@@ -36,16 +36,38 @@ public sealed class RuleSelectorTests
 
         var candidates = new[]
         {
-            new FileCandidate(@"C:\u\app-1.0.exe", 10, Now.AddDays(-100)),
+            new FileCandidate(@"C:\u\installer.exe", 10, Now.AddDays(-100)),
             new FileCandidate(@"C:\u\app-2.0.exe", 10, Now.AddDays(-1)),
-            new FileCandidate(@"C:\u\pending\only.exe", 10, Now.AddDays(-50)), // 独立分组，唯一文件被保留
+            new FileCandidate(@"C:\u\pending\only.exe", 10, Now.AddDays(-50)),
         };
 
         var selected = RuleSelector.Apply(candidates, rule, set, Now);
 
-        // app-2.0（组内最新）与 only.exe（组内唯一）保留；仅 app-1.0 入选清理
+        // 全局只保留最新的 app-2.0；app-1.0 与 pending\only.exe 均入选清理
+        Assert.Equal(2, selected.Count);
+        Assert.Contains(selected, c => c.FullPath.EndsWith("installer.exe", StringComparison.Ordinal));
+        Assert.Contains(selected, c => c.FullPath.EndsWith("only.exe", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void keepNewest_按修改时间而非文件名保留()
+    {
+        // 更新器场景：electron-updater 的待用包常命名为 installer.exe，文件名字典序不代表新旧
+        var rule = new Rule("r", "r", RuleCategory.Updater, RiskLevel.Low,
+            new[] { "%TEMP%\\u\\*.exe" }, Array.Empty<string>(),
+            AgeDays: null, KeepNewest: 1, RequiresElevation: false, Enabled: true, SafetyNotes: "测试规则说明，长度足够。");
+        var set = EmptySet();
+
+        var candidates = new[]
+        {
+            new FileCandidate(@"C:\u\installer.exe", 10, Now.AddDays(-1)),   // 新：待用安装包
+            new FileCandidate(@"C:\u\app-3.1.2.exe", 10, Now.AddDays(-90)), // 旧：版本号看起来更大
+        };
+
+        var selected = RuleSelector.Apply(candidates, rule, set, Now);
+
         Assert.Single(selected);
-        Assert.Equal(@"C:\u\app-1.0.exe", selected[0].FullPath, ignoreCase: true);
+        Assert.Equal(@"C:\u\app-3.1.2.exe", selected[0].FullPath, ignoreCase: true);
     }
 
     [Fact]

@@ -71,7 +71,7 @@
         "keepNewest": {
           "type": ["integer", "null"],
           "minimum": 1,
-          "description": "按父目录内名称排序保留最新 N 份，其余清理；用于更新器残留。设置后可豁免年龄阈值"
+          "description": "整个规则范围内按文件修改时间保留最新 N 份，其余清理（更新器的现行包可能位于 pending/ 子目录，故不做父目录分组）；设置后可豁免年龄阈值"
         },
         "requiresElevation": {
           "type": "boolean",
