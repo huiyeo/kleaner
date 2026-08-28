@@ -156,6 +156,99 @@
       "requiresElevation": true,
       "safetyNotes": "Windows Update 已下载的安装文件缓存，官方磁盘清理的「Windows 更新清理」同类对象。清理后需要时自动重新下载；仅清理 14 天未修改的文件，需要管理员权限。",
       "safetyDoc": "docs/safety-notes.md#windows-update-download"
+    },
+    {
+      "id": "uv-cache",
+      "name": "uv 包缓存",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\uv\\cache\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "uv（Python 包管理器）的下载与构建缓存，官方命令 uv cache clean 即清除此目录。删除后下次安装重新下载，不影响已创建的虚拟环境。",
+      "safetyDoc": "docs/safety-notes.md#uv-cache",
+      "verified": "本机实测目录存在（2026-08-28，当前占用 0）"
+    },
+    {
+      "id": "playwright-browsers",
+      "name": "Playwright 浏览器二进制",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\ms-playwright\\**"],
+      "ageDays": 30,
+      "requiresElevation": false,
+      "safetyNotes": "Playwright 自动下载的测试浏览器二进制（Chromium/Firefox/WebKit）。删除后运行 npx playwright install 重新下载即可，不影响任何项目代码。30 天阈值避免清掉正在使用的版本。",
+      "safetyDoc": "docs/safety-notes.md#playwright-browsers",
+      "verified": "本机实测约 394 MB（2026-08-28）"
+    },
+    {
+      "id": "cargo-registry",
+      "name": "Cargo 注册表缓存",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%USERPROFILE%\\.cargo\\registry\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "Rust Cargo 下载的 crate 缓存（registry/cache 与解压副本 registry/src）。删除后下次构建重新下载，不影响已编译产物与 cargo 本体。",
+      "safetyDoc": "docs/safety-notes.md#cargo-registry",
+      "verified": "官方文档来源（doc.rust-lang.org/cargo），本机未安装 Rust，未验证"
+    },
+    {
+      "id": "go-build-cache",
+      "name": "Go 构建缓存",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\go-build\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "Go 工具链的构建缓存（默认 GOCACHE 位置）。官方命令 go clean -cache 即清除此目录，删除后首次构建稍慢，不影响任何源码与安装产物。",
+      "safetyDoc": "docs/safety-notes.md#go-build-cache",
+      "verified": "官方文档来源（go env GOCACHE 默认值），本机未安装 Go，未验证"
+    },
+    {
+      "id": "gradle-caches",
+      "name": "Gradle 缓存",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%USERPROFILE%\\.gradle\\caches\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "Gradle 的依赖与构建缓存。删除后下次构建重新下载依赖并重建缓存，项目源码与 gradle 本体（.gradle/wrapper 之外的部分）不受影响。",
+      "safetyDoc": "docs/safety-notes.md#gradle-caches",
+      "verified": "官方文档来源（docs.gradle.org），本机未安装 Gradle，未验证"
+    },
+    {
+      "id": "maven-repository",
+      "name": "Maven 本地仓库",
+      "category": "dev-cache",
+      "risk": "low",
+      "paths": ["%USERPROFILE%\\.m2\\repository\\**"],
+      "requiresElevation": false,
+      "safetyNotes": "Maven 下载的依赖仓库缓存。删除后下次构建重新下载，settings.xml 与本地配置不在本规则路径内。",
+      "safetyDoc": "docs/safety-notes.md#maven-repository",
+      "verified": "官方文档来源（maven.apache.org），本机未安装 Maven，未验证"
+    },
+    {
+      "id": "crash-dumps",
+      "name": "应用崩溃转储",
+      "category": "temp",
+      "risk": "low",
+      "paths": ["%LOCALAPPDATA%\\CrashDumps\\**"],
+      "ageDays": 14,
+      "requiresElevation": false,
+      "safetyNotes": "Windows 错误报告为应用崩溃生成的用户级 minidump（默认 LocalDumps 位置）。仅供崩溃排查使用，14 天前的旧转储无保留价值，删除不影响系统。",
+      "safetyDoc": "docs/safety-notes.md#crash-dumps",
+      "verified": "官方文档来源（微软 LocalDumps 注册表默认位置），本机当前无此目录"
+    },
+    {
+      "id": "wer-reports",
+      "name": "Windows 错误报告队列",
+      "category": "system",
+      "risk": "low",
+      "paths": [
+        "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\ReportQueue\\**",
+        "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\ReportArchive\\**"
+      ],
+      "requiresElevation": true,
+      "safetyNotes": "Windows 错误报告（WER）待上报与已归档的报告队列，微软官方磁盘清理的「系统错误内存转储文件/报告」同类对象。删除不影响系统运行，仅丢失向微软反馈历史问题的材料。",
+      "safetyDoc": "docs/safety-notes.md#wer-reports",
+      "verified": "官方文档来源（learn.microsoft.com WER），需管理员权限"
     }
   ]
 }

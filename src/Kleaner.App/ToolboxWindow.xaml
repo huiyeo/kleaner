@@ -1,0 +1,77 @@
+<Window x:Class="Kleaner.App.ToolboxWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="工具箱" Height="640" Width="1000"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="8">
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="…" />
+            </StatusBarItem>
+        </StatusBar>
+        <TabControl>
+            <TabItem x:Name="UsageTab" Header="空间分析">
+                <DockPanel Margin="6">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
+                        <TextBlock x:Name="UsageRootLabel" VerticalAlignment="Center" />
+                        <TextBox x:Name="UsageRootBox" Width="520" Height="24" VerticalContentAlignment="Center" Margin="6,0,0,0" />
+                        <Button x:Name="UsageBrowseButton" Click="OnUsageBrowse" Width="72" Margin="6,0,0,0" />
+                        <Button x:Name="UsageScanButton" Click="OnUsageScan" Width="72" Margin="6,0,0,0" />
+                        <Button x:Name="UsageEnterButton" Click="OnUsageEnter" Width="110" Margin="6,0,0,0" />
+                    </StackPanel>
+                    <DataGrid x:Name="UsageGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                              SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding Path}" Width="*" />
+                            <DataGridTextColumn Binding="{Binding SizeDisplay}" Width="110" />
+                            <DataGridTextColumn Binding="{Binding TypeDisplay}" Width="70" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem x:Name="LargeTab" Header="大文件">
+                <DockPanel Margin="6">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
+                        <TextBlock x:Name="LargeRootLabel" VerticalAlignment="Center" />
+                        <TextBox x:Name="LargeRootBox" Width="400" Height="24" VerticalContentAlignment="Center" Margin="6,0,0,0" />
+                        <Button x:Name="LargeBrowseButton" Click="OnLargeBrowse" Width="72" Margin="6,0,0,0" />
+                        <TextBlock x:Name="LargeMinLabel" VerticalAlignment="Center" Margin="10,0,0,0" />
+                        <TextBox x:Name="LargeMinBox" Width="60" Height="24" Text="100" VerticalContentAlignment="Center" Margin="4,0,0,0" />
+                        <Button x:Name="LargeScanButton" Click="OnLargeScan" Width="72" Margin="10,0,0,0" />
+                        <Button x:Name="LargeCleanButton" Click="OnLargeClean" Width="170" Margin="10,0,0,0" />
+                    </StackPanel>
+                    <DataGrid x:Name="LargeGrid" AutoGenerateColumns="False" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="46" />
+                            <DataGridTextColumn Binding="{Binding Path}" Width="*" />
+                            <DataGridTextColumn Binding="{Binding Col1}" Width="110" />
+                            <DataGridTextColumn Binding="{Binding Col2}" Width="150" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem x:Name="DupTab" Header="重复文件">
+                <DockPanel Margin="6">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
+                        <TextBlock x:Name="DupRootLabel" VerticalAlignment="Center" />
+                        <TextBox x:Name="DupRootBox" Width="400" Height="24" VerticalContentAlignment="Center" Margin="6,0,0,0" />
+                        <Button x:Name="DupBrowseButton" Click="OnDupBrowse" Width="72" Margin="6,0,0,0" />
+                        <TextBlock x:Name="DupMinLabel" VerticalAlignment="Center" Margin="10,0,0,0" />
+                        <TextBox x:Name="DupMinBox" Width="60" Height="24" Text="1" VerticalContentAlignment="Center" Margin="4,0,0,0" />
+                        <Button x:Name="DupScanButton" Click="OnDupScan" Width="72" Margin="10,0,0,0" />
+                        <Button x:Name="DupCleanButton" Click="OnDupClean" Width="200" Margin="10,0,0,0" />
+                    </StackPanel>
+                    <DataGrid x:Name="DupGrid" AutoGenerateColumns="False" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="46" />
+                            <DataGridTextColumn Binding="{Binding GroupIndex}" Width="60" />
+                            <DataGridTextColumn Binding="{Binding Path}" Width="*" />
+                            <DataGridTextColumn Binding="{Binding SizeDisplay}" Width="100" />
+                            <DataGridTextColumn Binding="{Binding TagDisplay}" Width="90" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

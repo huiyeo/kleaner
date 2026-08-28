@@ -28,6 +28,8 @@ public partial class MainWindow : Window
         ScanButton.Content = S.Get("BtnScan");
         CleanButton.Content = S.Get("BtnClean");
         QuarantineButton.Content = S.Get("BtnQuarantine");
+        ToolboxButton.Content = S.Get("BtnToolbox");
+        HistoryButton.Content = S.Get("BtnHistory");
         AdvancedButton.Content = S.Get("BtnAdvanced");
         SettingsButton.Content = S.Get("BtnSettings");
         SafetyBox.Header = S.Get("SafetyNotesHeader");
@@ -175,6 +177,10 @@ public partial class MainWindow : Window
     }
 
     private void OnQuarantine(object sender, RoutedEventArgs e) => new QuarantineWindow { Owner = this }.ShowDialog();
+
+    private void OnToolbox(object sender, RoutedEventArgs e) => new ToolboxWindow { Owner = this }.ShowDialog();
+
+    private void OnHistory(object sender, RoutedEventArgs e) => new HistoryWindow { Owner = this }.ShowDialog();
 
     private void OnAdvanced(object sender, RoutedEventArgs e) => new AdvancedWindow { Owner = this }.ShowDialog();
 

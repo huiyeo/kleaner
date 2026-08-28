@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kleaner.Core\Kleaner.Core.csproj" />
     <ProjectReference Include="..\..\src\Kleaner.Executor\Kleaner.Executor.csproj" />
+    <ProjectReference Include="..\..\src\Kleaner.Analysis\Kleaner.Analysis.csproj" />
   </ItemGroup>
 
 </Project>

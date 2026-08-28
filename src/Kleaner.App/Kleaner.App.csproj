@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Kleaner.Core\Kleaner.Core.csproj" />
     <ProjectReference Include="..\Kleaner.Executor\Kleaner.Executor.csproj" />
     <ProjectReference Include="..\Kleaner.SpecialOps\Kleaner.SpecialOps.csproj" />
+    <ProjectReference Include="..\Kleaner.Analysis\Kleaner.Analysis.csproj" />
   </ItemGroup>
 
   <ItemGroup>

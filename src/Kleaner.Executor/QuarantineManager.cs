@@ -25,10 +25,12 @@ public sealed class QuarantineManager
     };
 
     private readonly string _root;
+    private readonly HistoryManager? _history;
 
-    public QuarantineManager(string? root = null)
+    public QuarantineManager(string? root = null, HistoryManager? history = null)
     {
         _root = root ?? DefaultRoot();
+        _history = history;
         Directory.CreateDirectory(_root);
     }
 
@@ -90,6 +92,9 @@ public sealed class QuarantineManager
             Path.Combine(batchDir, "manifest.json"),
             JsonSerializer.Serialize(new QuarantineBatch(batchId, DateTime.UtcNow, entries), JsonOpts));
 
+        _history?.Append("clean", $"批次 {batchId}（规则：{string.Join(",", entries.Select(e => e.RuleId).Distinct())}）",
+            entries.Count, bytes, skipped.Count == 0 ? "ok" : "partial");
+
         return new ExecutionReport(batchId, batchDir, entries.Count, bytes, skipped);
     }
 
@@ -147,10 +152,15 @@ public sealed class QuarantineManager
         }
 
         TryDeleteDir(batchDir);
+        _history?.Append("restore", $"批次 {batchId}", restored, 0, restored > 0 ? "ok" : "failed");
         return restored;
     }
 
-    public void DeleteBatch(string batchId) => TryDeleteDir(Path.Combine(_root, batchId));
+    public void DeleteBatch(string batchId)
+    {
+        TryDeleteDir(Path.Combine(_root, batchId));
+        _history?.Append("delete-batch", $"批次 {batchId}", 0, 0, "ok");
+    }
 
     /// <summary>清空早于指定时长的批次。仅由用户显式触发（手动清空策略，不自动删除）。</summary>
     public int PurgeOlderThan(TimeSpan age)
@@ -162,6 +172,7 @@ public sealed class QuarantineManager
             DeleteBatch(batch.BatchId);
             purged++;
         }
+        _history?.Append("purge", "清空过期批次", 0, 0, purged > 0 ? "ok" : "ok");
         return purged;
     }
 

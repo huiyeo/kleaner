@@ -64,7 +64,55 @@
 - **删除影响**：需要时自动重新下载，不影响已安装更新；官方"磁盘清理→Windows 更新清理"同类。
 - **验证方式**：本机实测（2026-08-24）占用接近 0（近期无待装更新）。
 
+## uv-cache
+
+- **目录用途**：uv（Python 包管理器）下载与构建缓存。
+- **删除影响**：下次安装重新下载；已创建的虚拟环境内是硬链接/副本，不受影响。
+- **验证方式**：官方命令 `uv cache clean` 清除的即此目录；本机实测目录存在（2026-08-28，占用 0）。
+
+## playwright-browsers
+
+- **目录用途**：Playwright 测试浏览器二进制（Chromium/Firefox/WebKit 按版本号目录存放）。
+- **删除影响**：下次运行 `npx playwright install` 重新下载；不删项目代码与测试结果。
+- **验证方式**：本机实测（2026-08-28）约 394 MB；阈值取 30 天，避免清掉正在使用的版本。
+
+## cargo-registry
+
+- **目录用途**：Cargo 下载的 crate 缓存（registry/cache 压缩包 + registry/src 解压副本）。
+- **删除影响**：下次构建重新下载；已编译的 target 目录不在本规则路径内。
+- **验证方式**：官方文档（doc.rust-lang.org/cargo/reference/cargo-home.html）。**本机未安装 Rust，未真机验证**。
+
+## go-build-cache
+
+- **目录用途**：Go 构建缓存（`go env GOCACHE` 默认值 `%LOCALAPPDATA%\go-build`）。
+- **删除影响**：官方 `go clean -cache` 同类操作；下次首次构建稍慢。
+- **验证方式**：官方文档（go.dev）。**本机未安装 Go，未真机验证**。
+
+## gradle-caches
+
+- **目录用途**：Gradle 依赖与构建缓存（`~/.gradle/caches`）。
+- **删除影响**：下次构建重新下载依赖并重建缓存；项目内 `.gradle` 目录不在本规则路径内。
+- **验证方式**：官方文档（docs.gradle.org/userguide/directory_layout.html）。**本机未安装 Gradle，未真机验证**。
+
+## maven-repository
+
+- **目录用途**：Maven 本地依赖仓库（`~/.m2/repository`）。
+- **删除影响**：下次构建重新下载；`settings.xml` 等配置不在本规则路径内。
+- **验证方式**：官方文档（maven.apache.org/guides/introduction/introduction-to-repos.html）。**本机未安装 Maven，未真机验证**。
+
+## crash-dumps
+
+- **目录用途**：应用崩溃 minidump（`%LOCALAPPDATA%\CrashDumps`，LocalDumps 默认位置）。
+- **删除影响**：仅丢失崩溃排查材料，系统与应用不受影响；14 天阈值。
+- **验证方式**：微软文档（learn.microsoft.com LocalDumps）。本机当前无此目录（无崩溃记录）。
+
+## wer-reports
+
+- **目录用途**：Windows 错误报告队列（ReportQueue 待上报 / ReportArchive 已归档）。
+- **删除影响**：微软官方磁盘清理同类对象；仅丢失历史问题反馈材料。需管理员权限。
+- **验证方式**：官方文档（learn.microsoft.com WER）。本机未验证具体占用。
+
 ## 数据来源
 
-- 本机占用数据：2026-08-24 对 `C:\Users\13739` 及系统目录的只读扫描（du 统计）。
-- 后续候选规则（待验证后进入规则库）：ms-playwright 浏览器缓存（属开发工具二进制，删除导致下次重新下载，暂缓）、`%LOCALAPPDATA%\Microsoft\Windows\INetCache`（本机实测仅 0.1 MB，价值低）。
+- 本机占用数据：2026-08-24 与 2026-08-28 对 `C:\Users\13739` 及系统目录的只读扫描（du 统计）。
+- 未采纳的候选（记录原因）：缩略图缓存（thumbcache_*.db 常驻被 Explorer 锁定，引擎跳过策略下几乎不可清理，价值低）、Ollama/HF 模型（用户主动下载的重资源，删除代价高，不属"无风险"）、项目内 node_modules/target（白名单纪律：项目目录内容一律不自动清理）。

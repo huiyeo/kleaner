@@ -17,7 +17,7 @@ gh repo create kleaner --public --source . --push
 gh release create v0.1.0 "releases/Kleaner-win-Setup.exe" "releases/Kleaner-win-Portable.zip" "releases/RELEASES" "releases/Kleaner-0.1.0-full.nupkg" --title "Kleaner v0.1.0 — 首个公开版本" --notes-file docs/release-notes-v0.1.0.md
 ```
 
-说明：`RELEASES` 与 `full.nupkg` 是 Velopack 自动更新通道的约定文件名，GitHub Release 附件会作为后续版本的更新源（应用内接上 UpdateManager 后指向 `https://github.com/<你的用户名>/kleaner` 即可）。
+说明：`RELEASES` 与 `full.nupkg` 是 Velopack 自动更新通道的约定文件名，GitHub Release 附件会作为后续版本的更新源（应用内接上 UpdateManager 后指向 `https://github.com/huiyeo/kleaner` 即可）。
 
 ## 本地复现打包
 

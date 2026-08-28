@@ -87,6 +87,10 @@
           "type": "string",
           "description": "rules/docs/safety-notes.md 中对应条目的锚点链接，PR 必填"
         },
+        "verified": {
+          "type": "string",
+          "description": "验证状态声明，如「本机实测 2026-08-28」或「官方文档来源，本机未验证」。三关流程（权威来源→安全边界→真机验证）的第三关记录"
+        },
         "lockedFilePolicy": {
           "enum": ["skip"],
           "default": "skip",
