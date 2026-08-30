@@ -43,8 +43,7 @@ public sealed class ScanEngine
                             continue;
                         if (excludes.Any(re => re.IsMatch(path)))
                             continue;
-                        if (_quarantineRoot is not null &&
-                            path.StartsWith(_quarantineRoot, StringComparison.OrdinalIgnoreCase))
+                        if (_quarantineRoot is not null && IsUnderRoot(path, _quarantineRoot))
                             continue;
 
                         long size;
@@ -82,5 +81,16 @@ public sealed class ScanEngine
         }
 
         return new ScanReport(now, results, errors);
+    }
+
+    /// <summary>判断 path 是否位于 root 目录之下（按路径段边界，避免 "D:\Q" 误伤 "D:\Q2"）。</summary>
+    private static bool IsUnderRoot(string path, string root)
+    {
+        var r = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (!path.StartsWith(r, StringComparison.OrdinalIgnoreCase))
+            return false;
+        return path.Length == r.Length ||
+               path[r.Length] == Path.DirectorySeparatorChar ||
+               path[r.Length] == Path.AltDirectorySeparatorChar;
     }
 }

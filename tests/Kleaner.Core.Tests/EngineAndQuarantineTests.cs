@@ -68,6 +68,56 @@ public sealed class EngineAndQuarantineTests : IDisposable
     }
 
     [Fact]
+    public void 引擎_隔离区内文件不计入候选且按路径段边界排除()
+    {
+        var dir = Path.Combine(_root, "app-cache");
+        Directory.CreateDirectory(dir);
+        var inside = Path.Combine(dir, "inside.bin");
+        File.WriteAllText(inside, "x");
+        File.SetLastWriteTimeUtc(inside, DateTime.UtcNow.AddDays(-30));
+
+        var quarantineRoot = Path.Combine(dir, "KleanerQuarantine");
+        Directory.CreateDirectory(quarantineRoot);
+        var quarantined = Path.Combine(quarantineRoot, "old.bin");
+        File.WriteAllText(quarantined, "y");
+        File.SetLastWriteTimeUtc(quarantined, DateTime.UtcNow.AddDays(-30));
+
+        // 前缀相同但不属于隔离区本体的目录不应被误伤（D:\Q 不排除 D:\Q2）
+        var sibling = Path.Combine(dir, "KleanerQuarantine2");
+        Directory.CreateDirectory(sibling);
+        var kept = Path.Combine(sibling, "keep.bin");
+        File.WriteAllText(kept, "z");
+        File.SetLastWriteTimeUtc(kept, DateTime.UtcNow.AddDays(-30));
+
+        var json = $$"""
+        {
+          "schemaVersion": 1,
+          "rules": [{
+            "id": "test-q",
+            "name": "测试隔离区排除",
+            "category": "application",
+            "risk": "low",
+            "paths": ["{{JsonEscape(dir)}}\\**"],
+            "ageDays": 7,
+            "requiresElevation": false,
+            "safetyNotes": "仅用于单元测试验证隔离区排除逻辑与路径段边界匹配。"
+          }]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+        Assert.Empty(RuleSetLoader.Validate(set));
+
+        var report = new ScanEngine(quarantineRoot).Scan(set);
+
+        Assert.True(report.Errors.Count == 0, "规则扫描错误：" + string.Join("；", report.Errors));
+        var files = Assert.Single(report.Results).Files;
+        Assert.Equal(2, files.Count);
+        Assert.Contains(files, f => string.Equals(f.FullPath, inside, StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(files, f => string.Equals(f.FullPath, kept, StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(files, f => string.Equals(f.FullPath, quarantined, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void 隔离区_执行后可整批还原()
     {
         var sourceDir = Path.Combine(_root, "src");

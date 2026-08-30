@@ -18,15 +18,25 @@
                         <Button x:Name="UsageBrowseButton" Click="OnUsageBrowse" Width="72" Margin="6,0,0,0" />
                         <Button x:Name="UsageScanButton" Click="OnUsageScan" Width="72" Margin="6,0,0,0" />
                         <Button x:Name="UsageEnterButton" Click="OnUsageEnter" Width="110" Margin="6,0,0,0" />
+                        <RadioButton x:Name="UsageViewList" GroupName="UsageView" IsChecked="True"
+                                     VerticalAlignment="Center" Margin="24,0,0,0" Checked="OnUsageViewChanged" />
+                        <RadioButton x:Name="UsageViewTreemap" GroupName="UsageView"
+                                     VerticalAlignment="Center" Margin="8,0,0,0" Checked="OnUsageViewChanged" />
                     </StackPanel>
-                    <DataGrid x:Name="UsageGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
-                              SelectionMode="Single">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Binding="{Binding Path}" Width="*" />
-                            <DataGridTextColumn Binding="{Binding SizeDisplay}" Width="110" />
-                            <DataGridTextColumn Binding="{Binding TypeDisplay}" Width="70" />
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid>
+                        <DataGrid x:Name="UsageGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                                  SelectionMode="Single">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Binding="{Binding Path}" Width="*" />
+                                <DataGridTextColumn Binding="{Binding SizeDisplay}" Width="110" />
+                                <DataGridTextColumn Binding="{Binding TypeDisplay}" Width="70" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <ScrollViewer x:Name="TreemapHost" Visibility="Collapsed"
+                                      HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
+                            <Canvas x:Name="TreemapCanvas" Background="White" MouseLeftButtonDown="OnTreemapMouseDown" />
+                        </ScrollViewer>
+                    </Grid>
                 </DockPanel>
             </TabItem>
             <TabItem x:Name="LargeTab" Header="大文件">

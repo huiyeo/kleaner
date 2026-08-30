@@ -54,7 +54,8 @@ public static class RuleSetLoader
             RequiresElevation: e.GetProperty("requiresElevation").GetBoolean(),
             Enabled: !e.TryGetProperty("enabled", out var enabled) || enabled.GetBoolean(),
             SafetyNotes: e.GetProperty("safetyNotes").GetString()!,
-            SafetyDoc: e.TryGetProperty("safetyDoc", out var sd) ? sd.GetString() : null);
+            SafetyDoc: e.TryGetProperty("safetyDoc", out var sd) ? sd.GetString() : null,
+            Verified: e.TryGetProperty("verified", out var vf) ? vf.GetString() : null);
     }
 
     private static int? TryGetNullableInt(JsonElement e, string name) =>

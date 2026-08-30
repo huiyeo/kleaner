@@ -6,9 +6,16 @@ namespace Kleaner.App;
 /// <summary>规则行视图模型：呈现扫描结果（文件数/可释放量），勾选状态驱动清理。</summary>
 public sealed class RuleRow : INotifyPropertyChanged
 {
-    public RuleRow(Rule rule) => Rule = rule;
+    public RuleRow(Rule rule)
+    {
+        Rule = rule;
+        _isSelected = MachineVerified;
+    }
 
     public Rule Rule { get; }
+
+    /// <summary>verified 以「本机实测」开头的规则视为已在本机验证；未声明 verified 的旧规则视同已验证。</summary>
+    public bool MachineVerified => Rule.Verified?.StartsWith("本机实测", StringComparison.Ordinal) ?? true;
 
     public string Id => Rule.Id;
 
@@ -28,7 +35,7 @@ public sealed class RuleRow : INotifyPropertyChanged
 
     public string SizeDisplay => Helpers.FormatBytes(Result?.TotalBytes ?? 0);
 
-    public string Note => Result?.Note ?? string.Empty;
+    public string Note => Result?.Note ?? (MachineVerified ? string.Empty : S.Get("UnverifiedNote"));
 
     private bool _isSelected = true;
 

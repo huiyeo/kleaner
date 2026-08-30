@@ -10,6 +10,7 @@
             <Button x:Name="QuarantineButton" Click="OnQuarantine" Width="96" Padding="0,4" Margin="8,0,0,0" />
             <Button x:Name="ToolboxButton" Click="OnToolbox" Width="96" Padding="0,4" Margin="8,0,0,0" />
             <Button x:Name="HistoryButton" Click="OnHistory" Width="96" Padding="0,4" Margin="8,0,0,0" />
+            <Button x:Name="StartupButton" Click="OnStartup" Width="96" Padding="0,4" Margin="8,0,0,0" />
             <Button x:Name="AdvancedButton" Click="OnAdvanced" Width="96" Padding="0,4" Margin="8,0,0,0" />
             <Button x:Name="SettingsButton" Click="OnSettings" Width="96" Padding="0,4" Margin="8,0,0,0" />
         </StackPanel>

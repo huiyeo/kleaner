@@ -2,6 +2,7 @@ using System.Text.Json;
 using Kleaner.Analysis;
 using Kleaner.Core;
 using Kleaner.Executor;
+using Microsoft.Win32;
 
 // Kleaner CLI（MangoDisk 式安全契约）：
 //   scan（默认）            只读扫描规则库目标，绝不删除
@@ -41,7 +42,7 @@ try
             var errors = RuleSetLoader.Validate(set);
             if (errors.Count > 0)
                 return Fail(json, errors);
-            var report = new ScanEngine().Scan(set);
+            var report = new ScanEngine(EffectiveQuarantineRoot()).Scan(set);
             Output(json, report, set);
             return 0;
         }
@@ -60,7 +61,7 @@ try
             if (missing.Count > 0)
                 return Fail(json, new[] { $"未知规则 id：{string.Join(",", missing)}" });
 
-            var report = new ScanEngine().Scan(set);
+            var report = new ScanEngine(EffectiveQuarantineRoot()).Scan(set);
             var selected = report.Results.Where(r => chosen.Any(c => c.Id == r.RuleId) && r.FileCount > 0).ToList();
             var plan = (Files: selected.Sum(r => r.FileCount), Bytes: selected.Sum(r => r.TotalBytes));
 
@@ -89,7 +90,7 @@ try
                 }
             }
 
-            var manager = new QuarantineManager(AppSettingsRoot(), history);
+            var manager = new QuarantineManager(EffectiveQuarantineRoot(), history);
             var items = selected.SelectMany(r => r.Files.Select(f => (r.RuleId, f))).ToList();
             var exec = manager.Execute(items);
             if (json)
@@ -145,6 +146,82 @@ try
                 foreach (var i in items)
                     Console.WriteLine($"{Fmt(i.SizeBytes),12}  {(i.IsDirectory ? "[目录]" : "[文件]")}  {i.Path}");
             return 0;
+        }
+        case "startup":
+        {
+            var manager = new StartupManager();
+            var items = manager.Enumerate();
+            var disabled = manager.ListDisabled();
+            if (json)
+                Console.WriteLine(JsonSerializer.Serialize(new { enabled = items, disabled }, JsonIndented()));
+            else
+            {
+                foreach (var i in items)
+                    Console.WriteLine($"[启用]   {(i.RequiresElevation ? "管理员 " : "      ")}{i.Name,-28}  {i.Command}");
+                foreach (var d in disabled)
+                    Console.WriteLine($"[已禁用]         {d.Name,-28}  {d.Command}");
+                Console.WriteLine();
+                Console.WriteLine($"共 {items.Count} 项启用，{disabled.Count} 项已禁用（禁用备份：{manager.BackupDir}）");
+            }
+            return 0;
+        }
+        case "startup-test":
+        {
+            // 自检：临时 HKCU Run 值与启动文件夹文件 → 禁用 → 还原 → 校验一致 → 清理
+            const string valueName = "KleanerSelfTest";
+            const string valueData = "\"C:\\Program Files\\KleanerSelfTest\\demo.exe\" /x";
+            const string keyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+            var manager = new StartupManager();
+            var failures = new List<string>();
+
+            Registry.SetValue(@"HKEY_CURRENT_USER\" + keyPath, valueName, valueData);
+            var notePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Startup), "KleanerSelfTestNote.txt");
+            File.WriteAllText(notePath, "kleaner startup self-test");
+            try
+            {
+                var regItem = manager.Enumerate().SingleOrDefault(i => i.Id.EndsWith("|" + valueName));
+                if (regItem is null) failures.Add("枚举未发现测试注册表项");
+                else
+                {
+                    manager.Disable(regItem);
+                    var gone = Registry.GetValue(@"HKEY_CURRENT_USER\" + keyPath, valueName, null) is null;
+                    if (!gone) failures.Add("禁用后注册表值仍存在");
+                    manager.Restore(regItem.Id);
+                    var back = Registry.GetValue(@"HKEY_CURRENT_USER\" + keyPath, valueName, null) as string;
+                    if (back != valueData) failures.Add("还原后注册表值数据不一致");
+                }
+
+                var fileItem = manager.Enumerate().SingleOrDefault(i => i.Id == $"file|{notePath}");
+                if (fileItem is null) failures.Add("枚举未发现测试文件项");
+                else
+                {
+                    manager.Disable(fileItem);
+                    if (File.Exists(notePath)) failures.Add("禁用后启动文件夹文件仍存在");
+                    manager.Restore(fileItem.Id);
+                    if (!File.Exists(notePath)) failures.Add("还原后启动文件夹文件丢失");
+                }
+            }
+            finally
+            {
+                // 测试数据清理：无论往返是否成功，都不残留测试启动项
+                try
+                {
+                    using var k = Registry.CurrentUser.OpenSubKey(keyPath, writable: true);
+                    k?.DeleteValue(valueName, throwOnMissingValue: false);
+                }
+                catch { }
+                try { if (File.Exists(notePath)) File.Delete(notePath); } catch { }
+            }
+
+            if (failures.Count == 0)
+            {
+                Console.WriteLine("startup-test PASS（注册表与文件项禁用/还原往返一致，测试数据已清理）");
+                return 0;
+            }
+            foreach (var f in failures)
+                Console.Error.WriteLine("FAIL: " + f);
+            return 1;
         }
         default:
             System.Console.Error.WriteLine($"未知命令：{cmd}");
@@ -212,6 +289,8 @@ static void Usage()
     System.Console.WriteLine("  large-files --root R [--min-mb 100] [--top 50]");
     System.Console.WriteLine("  duplicates  --root R [--min-mb 1]");
     System.Console.WriteLine("  usage       --root R [--top 30]");
+    System.Console.WriteLine("  startup                       只读列出启动项（含已禁用备份）");
+    System.Console.WriteLine("  startup-test                  启动项禁用/还原往返自检（临时测试项，自动清理）");
     System.Console.WriteLine("  通用：--format text|json   --yes");
 }
 
@@ -242,4 +321,7 @@ static string? AppSettingsRoot()
         return null;
     }
 }
+
+/// <summary>生效隔离区根：设置覆盖优先，缺省回退到剩余空间最大的非系统盘（与 GUI 一致）。</summary>
+static string EffectiveQuarantineRoot() => AppSettingsRoot() ?? QuarantineManager.DefaultRoot();
 

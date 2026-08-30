@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using Microsoft.Win32;
 using Kleaner.Analysis;
 using Kleaner.Core;
@@ -11,6 +13,7 @@ namespace Kleaner.App;
 public partial class ToolboxWindow : Window
 {
     private CancellationTokenSource? _cts;
+    private IReadOnlyList<UsageItem> _usageItems = Array.Empty<UsageItem>();
 
     public ToolboxWindow()
     {
@@ -29,6 +32,8 @@ public partial class ToolboxWindow : Window
         LargeScanButton.Content = S.Get("BtnScan");
         DupScanButton.Content = S.Get("BtnScan");
         UsageEnterButton.Content = S.Get("BtnEnterDir");
+        UsageViewList.Content = S.Get("BtnViewList");
+        UsageViewTreemap.Content = S.Get("BtnViewTreemap");
         LargeMinLabel.Text = S.Get("MinSizeLabel");
         DupMinLabel.Text = S.Get("MinSizeLabel");
         LargeCleanButton.Content = S.Get("BtnCleanSelected");
@@ -48,6 +53,16 @@ public partial class ToolboxWindow : Window
             DupGrid.Columns[i].Header = dupHeaders[i];
 
         Closed += (_, _) => _cts?.Cancel();
+        TreemapHost.LayoutUpdated += (_, _) =>
+        {
+            if (UsageViewTreemap.IsChecked != true)
+                return;
+            // 宿主尺寸与画布不一致（可见性切换/布局中途取值）时补渲染；收敛后不再触发
+            var w = Math.Max(TreemapHost.ActualWidth - 4, 10);
+            var h = Math.Max(TreemapHost.ActualHeight - 4, 10);
+            if (Math.Abs(TreemapCanvas.Width - w) > 1 || Math.Abs(TreemapCanvas.Height - h) > 1)
+                RenderTreemap();
+        };
     }
 
     private void SetBusy(bool busy)
@@ -82,8 +97,11 @@ public partial class ToolboxWindow : Window
         {
             var token = _cts.Token;
             var items = await Task.Run(() => DiskUsageAnalyzer.TopLevel(root, token), token);
+            _usageItems = items;
             UsageGrid.ItemsSource = items.Select(i => new UsageRow(i)).ToList();
             StatusText.Text = S.Format("StatusUsageDone", items.Count, Helpers.FormatBytes(items.Sum(i => i.SizeBytes)));
+            if (UsageViewTreemap.IsChecked == true)
+                RenderTreemapDeferred();
         }
         catch (OperationCanceledException)
         {
@@ -97,6 +115,120 @@ public partial class ToolboxWindow : Window
         {
             SetBusy(false);
         }
+    }
+
+    private void OnUsageViewChanged(object sender, RoutedEventArgs e)
+    {
+        if (UsageGrid is null || TreemapHost is null)
+            return; // InitializeComponent 期间触发
+        var treemap = UsageViewTreemap.IsChecked == true;
+        UsageGrid.Visibility = treemap ? Visibility.Collapsed : Visibility.Visible;
+        TreemapHost.Visibility = treemap ? Visibility.Visible : Visibility.Collapsed;
+        if (treemap)
+            RenderTreemapDeferred();
+    }
+
+    /// <summary>可见性/尺寸刚变化时布局尚未完成，推迟到布局结束后再取 ActualWidth 渲染。</summary>
+    private void RenderTreemapDeferred() =>
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(RenderTreemap));
+
+    private void RenderTreemap()
+    {
+        TreemapCanvas.Children.Clear();
+        var width = Math.Max(TreemapHost.ActualWidth - 4, 10);
+        var height = Math.Max(TreemapHost.ActualHeight - 4, 10);
+        TreemapCanvas.Width = width;
+        TreemapCanvas.Height = height;
+        if (_usageItems.Count == 0)
+            return;
+
+        var rects = TreemapLayout.Squarify(
+            _usageItems.Select(i => (i.Path, i.SizeBytes)), width, height);
+        var labels = new List<(TreemapRect Rect, string Name)>();
+        foreach (var r in rects)
+        {
+            var item = _usageItems.First(i => i.Path == r.Path);
+            var border = new System.Windows.Controls.Border
+            {
+                Width = Math.Max(r.Width - 1, 0),
+                Height = Math.Max(r.Height - 1, 0),
+                Background = UsageBrush(item),
+                BorderBrush = System.Windows.Media.Brushes.White,
+                BorderThickness = new Thickness(1),
+                ToolTip = $"{r.Path}\n{Helpers.FormatBytes(r.SizeBytes)}",
+                Tag = item,
+            };
+            TreemapCanvas.Children.Add(border);
+            if (r.Width > 40 && r.Height > 22)
+            {
+                var name = System.IO.Path.GetFileName(r.Path.TrimEnd('\\')) is { Length: > 0 } fn ? fn : r.Path;
+                labels.Add((r, $"{name}\n{Helpers.FormatBytes(r.SizeBytes)}"));
+            }
+        }
+        // 标签统一最后绘制，避免被后续矩形盖住
+        foreach (var (rect, text) in labels)
+        {
+            var label = new TextBlock
+            {
+                Text = text,
+                Foreground = System.Windows.Media.Brushes.White,
+                FontSize = 11,
+                Margin = new Thickness(3, 1, 1, 1),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Width = Math.Max(rect.Width - 6, 0),
+                IsHitTestVisible = false,
+            };
+            Canvas.SetLeft(label, rect.X);
+            Canvas.SetTop(label, rect.Y);
+            TreemapCanvas.Children.Add(label);
+        }
+        StatusText.Text = S.Get("TreemapHint");
+    }
+
+    private void OnTreemapMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2)
+            return;
+        if ((e.OriginalSource as FrameworkElement)?.Tag is UsageItem item && item.IsDirectory)
+        {
+            UsageRootBox.Text = item.Path;
+            _ = ScanUsageAsync();
+        }
+    }
+
+    private static System.Windows.Media.Brush UsageBrush(UsageItem item)
+    {
+        byte r, g, b;
+        if (item.IsDirectory)
+            (r, g, b) = (0x2E, 0x6F, 0xB8);
+        else
+        {
+            var ext = System.IO.Path.GetExtension(item.Path);
+            var seed = Math.Abs((ext.Length == 0 ? item.Path : ext).GetHashCode(StringComparison.OrdinalIgnoreCase));
+            var hue = seed % 360;
+            (r, g, b) = HsvToRgb(hue, 0.42, 0.78);
+        }
+        var brush = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.Color.FromRgb(r, g, b));
+        brush.Opacity = 0.92;
+        return brush;
+    }
+
+    private static (byte, byte, byte) HsvToRgb(int hue, double s, double v)
+    {
+        var c = v * s;
+        var x = c * (1 - Math.Abs(hue / 60.0 % 2 - 1));
+        var m = v - c;
+        var (r1, g1, b1) = hue switch
+        {
+            < 60 => (c, x, 0.0),
+            < 120 => (x, c, 0.0),
+            < 180 => (0.0, c, x),
+            < 240 => (0.0, x, c),
+            < 300 => (x, 0.0, c),
+            _ => (c, 0.0, x),
+        };
+        return ((byte)((r1 + m) * 255), (byte)((g1 + m) * 255), (byte)((b1 + m) * 255));
     }
 
     private async void OnLargeScan(object sender, RoutedEventArgs e) => await ScanLargeAsync();

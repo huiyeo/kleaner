@@ -22,4 +22,5 @@ public sealed record Rule(
     bool RequiresElevation,
     bool Enabled,
     string SafetyNotes,
-    string? SafetyDoc = null);
+    string? SafetyDoc = null,
+    string? Verified = null);
