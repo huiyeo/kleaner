@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<!--
+  PROTOTYPE — 用完即弃，不是产品代码。
+  问题（.scratch/pwa-refactor/issues/05-frontend-prototype.md）：
+    Kleaner PWA 主界面应该长什么样？同时验证「无构建 vanilla JS」栈可行性。
+  形态：
+    三个结构不同的变体，?variant=A|B|C 切换，底部悬浮条 + 键盘 ←/→。
+      A 向导式：线性步骤 选择→扫描→确认→完成，一次只看一步。
+      B 工作台：贴近现 WPF——工具栏 + 密表格 + 安全说明卡 + 状态栏。
+      C 分类聚合：先按类别汇总卡片，展开进规则，确认走侧滑抽屉。
+    流程全 mock：勾选（默认勾选策略）→ 扫描进度 → 预览确认 → 执行 → 结果。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kleaner 原型 — 主界面</title>
+<style>
+  :root {
+    --accent: #0067c0;
+    --accent-hover: #0078d4;
+    --bg: #f3f3f3;
+    --card: #ffffff;
+    --stroke: #e0e0e0;
+    --text: #1b1b1b;
+    --text-2: #616161;
+    --ok: #0f7b0f;
+    --warn: #9d5d00;
+    --danger: #c42b1c;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px;
+    overflow: hidden;
+  }
+  button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+  /* ===== 变体切换条（不属于任何设计） ===== */
+  #switcher {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 4px;
+    background: #1b1b1b; color: #fff; border-radius: 999px;
+    padding: 6px 10px; box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    z-index: 9999; font-size: 13px; user-select: none;
+  }
+  #switcher button { color: #fff; padding: 4px 10px; border-radius: 999px; }
+  #switcher button:hover { background: #ffffff26; }
+  #switcher .label { min-width: 170px; text-align: center; }
+  #switcher .hint { color: #ffffff99; font-size: 11px; margin-right: 6px; }
+
+  /* ===== 通用小组件 ===== */
+  .chip { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--stroke); color: var(--text-2); }
+  .chip.low  { color: var(--ok);   border-color: #0f7b0f55; background: #0f7b0f0d; }
+  .chip.med  { color: var(--warn); border-color: #9d5d0055; background: #9d5d000d; }
+  .chip.unv  { color: var(--danger); border-color: #c42b1c55; background: #c42b1c0d; }
+  .chip.elv  { color: #7038a8; border-color: #7038a855; background: #7038a80d; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 20px; border-radius: var(--radius);
+    background: var(--card); border: 1px solid var(--stroke); color: var(--text);
+  }
+  .btn:hover { background: #f9f9f9; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.small { padding: 5px 12px; font-size: 13px; }
+  .progress { height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+  .safety-box {
+    background: #f8f9fb; border: 1px solid var(--stroke); border-left: 3px solid var(--accent);
+    border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--text-2); line-height: 1.6;
+  }
+  .safety-box b { color: var(--text); }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-weight: 600; color: var(--text-2); font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--stroke); position: sticky; top: 0; background: var(--card); z-index: 1;}
+  td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  tr:hover td { background: #f7faff; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--text-2); }
+
+  /* ============================================================
+     变体 A · 向导式
+     ============================================================ */
+  .vA { height: 100vh; display: flex; flex-direction: column; background: linear-gradient(180deg, #eef4fb 0%, #f3f3f3 240px); }
+  .vA header { padding: 18px 32px 0; display: flex; justify-content: space-between; align-items: center; }
+  .vA header .brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; }
+  .vA header .brand .logo { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 15px; }
+  .vA header nav { display: flex; gap: 4px; }
+  .vA header nav button { padding: 7px 14px; border-radius: var(--radius); color: var(--text-2); }
+  .vA header nav button:hover { background: #ffffffaa; color: var(--text); }
+  .vA .steps { display: flex; justify-content: center; gap: 0; padding: 26px 0 10px; }
+  .vA .step { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+  .vA .step .dot {
+    width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    background: #fff; border: 1.5px solid var(--stroke); font-size: 12px; font-weight: 600;
+  }
+  .vA .step.on { color: var(--text); font-weight: 600; }
+  .vA .step.on .dot { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vA .step.done .dot { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .vA .step-line { width: 56px; height: 1.5px; background: var(--stroke); margin: 0 10px; }
+  .vA main { flex: 1; overflow-y: auto; width: min(860px, 92%); margin: 0 auto; background: var(--card);
+    border: 1px solid var(--stroke); border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+  .vA .pane { padding: 24px 28px; }
+  .vA .pane h2 { font-size: 18px; margin-bottom: 4px; }
+  .vA .pane .sub { color: var(--text-2); margin-bottom: 18px; }
+  .vA .rule-item { display: flex; gap: 12px; padding: 12px 8px; border-bottom: 1px solid #f0f0f0; align-items: flex-start; }
+  .vA .rule-item .info { flex: 1; }
+  .vA .rule-item .name-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .vA .rule-item .note-line { font-size: 12px; color: var(--text-2); margin-top: 4px; line-height: 1.55; }
+  .vA .rule-item .size { font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; padding-top: 2px; }
+  .vA footer { padding: 14px 32px 60px; display: flex; justify-content: space-between; align-items: center; }
+  .vA .big-cta { padding: 11px 34px; font-size: 15px; border-radius: 10px; }
+  .vA .scan-center { text-align: center; padding: 60px 0 50px; }
+  .vA .scan-center .pct { font-size: 44px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 18px 0 6px; }
+  .vA .scan-center .cur { color: var(--text-2); margin-bottom: 22px; }
+  .vA .scan-center .progress { width: 70%; margin: 0 auto; height: 6px; }
+  .vA .confirm-sum { display: flex; gap: 14px; margin-bottom: 20px; }
+  .vA .confirm-sum .stat { flex: 1; background: #f7f9fc; border: 1px solid var(--stroke); border-radius: 10px; padding: 14px 16px; }
+  .vA .confirm-sum .stat .v { font-size: 22px; font-weight: 600; margin-top: 2px; }
+  .vA .cat-row td:first-child { font-weight: 600; background: #f7f9fc; }
+
+  /* ============================================================
+     变体 B · 工作台
+     ============================================================ */
+  .vB { height: 100vh; display: flex; flex-direction: column; background: var(--card); }
+  .vB .titlebar { height: 42px; background: var(--accent); color: #fff; display: flex; align-items: center; padding: 0 14px; gap: 8px; font-weight: 600; font-size: 13px; }
+  .vB .titlebar .spacer { flex: 1; }
+  .vB .toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--stroke); background: #fafafa; flex-wrap: wrap; }
+  .vB .toolbar .sep { width: 1px; height: 22px; background: var(--stroke); margin: 0 6px; }
+  .vB .toolbar .grow { flex: 1; }
+  .vB .content { flex: 1; overflow-y: auto; margin: 0; }
+  .vB td .rname { display: flex; align-items: center; gap: 8px; }
+  .vB td .note { font-size: 12px; color: var(--text-2); margin-top: 2px; max-width: 520px; }
+  .vB .safety-dock { border-top: 1px solid var(--stroke); background: #fbfcfe; padding: 10px 16px; max-height: 132px; overflow-y: auto; }
+  .vB .statusbar { border-top: 1px solid var(--stroke); padding: 6px 16px; color: var(--text-2); font-size: 12.5px; background: #fafafa; display: flex; gap: 16px; align-items: center; margin-bottom: 44px;}
+  .vB .scan-inline { display: flex; align-items: center; gap: 10px; }
+  .vB .scan-inline .progress { width: 220px; }
+  .vB dialog { border: none; border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,.25); padding: 0; width: min(560px, 90vw); }
+  .vB dialog::backdrop { background: rgba(0,0,0,.32); }
+  .vB .dlg-body { padding: 22px 24px; }
+  .vB .dlg-body h3 { margin-bottom: 12px; font-size: 16px; }
+  .vB .dlg-body .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+  /* ============================================================
+     变体 C · 分类聚合
+     ============================================================ */
+  .vC { height: 100vh; display: grid; grid-template-columns: 280px 1fr; background: #f6f7fa; }
+  .vC aside { background: #fcfcfd; border-right: 1px solid var(--stroke); padding: 22px 20px; display: flex; flex-direction: column; gap: 18px; }
+  .vC aside .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; }
+  .vC aside .brand .logo { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #fff; display: grid; place-items: center; }
+  .vC .ring-wrap { text-align: center; padding: 8px 0; }
+  .vC .ring { width: 132px; height: 132px; margin: 0 auto; }
+  .vC .ring .val { font-size: 20px; font-weight: 600; fill: var(--text); }
+  .vC .ring .cap { font-size: 10.5px; fill: var(--text-2); }
+  .vC .side-stats { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text-2); }
+  .vC .side-stats .row { display: flex; justify-content: space-between; padding: 6px 10px; background: #fff; border: 1px solid var(--stroke); border-radius: 8px; }
+  .vC .side-stats .row b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .vC aside .links { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
+  .vC aside .links button { text-align: left; padding: 8px 10px; border-radius: 8px; color: var(--text-2); }
+  .vC aside .links button:hover { background: #eef2f8; color: var(--text); }
+  .vC .main-col { display: flex; flex-direction: column; overflow: hidden; }
+  .vC .top { display: flex; align-items: center; gap: 12px; padding: 16px 24px; }
+  .vC .top h1 { font-size: 18px; flex: 1; }
+  .vC .cats { flex: 1; overflow-y: auto; padding: 4px 24px 80px; display: flex; flex-direction: column; gap: 14px; }
+  .vC .cat-card { background: var(--card); border: 1px solid var(--stroke); border-radius: 12px; overflow: hidden; }
+  .vC .cat-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; }
+  .vC .cat-head:hover { background: #fafbfd; }
+  .vC .cat-head .cname { font-weight: 600; flex: 1; }
+  .vC .cat-head .ctotal { font-variant-numeric: tabular-nums; color: var(--text-2); }
+  .vC .cat-head .arrow { transition: transform .15s; color: var(--text-2); }
+  .vC .cat-card.open .cat-head .arrow { transform: rotate(90deg); }
+  .vC .cat-body { display: none; border-top: 1px solid var(--stroke); }
+  .vC .cat-card.open .cat-body { display: block; }
+  .vC .rule-line { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-bottom: 1px solid #f2f2f2; }
+  .vC .rule-line:last-child { border-bottom: none; }
+  .vC .rule-line .rn { flex: 1; }
+  .vC .rule-line .detail { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+  .vC .rule-line .sz { font-variant-numeric: tabular-nums; color: var(--text-2); width: 90px; text-align: right; }
+  .vC .scan-strip { background: var(--card); border-top: 1px solid var(--stroke); padding: 12px 24px; display: flex; align-items: center; gap: 14px; margin-bottom: 48px; }
+  .vC .scan-strip .progress { flex: 1; }
+  .vC .drawer-mask { position: fixed; inset: 0; background: rgba(0,0,0,.28); z-index: 100; display: none; }
+  .vC .drawer-mask.show { display: block; }
+  .vC .drawer {
+    position: fixed; top: 0; right: -520px; width: min(500px, 92vw); height: 100vh; z-index: 101;
+    background: var(--card); box-shadow: -12px 0 40px rgba(0,0,0,.18);
+    transition: right .22s ease; display: flex; flex-direction: column;
+  }
+  .vC .drawer.show { right: 0; }
+  .vC .drawer .dh { padding: 20px 24px 12px; border-bottom: 1px solid var(--stroke); }
+  .vC .drawer .dh h3 { font-size: 17px; }
+  .vC .drawer .dh .sub { color: var(--text-2); font-size: 13px; margin-top: 4px; }
+  .vC .drawer .db { flex: 1; overflow-y: auto; padding: 12px 24px; }
+  .vC .drawer .df { padding: 14px 24px 20px; border-top: 1px solid var(--stroke); display: flex; gap: 10px; justify-content: flex-end; }
+  .vC .drawer .sum-line { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed #eee; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="switcher">
+  <span class="hint">原型变体</span>
+  <button id="sw-prev" title="上一个（←）">◀</button>
+  <span class="label" id="sw-label"></span>
+  <button id="sw-next" title="下一个（→）">▶</button>
+</div>
+
+<script>
+"use strict";
+
+/* ================= mock 数据（形状对齐 rules.v1.json + 扫描结果） ================= */
+
+const RULES = [
+  { id: "user-temp", name: "用户临时目录", category: "temp", catName: "临时文件", risk: "low", verified: true, elevated: false,
+    note: "Windows 与各应用写入的用户级临时目录，删除后按需自动重建。仅清理 14 天未修改的文件，跳过被占用文件。",
+    files: 1284, bytes: 2_331_648_512 },
+  { id: "chrome-http-cache", name: "Chrome HTTP 缓存与代码缓存", category: "browser-cache", catName: "浏览器缓存", risk: "low", verified: true, elevated: false,
+    note: "Chrome 官方缓存目录，删除后自动重建。不含 Cookie、登录态、历史记录与扩展数据。",
+    files: 1968, bytes: 1_932_735_488 },
+  { id: "edge-http-cache", name: "Edge HTTP 缓存与代码缓存", category: "browser-cache", catName: "浏览器缓存", risk: "low", verified: true, elevated: false,
+    note: "Edge 官方缓存目录，删除后自动重建。不含 Cookie、登录态、收藏与历史记录。",
+    files: 492, bytes: 440_401_920 },
+  { id: "npm-cache", name: "npm 包下载缓存", category: "dev-cache", catName: "开发缓存", risk: "low", verified: true, elevated: false,
+    note: "npm 官方命令 npm cache clean --force 即清除此目录，不影响已安装项目与全局包。",
+    files: 5697, bytes: 3_112_794_112 },
+  { id: "pip-cache", name: "pip 下载缓存", category: "dev-cache", catName: "开发缓存", risk: "low", verified: true, elevated: false,
+    note: "pip 官方命令 pip cache purge 即清除此目录，不影响已安装的 Python 环境。",
+    files: 1022, bytes: 856_686_336 },
+  { id: "kimi-desktop-updater", name: "Kimi 桌面版更新器安装包", category: "updater", catName: "更新残留", risk: "low", verified: true, elevated: false,
+    note: "已安装完毕的更新安装包，删除不影响已安装版本。",
+    files: 3, bytes: 219_868_160 },
+  { id: "thumbnail-cache", name: "资源管理器缩略图缓存", category: "system", catName: "系统缓存", risk: "low", verified: true, elevated: false,
+    note: "缩略图缓存，删除后浏览文件夹时自动重建，首次打开会稍慢。",
+    files: 356, bytes: 188_743_680 },
+  { id: "windows-temp", name: "系统临时目录（Windows\\Temp）", category: "system", catName: "系统缓存", risk: "medium", verified: true, elevated: true,
+    note: "系统级临时目录，需要管理员权限。仅清理 14 天未修改文件；部分被系统占用的文件会跳过。",
+    files: 87, bytes: 421_527_552 },
+  { id: "old-defender-scan", name: "旧版 Defender 扫描缓存（实验）", category: "system", catName: "系统缓存", risk: "medium", verified: false, elevated: true,
+    note: "未完成验证的规则。未验证规则默认不勾选，需要手动确认。",
+    files: 0, bytes: 0 },
+];
+
+const CANCEL_TEXT = "取消扫描";
+
+/* ================= 共享状态机（只存数据；布局由各变体自行渲染） ================= */
+
+const store = {
+  phase: "initial",          // initial → scanning → ready → executing → done
+  selected: new Set(RULES.filter(r => r.verified && r.risk === "low" && r.files > 0).map(r => r.id)),
+  expandedNote: null,        // 展开安全说明的规则 id
+  scan: { pct: 0, current: "" },
+  lastResult: null,          // { files, bytes, skipped, batchId }
+  openCat: new Set(),
+  drawerOpen: false,
+  listeners: [],
+  sub(fn) { this.listeners.push(fn); },
+  emit() { this.listeners.forEach(f => f()); },
+  selectedRules() { return RULES.filter(r => this.selected.has(r.id) && r.files > 0); },
+  totals() {
+    const rs = this.selectedRules();
+    return { files: rs.reduce((s, r) => s + r.files, 0), bytes: rs.reduce((s, r) => s + r.bytes, 0), count: rs.length };
+  },
+  byCategory() {
+    const m = new Map();
+    for (const r of RULES) {
+      if (!m.has(r.category)) m.set(r.category, { catName: r.catName, rules: [], files: 0, bytes: 0 });
+      const c = m.get(r.category);
+      c.rules.push(r);
+      if (store.selected.has(r.id) && r.files > 0) { c.files += r.files; c.bytes += r.bytes; }
+    }
+    return m;
+  },
+};
+
+/* 模拟扫描：逐步推进进度条 */
+let scanTimer = null;
+function startScan(onDone) {
+  store.phase = "scanning";
+  store.scan = { pct: 0, current: "" };
+  store.emit();
+  const seq = RULES.filter(r => r.files > 0);
+  let i = 0;
+  scanTimer = setInterval(() => {
+    if (i >= seq.length) {
+      clearInterval(scanTimer); scanTimer = null;
+      store.phase = "ready"; store.emit();
+      onDone && onDone();
+      return;
+    }
+    const r = seq[i];
+    store.scan = { pct: Math.round((i / seq.length) * 100), current: r.name };
+    i++;
+    store.emit();
+  }, 260);
+}
+function cancelScan() {
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+  store.phase = "initial"; store.emit();
+}
+/* 模拟执行：移入隔离区 */
+function executeClean(onDone) {
+  store.phase = "executing"; store.emit();
+  setTimeout(() => {
+    const t = store.totals();
+    store.lastResult = { files: t.files, bytes: t.bytes, skipped: 2, batchId: "20260831-142207-a3f9" };
+    store.phase = "done"; store.emit();
+    onDone && onDone();
+  }, 1400);
+}
+
+/* ================= 工具 ================= */
+
+function fmtBytes(b) {
+  if (b >= 1024 ** 3) return (b / 1024 ** 3).toFixed(2) + " GB";
+  if (b >= 1024 ** 2) return (b / 1024 ** 2).toFixed(1) + " MB";
+  if (b >= 1024) return (b / 1024).toFixed(0) + " KB";
+  return b + " B";
+}
+function riskChip(r) {
+  if (!r.verified) return `<span class="chip unv">未验证·默认不勾选</span>`;
+  return r.risk === "low" ? `<span class="chip low">低</span>` : `<span class="chip med">中</span>`;
+}
+function elvChip(r) { return r.elevated ? `<span class="chip elv">管理员</span>` : ""; }
+function escape0(s) { return s; }
+
+/* ================= 变体 A · 向导式 ================= */
+
+const vA = {
+  id: "A", name: "向导式",
+  step() {
+    return { initial: 1, scanning: 2, ready: 3, executing: 3, done: 4 }[store.phase];
+  },
+  render(app) {
+    const s = this.step();
+    app.className = "vA";
+    app.innerHTML = `
+      <header>
+        <div class="brand"><span class="logo">🧹</span> Kleaner</div>
+        <nav>
+          <button>隔离区</button><button>历史</button><button>工具箱</button><button>启动项</button><button>设置</button>
+        </nav>
+      </header>
+      <div class="steps">
+        ${[["1", "选择清理项"], ["2", "扫描"], ["3", "确认"], ["4", "完成"]].map(([n, t], i) => `
+          ${i > 0 ? '<div class="step-line"></div>' : ""}
+          <div class="step ${s === i + 1 ? "on" : ""} ${s > i + 1 ? "done" : ""}">
+            <span class="dot">${s > i + 1 ? "✓" : n}</span>${t}
+          </div>`).join("")}
+      </div>
+      <main><div class="pane">${this.pane(s)}</div></main>
+      <footer>
+        <span class="muted">白名单机制：只有逐条说明过安全原因的规则才会出现在这里。</span>
+        ${this.cta(s)}
+      </footer>
+    `;
+    this.bind(app);
+  },
+  pane(s) {
+    if (s === 1) {
+      return `
+        <h2>选择要清理的项目</h2>
+        <p class="sub">已按安全策略默认勾选「低风险 + 已验证」项。勾选或取消任意条目，展开查看安全性说明。</p>
+        ${RULES.map(r => `
+          <div class="rule-item">
+            <input type="checkbox" data-rule="${r.id}" ${store.selected.has(r.id) ? "checked" : ""}
+                   ${r.files === 0 && !r.verified ? "" : ""}>
+            <div class="info">
+              <div class="name-line">
+                <b>${r.name}</b>
+                ${riskChip(r)} ${elvChip(r)}
+                <span class="chip">${r.catName}</span>
+              </div>
+              <div class="note-line">${r.note}</div>
+            </div>
+            <span class="size">${store.phase === "initial" ? "待扫描" : `${r.files} 项 · ${fmtBytes(r.bytes)}`}</span>
+          </div>`).join("")}
+      `;
+    }
+    if (s === 2) {
+      return `
+        <div class="scan-center">
+          <h2>正在扫描</h2>
+          <div class="pct">${store.scan.pct}%</div>
+          <div class="cur">${store.scan.current}</div>
+          <div class="progress"><div style="width:${store.scan.pct}%"></div></div>
+          <p class="muted" style="margin-top:18px">只读预览，不会删除任何文件</p>
+        </div>`;
+    }
+    if (s === 3) {
+      const t = store.totals();
+      const cats = [...store.byCategory().values()].filter(c => c.files > 0);
+      return `
+        <h2>确认清理计划</h2>
+        <p class="sub">以下内容将移入隔离区（保留 7 天，可随时还原），不会直接删除。</p>
+        <div class="confirm-sum">
+          <div class="stat"><span class="muted">文件数</span><div class="v">${t.files}</div></div>
+          <div class="stat"><span class="muted">可释放</span><div class="v">${fmtBytes(t.bytes)}</div></div>
+          <div class="stat"><span class="muted">清理项</span><div class="v">${t.count} 条</div></div>
+        </div>
+        <table>
+          <tr class="cat-row"><td>类别</td><td class="num">文件数</td><td class="num">大小</td></tr>
+          ${cats.map(c => `<tr><td>${c.catName}</td><td class="num">${c.files}</td><td class="num">${fmtBytes(c.bytes)}</td></tr>`).join("")}
+        </table>
+        ${store.phase === "executing" ? `<p style="margin-top:18px">正在移入隔离区…</p>` : ""}
+      `;
+    }
+    const res = store.lastResult;
+    return `
+      <div class="scan-center">
+        <div style="font-size:52px">✅</div>
+        <h2 style="margin:12px 0 6px">清理完成</h2>
+        <p class="muted">已移入隔离区 ${res.files} 个文件，释放 ${fmtBytes(res.bytes)}。<br>
+        跳过 ${res.skipped} 个（被占用/无权限）。<br>隔离区批次：<code>${res.batchId}</code></p>
+      </div>`;
+  },
+  cta(s) {
+    const t = store.totals();
+    if (s === 1) return `<button class="btn primary big-cta" data-act="scan" ${t.count === 0 ? "disabled" : ""}>开始扫描 →</button>`;
+    if (s === 2) return `<button class="btn big-cta" data-act="cancel">${CANCEL_TEXT}</button>`;
+    if (s === 3) return store.phase === "executing"
+      ? `<button class="btn big-cta" disabled>执行中…</button>`
+      : `<button class="btn big-cta" data-act="confirm">确认移入隔离区（${t.count} 项 / ${fmtBytes(t.bytes)}）</button>`;
+    return `<button class="btn big-cta" data-act="restart">再来一轮</button>`;
+  },
+  bind(app) {
+    app.querySelectorAll("[data-rule]").forEach(cb => cb.addEventListener("change", () => {
+      cb.checked ? store.selected.add(cb.dataset.rule) : store.selected.delete(cb.dataset.rule);
+      store.emit();
+    }));
+    app.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => {
+      const a = b.dataset.act;
+      if (a === "scan") startScan();
+      if (a === "cancel") cancelScan();
+      if (a === "confirm") executeClean();
+      if (a === "restart") { store.phase = "initial"; store.lastResult = null; store.emit(); }
+    }));
+  },
+};
+
+/* ================= 变体 B · 工作台（贴近现 WPF） ================= */
+
+const vB = {
+  id: "B", name: "工作台",
+  render(app) {
+    app.className = "vB";
+    const t = store.totals();
+    const sel = RULES.find(r => r.id === store.expandedNote) || RULES[0];
+    app.innerHTML = `
+      <div class="titlebar">🧹 Kleaner — 白名单 C 盘清理
+        <span class="spacer"></span><span style="font-weight:400;opacity:.85">窗口化体验（可安装为桌面应用）</span>
+      </div>
+      <div class="toolbar">
+        <button class="btn primary" data-act="scan" ${store.phase === "scanning" ? "disabled" : ""}>
+          ${store.phase === "initial" ? "🔍 扫描" : "🔍 重新扫描"}</button>
+        <button class="btn primary" data-act="confirm" ${store.phase !== "ready" || t.count === 0 ? "disabled" : ""}>
+          🧹 清理所选（${t.count}）</button>
+        ${store.phase === "scanning" ? `
+          <span class="scan-inline">
+            <button class="btn small" data-act="cancel">✕ ${CANCEL_TEXT}</button>
+            <div class="progress"><div style="width:${store.scan.pct}%"></div></div>
+            <span class="muted" style="font-size:12px">${store.scan.current}</span>
+          </span>` : ""}
+        <span class="sep"></span>
+        <button class="btn">🔒 隔离区</button>
+        <button class="btn">🕘 历史</button>
+        <button class="btn">🧰 工具箱</button>
+        <button class="btn">🚀 启动项</button>
+        <span class="grow"></span>
+        <button class="btn">⚙️ 高级</button>
+        <button class="btn">🎛 设置</button>
+      </div>
+      <div class="content">
+        <table>
+          <thead><tr>
+            <th style="width:44px">选</th><th>清理项</th><th style="width:100px">类别</th>
+            <th class="num" style="width:76px">文件数</th><th class="num" style="width:96px">可释放</th>
+            <th style="width:56px">风险</th><th style="width:64px">权限</th>
+          </tr></thead>
+          <tbody>
+          ${RULES.map(r => `
+            <tr data-row="${r.id}">
+              <td><input type="checkbox" data-rule="${r.id}" ${store.selected.has(r.id) ? "checked" : ""}></td>
+              <td><div class="rname"><b>${r.name}</b>${r.verified ? "" : `<span class="chip unv">未验证·默认不勾选</span>`}</div>
+                  <div class="note">${r.note}</div></td>
+              <td>${r.catName}</td>
+              <td class="num">${store.phase === "initial" ? "—" : r.files}</td>
+              <td class="num">${store.phase === "initial" ? "—" : fmtBytes(r.bytes)}</td>
+              <td>${riskChip(r)}</td>
+              <td>${elvChip(r) || '<span class="muted">—</span>'}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="safety-dock">
+        <b>安全性说明 — ${sel.name}</b>
+        <div style="color:var(--text-2);margin-top:4px;line-height:1.6">${sel.note}<br>
+          <span style="font-size:12px">验证记录：本机实测 2026-08-29</span></div>
+      </div>
+      <div class="statusbar">
+        ${statusLine()}
+      </div>
+      <dialog id="vb-dlg">
+        <div class="dlg-body">
+          <h3>确认清理</h3>
+          <p style="line-height:1.7">将把 <b>${t.files}</b> 个文件（${fmtBytes(t.bytes)}）移入隔离区。<br>
+          隔离区保留 7 天，期间可随时还原。</p>
+          ${[...store.byCategory().values()].filter(c => c.files > 0).map(c =>
+            `<div class="sum-line"><span class="muted">${c.catName}</span><span>${c.files} 项 · ${fmtBytes(c.bytes)}</span></div>`).join("")}
+          <div class="actions">
+            <button class="btn" data-act="dlg-cancel">取消</button>
+            <button class="btn primary" data-act="dlg-ok">确认执行</button>
+          </div>
+        </div>
+      </dialog>
+    `;
+    this.bind(app);
+  },
+  bind(app) {
+    app.querySelectorAll("[data-rule]").forEach(cb => cb.addEventListener("change", e => {
+      cb.checked ? store.selected.add(cb.dataset.rule) : store.selected.delete(cb.dataset.rule);
+      store.emit();
+    }));
+    app.querySelectorAll("[data-row]").forEach(tr => tr.addEventListener("click", e => {
+      if (e.target.tagName === "INPUT") return;
+      store.expandedNote = tr.dataset.row; store.emit();
+    }));
+    const dlg = app.querySelector("#vb-dlg");
+    app.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => {
+      const a = b.dataset.act;
+      if (a === "scan") startScan();
+      if (a === "cancel") cancelScan();
+      if (a === "confirm") dlg.showModal();
+      if (a === "dlg-cancel") dlg.close();
+      if (a === "dlg-ok") { dlg.close(); executeClean(() => setTimeout(() => alert(
+        `清理完成：已移入隔离区 ${store.lastResult.files} 个文件，释放 ${fmtBytes(store.lastResult.bytes)}；跳过 ${store.lastResult.skipped} 个；批次 ${store.lastResult.batchId}`)), 300); }
+    }));
+  },
+};
+
+function statusLine() {
+  switch (store.phase) {
+    case "initial": return `已加载 ${RULES.length} 条规则（频道 2026.09）· 扫描后显示可释放空间`;
+    case "scanning": return `正在扫描（只读预览，不会删除任何文件）…`;
+    case "ready": { const t = store.totals(); return `扫描完成：共可释放 ${fmtBytes(t.bytes)} · 已勾选 ${t.count} 项 / ${t.files} 个文件`; }
+    case "executing": return `正在移入隔离区…`;
+    case "done": { const r = store.lastResult; return `已移入隔离区 ${r.files} 个文件，释放 ${fmtBytes(r.bytes)} · 跳过 ${r.skipped} 个 · 批次 ${r.batchId}`; }
+  }
+}
+
+/* ================= 变体 C · 分类聚合 ================= */
+
+const vC = {
+  id: "C", name: "分类聚合",
+  render(app) {
+    app.className = "vC";
+    const t = store.totals();
+    const CAP = 12 * 1024 ** 3; // 假设 12 GB 参考满刻度
+    const ratio = Math.min(1, t.bytes / CAP);
+    const R = 54, CIRC = 2 * Math.PI * R;
+    app.innerHTML = `
+      <aside>
+        <div class="brand"><span class="logo">🧹</span> Kleaner</div>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 132 132">
+            <circle cx="66" cy="66" r="${R}" fill="none" stroke="#e8ecf2" stroke-width="11"/>
+            <circle cx="66" cy="66" r="${R}" fill="none" stroke="var(--accent)" stroke-width="11"
+              stroke-linecap="round" stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC * (1 - ratio)}"
+              transform="rotate(-90 66 66)"/>
+            <text class="val" x="66" y="63" text-anchor="middle">${fmtBytes(t.bytes)}</text>
+            <text class="cap" x="66" y="82" text-anchor="middle">已勾选可释放</text>
+          </svg>
+        </div>
+        <div class="side-stats">
+          <div class="row"><span>已勾选清理项</span><b>${t.count} / ${RULES.length}</b></div>
+          <div class="row"><span>涉及文件</span><b>${t.files}</b></div>
+          <div class="row"><span>默认策略</span><b>低风险+已验证</b></div>
+        </div>
+        <div class="links">
+          <button>🔒 隔离区（保留 7 天）</button>
+          <button>🕘 历史</button>
+          <button>🧰 工具箱</button>
+          <button>🚀 启动项</button>
+          <button>⚙️ 设置</button>
+        </div>
+      </aside>
+      <div class="main-col">
+        <div class="top">
+          <h1>清理概览</h1>
+          ${store.phase === "scanning" ? `<span class="chip">扫描中 ${store.scan.pct}% · ${store.scan.current}</span>` : ""}
+          ${store.phase === "initial" ? `<button class="btn primary" data-act="scan">🔍 开始扫描</button>` : ""}
+          ${store.phase !== "initial" && store.phase !== "scanning" ? `<button class="btn" data-act="scan">🔍 重新扫描</button>` : ""}
+          <button class="btn primary" data-act="drawer" ${store.phase !== "ready" || t.count === 0 ? "disabled" : ""}>
+            🧹 预览并清理（${t.count}）</button>
+        </div>
+        <div class="cats">
+          ${[...store.byCategory().entries()].map(([cat, c]) => `
+            <div class="cat-card ${store.openCat.has(cat) ? "open" : ""}" data-cat="${cat}">
+              <div class="cat-head" data-cat-head="${cat}">
+                <span class="arrow">▶</span>
+                <span class="cname">${c.catName}</span>
+                ${store.phase !== "initial" && c.files > 0 ? `<span class="ctotal">${c.files} 项 · ${fmtBytes(c.bytes)}</span>` : `<span class="ctotal muted">${c.rules.length} 条规则</span>`}
+              </div>
+              <div class="cat-body">
+                ${c.rules.map(r => `
+                  <div class="rule-line">
+                    <input type="checkbox" data-rule="${r.id}" ${store.selected.has(r.id) ? "checked" : ""}>
+                    <div class="rn">
+                      <b>${r.name}</b> ${riskChip(r)} ${elvChip(r)}
+                      <div class="detail">${r.note}</div>
+                    </div>
+                    <span class="sz">${store.phase === "initial" ? "待扫描" : `${r.files} 项`}</span>
+                    <span class="sz">${store.phase === "initial" ? "" : fmtBytes(r.bytes)}</span>
+                  </div>`).join("")}
+              </div>
+            </div>`).join("")}
+        </div>
+        ${store.phase === "scanning" ? `
+          <div class="scan-strip">
+            <span class="muted">只读预览中…</span>
+            <div class="progress"><div style="width:${store.scan.pct}%"></div></div>
+            <button class="btn small" data-act="cancel">${CANCEL_TEXT}</button>
+          </div>` : ""}
+        <div class="scan-strip" style="border-top:1px solid var(--stroke)">
+          <span style="flex:1">${statusLine()}</span>
+        </div>
+      </div>
+      <div class="drawer-mask" data-act="mask"></div>
+      <div class="drawer ${store.drawerOpen ? "show" : ""}">
+        <div class="dh"><h3>确认清理计划</h3><div class="sub">以下内容将移入隔离区（保留 7 天，可随时还原），不会直接删除。</div></div>
+        <div class="db">
+          ${[...store.byCategory().values()].filter(c => c.files > 0).map(c => `
+            <div class="sum-line"><span>${c.catName}</span><span class="muted">${c.files} 项 · ${fmtBytes(c.bytes)}</span></div>`).join("")}
+          <div class="sum-line" style="border-bottom:none;margin-top:8px"><b>合计</b><b>${t.files} 项 · ${fmtBytes(t.bytes)}</b></div>
+          ${store.phase === "executing" ? `<p style="margin-top:14px">正在移入隔离区…</p>` : ""}
+          ${store.phase === "done" ? `
+            <p style="margin-top:14px;line-height:1.8">✅ 已移入隔离区 ${store.lastResult.files} 个文件，释放 ${fmtBytes(store.lastResult.bytes)}。<br>
+            跳过 ${store.lastResult.skipped} 个（被占用/无权限）。<br>批次：<code>${store.lastResult.batchId}</code></p>` : ""}
+        </div>
+        <div class="df">
+          ${store.phase === "ready" ? `<button class="btn" data-act="drawer-close">返回调整</button>
+            <button class="btn primary" data-act="execute">确认移入隔离区</button>` : ""}
+          ${store.phase === "executing" ? `<button class="btn" disabled>执行中…</button>` : ""}
+          ${store.phase === "done" ? `<button class="btn primary" data-act="drawer-close">完成</button>` : ""}
+        </div>
+      </div>
+    `;
+    this.bind(app);
+  },
+  bind(app) {
+    app.querySelectorAll("[data-rule]").forEach(cb => cb.addEventListener("change", () => {
+      cb.checked ? store.selected.add(cb.dataset.rule) : store.selected.delete(cb.dataset.rule);
+      store.emit();
+    }));
+    app.querySelectorAll("[data-cat-head]").forEach(h => h.addEventListener("click", e => {
+      if (e.target.tagName === "INPUT") return;
+      const cat = h.dataset.catHead;
+      store.openCat.has(cat) ? store.openCat.delete(cat) : store.openCat.add(cat);
+      store.emit();
+    }));
+    app.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => {
+      const a = b.dataset.act;
+      if (a === "scan") startScan();
+      if (a === "cancel") cancelScan();
+      if (a === "drawer") { store.drawerOpen = true; store.emit(); }
+      if (a === "mask" || a === "drawer-close") { store.drawerOpen = false; store.emit(); }
+      if (a === "execute") executeClean();
+    }));
+  },
+};
+
+/* ================= 切换器 ================= */
+
+const VARIANTS = [vA, vB, vC];
+function currentVariant() {
+  const v = new URLSearchParams(location.search).get("variant") || "A";
+  return VARIANTS.find(x => x.id === v.toUpperCase()) || VARIANTS[0];
+}
+function setVariant(id) {
+  const url = new URL(location);
+  url.searchParams.set("variant", id);
+  history.replaceState(null, "", url);
+  render();
+}
+function cycle(dir) {
+  const cur = currentVariant();
+  const i = VARIANTS.indexOf(cur);
+  setVariant(VARIANTS[(i + dir + VARIANTS.length) % VARIANTS.length].id);
+}
+function render() {
+  const v = currentVariant();
+  document.getElementById("sw-label").textContent = `${v.id}（${v.name}）`;
+  v.render(document.getElementById("app"));
+}
+document.getElementById("sw-prev").addEventListener("click", () => cycle(-1));
+document.getElementById("sw-next").addEventListener("click", () => cycle(1));
+document.addEventListener("keydown", e => {
+  const t = document.activeElement;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  if (e.key === "ArrowLeft") cycle(-1);
+  if (e.key === "ArrowRight") cycle(1);
+});
+
+store.sub(render);
+render();
+</script>
+</body>
+</html>

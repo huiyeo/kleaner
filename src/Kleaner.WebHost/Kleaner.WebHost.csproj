@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <StartupObject>Kleaner.WebHost.Program</StartupObject>
+    <ApplicationIcon>..\..\assets\icon\Kleaner.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 最小 API 宿主；不做 UseWPF，规则/界面全部走 web（工单 04 决策） -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 内置规则库随包分发，/api/scan 经 RuleUpdateService.LoadEffective 加载（工单 12） -->
+    <Content Include="..\..\rules\rules.v1.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PlanRecord.TryConsume 等内部成员直接进纯逻辑测试（工单 12） -->
+    <InternalsVisibleTo Include="Kleaner.WebHost.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.0" />
+    <!-- 测试基建：WebHostAppFactory 的 UseTestServer 分支与集成测试都依赖它，体积可忽略 -->
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kleaner.Core\Kleaner.Core.csproj" />
+    <ProjectReference Include="..\Kleaner.Executor\Kleaner.Executor.csproj" />
+    <ProjectReference Include="..\Kleaner.SpecialOps\Kleaner.SpecialOps.csproj" />
+    <ProjectReference Include="..\Kleaner.Analysis\Kleaner.Analysis.csproj" />
+  </ItemGroup>
+
+</Project>

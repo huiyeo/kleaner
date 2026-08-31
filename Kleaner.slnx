@@ -5,9 +5,11 @@
     <Project Path="src/Kleaner.Core/Kleaner.Core.csproj" />
     <Project Path="src/Kleaner.Executor/Kleaner.Executor.csproj" />
     <Project Path="src/Kleaner.SpecialOps/Kleaner.SpecialOps.csproj" />
+    <Project Path="src/Kleaner.WebHost/Kleaner.WebHost.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kleaner.Core.Tests/Kleaner.Core.Tests.csproj" />
+    <Project Path="tests/Kleaner.WebHost.Tests/Kleaner.WebHost.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/Kleaner.ScanCli/Kleaner.ScanCli.csproj" />

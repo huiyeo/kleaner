@@ -14,6 +14,9 @@ public sealed record RuleScanResult(
 
 public sealed record ScanReport(DateTime ScanUtc, IReadOnlyList<RuleScanResult> Results, IReadOnlyList<string> Errors);
 
+/// <summary>单条规则扫描完成的上报：规则 id 与该规则的候选计数。</summary>
+public sealed record ScanProgress(string RuleId, int FileCount, long TotalBytes);
+
 /// <summary>白名单扫描引擎：枚举候选 → 应用 exclude → 应用年龄/版本规则。只读，不做任何删除。</summary>
 public sealed class ScanEngine
 {
@@ -21,7 +24,7 @@ public sealed class ScanEngine
 
     public ScanEngine(string? quarantineRoot = null) => _quarantineRoot = quarantineRoot;
 
-    public ScanReport Scan(RuleSet set)
+    public ScanReport Scan(RuleSet set, CancellationToken token = default, IProgress<ScanProgress>? progress = null)
     {
         var now = DateTime.UtcNow;
         var results = new List<RuleScanResult>();
@@ -29,6 +32,9 @@ public sealed class ScanEngine
 
         foreach (var rule in set.Rules.Where(r => r.Enabled))
         {
+            token.ThrowIfCancellationRequested();
+            var fileCount = 0;
+            var totalBytes = 0L;
             try
             {
                 var excludes = rule.Exclude.Select(GlobScanner.ToRegex).ToList();
@@ -37,8 +43,10 @@ public sealed class ScanEngine
 
                 foreach (var pattern in rule.Paths)
                 {
+                    token.ThrowIfCancellationRequested();
                     foreach (var path in GlobScanner.EnumerateFiles(pattern))
                     {
+                        token.ThrowIfCancellationRequested();
                         if (!seen.Add(path))
                             continue;
                         if (excludes.Any(re => re.IsMatch(path)))
@@ -63,9 +71,15 @@ public sealed class ScanEngine
                 }
 
                 var selected = RuleSelector.Apply(candidates, rule, set, now);
+                fileCount = selected.Count;
+                totalBytes = selected.Sum(c => c.SizeBytes);
                 results.Add(new RuleScanResult(
                     rule.Id, rule.Name, rule.Category, rule.Risk, rule.RequiresElevation,
-                    selected.Count, selected.Sum(c => c.SizeBytes), rule.SafetyNotes, selected));
+                    fileCount, totalBytes, rule.SafetyNotes, selected));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (UnauthorizedAccessException)
             {
@@ -78,6 +92,8 @@ public sealed class ScanEngine
             {
                 errors.Add($"规则 {rule.Id} 扫描失败：{ex.Message}");
             }
+            // 取消路径直接抛出，不上报；其余路径每条规则完成即上报一次
+            progress?.Report(new ScanProgress(rule.Id, fileCount, totalBytes));
         }
 
         return new ScanReport(now, results, errors);

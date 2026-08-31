@@ -24,6 +24,13 @@ public sealed class EngineAndQuarantineTests : IDisposable
 
     private static string JsonEscape(string s) => s.Replace("\\", "\\\\");
 
+    /// <summary>同步收集 ScanProgress 上报的 IProgress 实现，避免 Progress&lt;T&gt; 的线程语义带来的竞态。</summary>
+    private sealed class CollectingProgress : IProgress<ScanProgress>
+    {
+        public List<ScanProgress> Reports { get; } = new();
+        public void Report(ScanProgress value) => Reports.Add(value);
+    }
+
     [Fact]
     public void 引擎端到端_扫描与排除()
     {
@@ -65,6 +72,69 @@ public sealed class EngineAndQuarantineTests : IDisposable
         Assert.Equal(1, result.FileCount);
         Assert.Equal(100, result.TotalBytes);
         Assert.Equal(old, result.Files[0].FullPath, ignoreCase: true);
+    }
+
+    [Fact]
+    public void 引擎_已取消的令牌立即抛取消异常()
+    {
+        var dir = Path.Combine(_root, "cancel");
+        Directory.CreateDirectory(dir);
+        var f = Path.Combine(dir, "c.bin");
+        File.WriteAllText(f, "x");
+        File.SetLastWriteTimeUtc(f, DateTime.UtcNow.AddDays(-30));
+
+        var json = $$"""
+        {
+          "schemaVersion": 1,
+          "rules": [{
+            "id": "test-cancel",
+            "name": "测试取消",
+            "category": "application",
+            "risk": "low",
+            "paths": ["{{JsonEscape(dir)}}\\**"],
+            "ageDays": 7,
+            "requiresElevation": false,
+            "safetyNotes": "仅用于单元测试验证取消语义，不影响真实环境与规则库文件。"
+          }]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+        Assert.Empty(RuleSetLoader.Validate(set));
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        Assert.Throws<OperationCanceledException>(() => new ScanEngine().Scan(set, cts.Token));
+    }
+
+    [Fact]
+    public void 引擎_默认令牌下扫描结果与之前一致()
+    {
+        var dir = Path.Combine(_root, "token-ok");
+        Directory.CreateDirectory(dir);
+        var f = Path.Combine(dir, "t.bin");
+        File.WriteAllText(f, "content");
+        File.SetLastWriteTimeUtc(f, DateTime.UtcNow.AddDays(-30));
+
+        var json = $$"""
+        {
+          "schemaVersion": 1,
+          "rules": [{
+            "id": "test-token",
+            "name": "测试默认令牌",
+            "category": "application",
+            "risk": "low",
+            "paths": ["{{JsonEscape(dir)}}\\**"],
+            "ageDays": 7,
+            "requiresElevation": false,
+            "safetyNotes": "仅用于单元测试验证默认令牌路径不受影响。"
+          }]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+        var report = new ScanEngine().Scan(set, CancellationToken.None);
+
+        Assert.Empty(report.Errors);
+        Assert.Equal(1, Assert.Single(report.Results).FileCount);
     }
 
     [Fact]
@@ -246,5 +316,127 @@ public sealed class EngineAndQuarantineTests : IDisposable
             RegistryInspector.ExtractExePath("\"C:\\Program Files\\X\\unins.exe\" /quiet"));
         Assert.Null(RegistryInspector.ExtractExePath("MsiExec.exe /X{GUID}"));
         Assert.Null(RegistryInspector.ExtractExePath("something without exe"));
+    }
+
+    [Fact]
+    public void 引擎_进度按规则顺序与计数上报()
+    {
+        var dirA = Path.Combine(_root, "prog-a");
+        var dirB = Path.Combine(_root, "prog-b");
+        Directory.CreateDirectory(dirA);
+        Directory.CreateDirectory(dirB);
+        foreach (var name in new[] { "1.bin", "2.bin" })
+            File.WriteAllText(Path.Combine(dirA, name), new string('a', 10));
+        File.WriteAllText(Path.Combine(dirB, "1.bin"), new string('b', 30));
+        File.SetLastWriteTimeUtc(Path.Combine(dirA, "1.bin"), DateTime.UtcNow.AddDays(-30));
+        File.SetLastWriteTimeUtc(Path.Combine(dirA, "2.bin"), DateTime.UtcNow.AddDays(-30));
+        File.SetLastWriteTimeUtc(Path.Combine(dirB, "1.bin"), DateTime.UtcNow.AddDays(-30));
+
+        var json = $$"""
+        {
+          "schemaVersion": 1,
+          "rules": [
+            {
+              "id": "rule-a",
+              "name": "进度规则A",
+              "category": "application",
+              "risk": "low",
+              "paths": ["{{JsonEscape(dirA)}}\\**"],
+              "ageDays": 7,
+              "requiresElevation": false,
+              "safetyNotes": "仅用于单元测试验证进度上报顺序，不影响真实环境。"
+            },
+            {
+              "id": "rule-b",
+              "name": "进度规则B",
+              "category": "application",
+              "risk": "low",
+              "paths": ["{{JsonEscape(dirB)}}\\**"],
+              "ageDays": 7,
+              "requiresElevation": false,
+              "safetyNotes": "仅用于单元测试验证进度上报顺序，不影响真实环境。"
+            }
+          ]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+
+        var reports = new CollectingProgress();
+        var report = new ScanEngine().Scan(set, progress: reports);
+
+        Assert.Equal(new[] { "rule-a", "rule-b" }, reports.Reports.Select(p => p.RuleId).ToArray());
+        Assert.Equal(2, reports.Reports[0].FileCount);
+        Assert.Equal(20, reports.Reports[0].TotalBytes);
+        Assert.Equal(1, reports.Reports[1].FileCount);
+        Assert.Equal(30, reports.Reports[1].TotalBytes);
+        Assert.Equal(2, Assert.Single(report.Results, r => r.RuleId == "rule-a").FileCount);
+    }
+
+    [Fact]
+    public void 引擎_null进度时行为与现状一致()
+    {
+        var dir = Path.Combine(_root, "prog-null");
+        Directory.CreateDirectory(dir);
+        var f = Path.Combine(dir, "n.bin");
+        File.WriteAllText(f, new string('x', 5));
+        File.SetLastWriteTimeUtc(f, DateTime.UtcNow.AddDays(-30));
+
+        var json = $$"""
+        {
+          "schemaVersion": 1,
+          "rules": [{
+            "id": "rule-null",
+            "name": "空进度规则",
+            "category": "application",
+            "risk": "low",
+            "paths": ["{{JsonEscape(dir)}}\\**"],
+            "ageDays": 7,
+            "requiresElevation": false,
+            "safetyNotes": "仅用于单元测试验证 null 进度参数不改变行为。"
+          }]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+
+        // 不传 progress（默认 null）：结果与既有契约一致
+        var report = new ScanEngine().Scan(set);
+
+        Assert.Empty(report.Errors);
+        var result = Assert.Single(report.Results);
+        Assert.Equal(1, result.FileCount);
+        Assert.Equal(5, result.TotalBytes);
+    }
+
+    [Fact]
+    public void 引擎_规则扫描失败时进度上报零计数()
+    {
+        var dir = Path.Combine(_root, "prog-fail");
+        Directory.CreateDirectory(dir);
+
+        // paths 指向不存在的盘符目录，GlobScanner 抛非权限类异常 → errors 记录且进度为 0
+        var json = $$"""
+        {
+          "schemaVersion": 1,
+          "rules": [{
+            "id": "rule-fail",
+            "name": "失败规则",
+            "category": "application",
+            "risk": "low",
+            "paths": ["{{JsonEscape(_root)}}\\nonexistent-驱动器\\**"],
+            "ageDays": 7,
+            "requiresElevation": false,
+            "safetyNotes": "仅用于单元测试验证失败规则也会上报进度，不影响真实环境。"
+          }]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+
+        var reports = new CollectingProgress();
+        var report = new ScanEngine().Scan(set, progress: reports);
+
+        var entry = Assert.Single(reports.Reports);
+        Assert.Equal("rule-fail", entry.RuleId);
+        Assert.Equal(0, entry.FileCount);
+        Assert.Equal(0, entry.TotalBytes);
     }
 }
