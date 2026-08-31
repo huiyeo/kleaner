@@ -32,6 +32,12 @@ public sealed record KleanerWebHostOptions
     /// <summary>true 时挂 TestServer 而非 Kestrel（仅供集成测试）。</summary>
     public bool UseTestServer { get; init; }
 
+    /// <summary>TestServer 的静态资源根目录；生产由 Web SDK 的 MapStaticAssets 清单托管。</summary>
+    public string? TestStaticWebRoot { get; init; }
+
+    /// <summary>内容根目录覆盖；生产入口固定到可执行文件目录，避免从任意工作目录启动时丢失 PWA 回退文件。</summary>
+    public string? ContentRootPath { get; init; }
+
     /// <summary>service.json 所在目录；null 时为 %APPDATA%\Kleaner。测试可指向临时目录。</summary>
     public string? ServiceStateDirectory { get; init; }
 

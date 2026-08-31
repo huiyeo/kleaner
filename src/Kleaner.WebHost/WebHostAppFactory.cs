@@ -18,11 +18,18 @@ public static class WebHostAppFactory
 {
     public static WebApplication Build(KleanerWebHostOptions options)
     {
-        var builder = WebApplication.CreateBuilder();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            ContentRootPath = options.ContentRootPath,
+        });
 
         if (options.UseTestServer)
         {
             builder.WebHost.UseTestServer();
+            if (!string.IsNullOrWhiteSpace(options.TestStaticWebRoot))
+            {
+                builder.WebHost.UseWebRoot(options.TestStaticWebRoot);
+            }
         }
         else
         {
@@ -52,6 +59,15 @@ public static class WebHostAppFactory
         var app = builder.Build();
 
         app.UseMiddleware<LoopbackSecurityMiddleware>();
+        if (options.UseTestServer)
+        {
+            // TestServer 的入口程序集是 testhost，故无生产静态资源清单；用复制到测试输出的同一 wwwroot。
+            app.UseStaticFiles();
+        }
+        else
+        {
+            app.MapStaticAssets();
+        }
 
         // 冒烟端点（工单 10）
         app.MapGet("/api/health", () => Results.Json(new { status = "ok" }));
@@ -162,9 +178,6 @@ public static class WebHostAppFactory
                 // 断连（关标签/网络断）：任务照跑（工单 07），仅结束本连接
             }
         });
-
-        // 静态 PWA 壳（wwwroot / manifest / SW）随工单 15 落地；先给个可达的根页面
-        app.MapGet("/", () => Results.Text("Kleaner WebHost is running.", "text/plain"));
 
         // ── 清理主链路（工单 12）：scan job → plan（dry-run）→ confirm（执行）──────────────
         // REST 资源风（工单 04）；删除闸映射为计划资源的确认状态（工单 03 第 5 层）。
@@ -404,6 +417,9 @@ public static class WebHostAppFactory
                 return Results.Problem($"还原失败：{ex.Message}");
             }
         });
+
+        // PWA 壳：未知的前端路由回到 index.html；API 路由已全部在此前注册，仍受安全中间件保护。
+        app.MapFallbackToFile("index.html");
 
         return app;
     }

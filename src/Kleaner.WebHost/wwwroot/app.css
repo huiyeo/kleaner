@@ -1,0 +1,62 @@
+:root {
+  color-scheme: light;
+  --accent: #0067c0;
+  --accent-hover: #005a9e;
+  --bg: #f5f6f8;
+  --surface: #fff;
+  --stroke: #e1e4e8;
+  --text: #1b1b1b;
+  --muted: #667085;
+  --success: #0d7a43;
+  --warning: #a15c00;
+  font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { min-width: 320px; color: var(--text); background: var(--bg); }
+button { font: inherit; cursor: pointer; }
+
+.shell { min-height: 100%; display: grid; grid-template-columns: 264px minmax(0, 1fr); }
+.sidebar { display: flex; flex-direction: column; gap: 18px; padding: 22px 16px; background: var(--surface); border-right: 1px solid var(--stroke); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; font-weight: 650; font-size: 17px; }
+.brand img { width: 30px; height: 30px; }
+.summary { padding: 16px; text-align: center; border: 1px solid var(--stroke); border-radius: 14px; background: linear-gradient(145deg, #f8fbff, #fff); }
+.summary .ring { width: 96px; height: 96px; margin: 0 auto 10px; border: 9px solid #dceeff; border-top-color: var(--accent); border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--accent); }
+.summary small { color: var(--muted); }
+.nav { display: grid; gap: 3px; }
+.nav button { display: flex; align-items: center; width: 100%; gap: 10px; padding: 10px 12px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; text-align: left; }
+.nav button:hover, .nav button[aria-current="page"] { color: var(--accent); background: #eaf3ff; }
+.safety { margin-top: auto; padding: 12px; color: var(--muted); background: #f8fafc; border-radius: 10px; font-size: 12px; line-height: 1.55; }
+.main { min-width: 0; display: flex; flex-direction: column; min-height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 14px; padding: 18px 28px; background: var(--surface); border-bottom: 1px solid var(--stroke); }
+.topbar h1 { margin: 0; flex: 1; font-size: 20px; }
+.connection { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
+.connection::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--warning); }
+.connection[data-state="connected"]::before { background: var(--success); }
+.connection[data-state="retrying"]::before { background: var(--warning); }
+.button { border: 1px solid var(--stroke); border-radius: 8px; padding: 8px 12px; color: var(--text); background: var(--surface); }
+.button:hover { background: #f6f9fc; }
+.button.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+.button.primary:hover { background: var(--accent-hover); }
+.content { flex: 1; overflow: auto; padding: 28px; }
+.hero { max-width: 880px; margin: 8vh auto 0; padding: 36px; border: 1px solid var(--stroke); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 30px rgb(15 23 42 / 5%); }
+.hero h2 { margin: 0 0 8px; font-size: 24px; }
+.hero p { max-width: 660px; color: var(--muted); line-height: 1.7; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+.card { padding: 16px; border: 1px solid var(--stroke); border-radius: 12px; background: #fbfcfe; }
+.card b { display: block; margin-bottom: 6px; }
+.card span { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.statusbar { display: flex; align-items: center; gap: 9px; padding: 10px 28px; color: var(--muted); border-top: 1px solid var(--stroke); background: var(--surface); font-size: 13px; }
+.statusbar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); }
+.statusbar[data-state="connected"] .dot { background: var(--success); }
+.notice { position: fixed; right: 20px; bottom: 20px; max-width: 360px; padding: 14px; border: 1px solid var(--stroke); border-radius: 12px; background: var(--surface); box-shadow: 0 12px 30px rgb(0 0 0 / 15%); }
+.notice[hidden] { display: none; }
+
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .topbar, .content, .statusbar { padding-left: 18px; padding-right: 18px; }
+  .cards { grid-template-columns: 1fr; }
+  .hero { margin-top: 3vh; padding: 24px; }
+}

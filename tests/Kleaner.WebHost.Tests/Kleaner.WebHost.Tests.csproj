@@ -28,4 +28,10 @@
     <ProjectReference Include="..\..\src\Kleaner.WebHost\Kleaner.WebHost.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\src\Kleaner.WebHost\wwwroot\**\*"
+             Link="wwwroot\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -1,0 +1,19 @@
+{
+  "appName": "Kleaner",
+  "dashboard": "清理概览",
+  "quarantine": "隔离区",
+  "history": "操作历史",
+  "toolbox": "工具箱",
+  "startup": "启动项",
+  "settings": "设置",
+  "ready": "已连接到本地服务",
+  "reconnecting": "正在等待本地服务恢复…",
+  "offline": "本地服务不可用",
+  "install": "安装应用",
+  "updateReady": "发现新版本，点击更新",
+  "shellTitle": "安全、可预览、可还原的清理体验",
+  "shellBody": "选择规则、扫描、预览和确认将由后续页面逐步接入。此壳已建立本地服务连接并可在离线时打开。",
+  "whitelist": "严格白名单",
+  "preview": "强制预览",
+  "restore": "隔离区可还原"
+}

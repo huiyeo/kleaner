@@ -30,6 +30,7 @@ public static class Program
         {
             Port = PortPicker.PickFreePort(KleanerWebHostOptions.DefaultPreferredPort),
             Token = KleanerWebHostOptions.GenerateToken(),
+            ContentRootPath = AppContext.BaseDirectory,
         };
 
         using var app = WebHostAppFactory.Build(options);

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -10,13 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- 最小 API 宿主；不做 UseWPF，规则/界面全部走 web（工单 04 决策） -->
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- 内置规则库随包分发，/api/scan 经 RuleUpdateService.LoadEffective 加载（工单 12） -->
     <Content Include="..\..\rules\rules.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- MapStaticAssets 负责带指纹的静态端点；同时保留实体 wwwroot，供 MapFallbackToFile 在任意启动目录下返回 SPA 壳。 -->
+    <Content Update="wwwroot\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

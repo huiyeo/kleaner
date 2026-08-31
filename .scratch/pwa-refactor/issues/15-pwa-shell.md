@@ -1,7 +1,7 @@
 # 15 PWA 壳：wwwroot、manifest、SW 与重连
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 10
 
 ## Task
@@ -20,3 +20,7 @@ Blocked by: 10
 - 两个悬置项有明确结论并记录。
 
 ## Comments
+
+- 本地化落定为前端静态 i18n：壳文案由 `wwwroot/locales/zh-CN.json` 提供，离线时回退内嵌中文文案；过渡期不新增后端文案 API，也不改动 WPF 的 `Strings.zh-CN.json`，工单 21 再统一清理双栈遗留。
+- SW 策略落定为版本化壳缓存（`kleaner-shell-v1`）：安装时预缓存 HTML/CSS/JS/manifest/icon/locale；导航 network-first、失败回 `index.html`，壳资源 cache-first；永不缓存 `/api/*`，activate 清理旧壳缓存。发现新 SW 仅展示更新提示，用户点击后发送 `SKIP_WAITING` 并在 controllerchange 刷新；规则库更新仍只走 `POST /api/rules/update`。
+- 验证：PwaShellTests 覆盖 manifest、SW、前端路由与带 token 的指数退避契约；Chrome 实测可安装入口、SSE 已连接、停服刷新后离线壳可用，并在同端口同 token 的 SSE 恢复后自动重连。全量 `dotnet test Kleaner.slnx -c Release --no-restore`：127/127 通过。
