@@ -69,8 +69,15 @@ public partial class AdvancedWindow : Window
 
     private void OnRunTool(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is BigItemRow item)
-            Helpers.RunSystemCommand(item.Command, item.RequiresAdmin);
+        if ((sender as FrameworkElement)?.Tag is not BigItemRow item)
+            return;
+        var privilege = item.RequiresAdmin ? S.Get("RunAsAdmin") : S.Get("RunAsNormal");
+        if (MessageBox.Show(
+                S.Format("ConfirmRunToolBody", privilege, item.Title),
+                S.Get("ConfirmRunToolTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Question)
+            != MessageBoxResult.OK)
+            return;
+        Helpers.RunSystemCommand(item.Command, item.RequiresAdmin);
     }
 }
 

@@ -42,12 +42,23 @@ public partial class QuarantineWindow : Window
     {
         if (BatchesGrid.SelectedItem is not BatchRow row)
             return;
+        // 永久删除路径，确认强度必须高于可还原的清理
+        if (MessageBox.Show(
+                S.Format("ConfirmDeleteBatchBody", row.BatchId, row.EntryCount, row.SizeDisplay),
+                S.Get("ConfirmDeleteBatchTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
+            != MessageBoxResult.Yes)
+            return;
         _manager.DeleteBatch(row.Batch.BatchId);
         Refresh();
     }
 
     private void OnPurge(object sender, RoutedEventArgs e)
     {
+        if (MessageBox.Show(
+                S.Get("ConfirmPurgeBody"),
+                S.Get("ConfirmPurgeTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
+            != MessageBoxResult.Yes)
+            return;
         var purged = _manager.PurgeOlderThan(TimeSpan.FromDays(7));
         MessageBox.Show(S.Format("PurgeDone", purged), Title);
         Refresh();

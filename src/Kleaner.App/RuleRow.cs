@@ -1,15 +1,15 @@
-using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Kleaner.Core;
 
 namespace Kleaner.App;
 
 /// <summary>规则行视图模型：呈现扫描结果（文件数/可释放量），勾选状态驱动清理。</summary>
-public sealed class RuleRow : INotifyPropertyChanged
+public sealed partial class RuleRow : ObservableObject
 {
     public RuleRow(Rule rule)
     {
         Rule = rule;
-        _isSelected = MachineVerified;
+        IsSelected = MachineVerified;
     }
 
     public Rule Rule { get; }
@@ -37,29 +37,14 @@ public sealed class RuleRow : INotifyPropertyChanged
 
     public string Note => Result?.Note ?? (MachineVerified ? string.Empty : S.Get("UnverifiedNote"));
 
-    private bool _isSelected = true;
-
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set
-        {
-            if (_isSelected == value)
-                return;
-            _isSelected = value;
-            Raise(nameof(IsSelected));
-        }
-    }
+    [ObservableProperty]
+    private bool isSelected;
 
     public void Apply(RuleScanResult result)
     {
         Result = result;
-        Raise(nameof(FileCount));
-        Raise(nameof(SizeDisplay));
-        Raise(nameof(Note));
+        OnPropertyChanged(nameof(FileCount));
+        OnPropertyChanged(nameof(SizeDisplay));
+        OnPropertyChanged(nameof(Note));
     }
-
-    private void Raise(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 }

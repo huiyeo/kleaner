@@ -110,6 +110,20 @@
 ## 已知问题
 
 - **CLI 定位内置规则的.path 很脆**：`BundledRulesPath()` 从 `AppContext.BaseDirectory` 向上跳 5 级再拼 `rules/rules.v1.json`。输出目录层级一变就失效。
-- **`StartupWindow` 的表头未完全走本地化**：XAML 里硬编码了列头，再在 `LoadStrings()` 里按列索引覆盖。列顺序一旦调整，文案就会错位。
+- **`StartupWindow` 的表头未完全走本地化**：XAML 里硬编码了列头，再在 `LoadStrings()` 里按列索引覆盖。列顺序一旦调整，文案就会错位。（`MainWindow`/`ToolboxWindow`/`QuarantineWindow` 同样按列索引设表头——列顺序调整时需同步，见各窗口 `LoadStrings()`。）
 - **`RuleUpdateService` 的本地覆盖会静默生效**：`%APPDATA%\Kleaner\rules\rules.v1.json` 存在时优先于内置规则库。排查"改了 rules.v1.json 却没生效"时先看这里。
-- **WPF 层零测试**：`Kleaner.Core.Tests` 不引用 App。
+- **WPF 层零控件测试**：`Kleaner.Core.Tests` 不引用 App。可剥离的纯逻辑会下沉到 `Kleaner.Analysis`/`Kleaner.Core` 并补测试（例：`DuplicateSelectionPolicy`、`ScanEngine.Scan` 的取消语义）。
+
+## 前端工程约定（本次优化新增）
+
+- **WPF 官方 Fluent 主题**：`App.xaml` 通过 `MergedDictionaries` 引入 `PresentationFramework.Fluent;component/themes/fluent.xaml`（.NET 6+ 运行时内置，零 NuGet 依赖）。全局控件样式被其接管，窗口内硬编码的尺寸/颜色不受影响；改主题前需回归 7 个窗口的 DataGrid/StatusBar。
+- **MVVM 底座（CommunityToolkit.Mvvm 8.4.2）**：`Kleaner.App.csproj` 引入 `CommunityToolkit.Mvvm`。约定：
+  - 行模型继承 `ObservableObject`，可写属性用 `[ObservableProperty]` 源生成器（`RuleRow` 已示范：`IsSelected`），派生显示属性靠 `OnPropertyChanged(nameof(...))` 手动通知（如 `Apply` 后刷新 `FileCount`/`SizeDisplay`/`Note`）。
+  - 窗口命令用 `[RelayCommand]`/`AsyncRelayCommand`，状态用 `[ObservableProperty]` + `[NotifyCanExecuteChangedFor]` 驱动按钮可用性，替代 `SetBusy`/`SetIdle` 样板（`MainWindowViewModel` 已示范：`ScanCommand`/`CancelScanCommand`/`CleanCommand` + `IsBusy`）。
+  - ViewModel 不直接 `new Window`；跨窗口导航通过事件（`OpenWindowRequested`）交由 code-behind 打开，保持 ViewModel 不依赖具体 View。
+  - **本地化加载时机的坑**：`S.Get(key)` 查不到时**静默回退为英文键名**（`S.cs` 的 `TryGetValue` 失败分支），不会报错，只在界面上显示成 `BtnScan` 之类。因此：
+    - `Program.Main` 在创建任何窗口前调用一次 `S.Load()`（全局保险）；
+    - 窗口构造函数里**不要用字段初始化器创建 ViewModel**——字段初始化器早于构造函数体执行，会导致 ViewModel 在 `S.Load()` 之前构造，界面文字整体变英文（`MainWindow` 已按此修正）。
+  - **仍有遗留**：`MessageBox` 直接出现在 ViewModel 内（`MainWindowViewModel.LoadRules`/`ScanAsync`/`CleanAsync`），可测性打折，后续可抽 `IDialogService`；`MainWindow` 的 `LoadStrings` 仍按列索引设 DataGrid 表头。
+- **扫描支持取消**：`ScanEngine.Scan(RuleSet, CancellationToken)` 在规则与文件循环中检查取消。`MainWindow` 提供「取消扫描」按钮并禁止重入（`_scanCts` 非空时忽略重复触发）；`ToolboxWindow` 每次扫描前取消并释放旧 `_cts`。
+- **永久删除的确认强度**：`QuarantineManager.DeleteBatch`/`PurgeOlderThan` 是全仓仅有的永久删除出口（`TryDeleteDir` 递归删除），GUI 已要求二次确认并明示「不可还原」，强度高于可还原的清理流程。

@@ -52,7 +52,11 @@ public partial class ToolboxWindow : Window
         for (var i = 0; i < dupHeaders.Length && i < DupGrid.Columns.Count; i++)
             DupGrid.Columns[i].Header = dupHeaders[i];
 
-        Closed += (_, _) => _cts?.Cancel();
+        Closed += (_, _) =>
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+        };
         TreemapHost.LayoutUpdated += (_, _) =>
         {
             if (UsageViewTreemap.IsChecked != true)
@@ -91,6 +95,8 @@ public partial class ToolboxWindow : Window
         if (root.Length == 0)
             return;
         SetBusy(true);
+        _cts?.Cancel();
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         StatusText.Text = S.Get("StatusScanningGeneric");
         try
@@ -144,10 +150,14 @@ public partial class ToolboxWindow : Window
 
         var rects = TreemapLayout.Squarify(
             _usageItems.Select(i => (i.Path, i.SizeBytes)), width, height);
+        var byPath = new Dictionary<string, UsageItem>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in _usageItems)
+            byPath[item.Path] = item;
         var labels = new List<(TreemapRect Rect, string Name)>();
-        foreach (var r in rects)
+        const int maxRects = 500; // 矩形数上限：超出部分不再绘制，避免海量视觉元素卡死
+        foreach (var r in rects.Take(maxRects))
         {
-            var item = _usageItems.First(i => i.Path == r.Path);
+            var item = byPath[r.Path];
             var border = new System.Windows.Controls.Border
             {
                 Width = Math.Max(r.Width - 1, 0),
@@ -239,6 +249,8 @@ public partial class ToolboxWindow : Window
         if (!long.TryParse(LargeMinBox.Text.Trim(), out var minMb) || root.Length == 0)
             return;
         SetBusy(true);
+        _cts?.Cancel();
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         StatusText.Text = S.Get("StatusScanningGeneric");
         try
@@ -282,28 +294,52 @@ public partial class ToolboxWindow : Window
         if (!long.TryParse(DupMinBox.Text.Trim(), out var minMb) || root.Length == 0)
             return;
         SetBusy(true);
+        _cts?.Cancel();
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         StatusText.Text = S.Get("StatusDupScanning");
         try
         {
             var token = _cts.Token;
             var groups = await Task.Run(() => DuplicateFinder.Find(root, minMb * 1024L * 1024, token), token);
-            var rows = new List<DupRow>();
-            for (var g = 0; g < groups.Count; g++)
+            // 行构建（FileInfo 元数据 IO + 保留策略）放后台线程，避免大量文件时卡死 UI
+            var rows = await Task.Run(() =>
             {
-                // 每组默认勾选除最新一份外的所有副本；最新一份标记「保留」
-                var ordered = groups[g].Files
-                    .Select(f => (Path: f, Info: new FileInfo(f)))
-                    .OrderByDescending(x => x.Info.LastWriteTimeUtc)
-                    .ToList();
-                for (var i = 0; i < ordered.Count; i++)
+                var list = new List<DupRow>();
+                for (var g = 0; g < groups.Count; g++)
                 {
-                    var (path, info) = ordered[i];
-                    rows.Add(new DupRow(groups[g], g + 1, path, info.Length,
-                        isSelected: i > 0,
-                        tag: i == 0 ? S.Get("DupKeep") : S.Get("DupCopy")));
+                    var candidates = groups[g].Files
+                        .Select(f => new DuplicateCandidate(f, 0, default))
+                        .ToList();
+                    // 大小与修改时间只在做策略前取一次，避免重复 IO
+                    for (var i = 0; i < candidates.Count; i++)
+                    {
+                        try
+                        {
+                            var info = new FileInfo(candidates[i].Path);
+                            candidates[i] = candidates[i] with
+                            {
+                                SizeBytes = info.Length,
+                                LastWriteTimeUtc = info.LastWriteTimeUtc,
+                            };
+                        }
+                        catch
+                        {
+                            // 文件被删/无权限：从规划中剔除
+                            candidates.RemoveAt(i--);
+                        }
+                    }
+                    var plan = DuplicateSelectionPolicy.Plan(candidates);
+                    for (var i = 0; i < plan.Count; i++)
+                    {
+                        var item = plan[i];
+                        list.Add(new DupRow(groups[g], g + 1, item.Path, item.SizeBytes, item.LastWriteTimeUtc,
+                            isSelected: !item.IsKeep,
+                            tag: item.IsKeep ? S.Get("DupKeep") : S.Get("DupCopy")));
+                    }
                 }
-            }
+                return list;
+            }, token);
             DupGrid.ItemsSource = rows;
             var wasted = groups.Sum(g => g.SizeBytes * (g.Files.Count - 1));
             StatusText.Text = S.Format("StatusDupDone", groups.Count, Helpers.FormatBytes(wasted));
@@ -338,8 +374,7 @@ public partial class ToolboxWindow : Window
             return;
         }
 
-        var files = rows.Select(r => new FileCandidate(r.Path, r.SizeBytes,
-            File.Exists(r.Path) ? File.GetLastWriteTimeUtc(r.Path) : DateTime.UtcNow));
+        var files = rows.Select(r => new FileCandidate(r.Path, r.SizeBytes, r.LastWriteTimeUtc));
         await CleanSelectedAsync(files, "duplicates", rows.Sum(r => r.SizeBytes));
         if (rows.Count > 0)
             await ScanDupAsync();
@@ -451,12 +486,14 @@ public sealed class DupRow : INotifyPropertyChanged
 {
     private bool _isSelected;
 
-    public DupRow(DuplicateGroup group, int groupIndex, string path, long sizeBytes, bool isSelected, string tag)
+    public DupRow(DuplicateGroup group, int groupIndex, string path, long sizeBytes,
+        DateTime lastWriteTimeUtc, bool isSelected, string tag)
     {
         Group = group;
         GroupIndex = groupIndex;
         Path = path;
         SizeBytes = sizeBytes;
+        LastWriteTimeUtc = lastWriteTimeUtc;
         _isSelected = isSelected;
         Tag = tag;
     }
@@ -468,6 +505,8 @@ public sealed class DupRow : INotifyPropertyChanged
     public string Path { get; }
 
     public long SizeBytes { get; }
+
+    public DateTime LastWriteTimeUtc { get; }
 
     public string Tag { get; }
 

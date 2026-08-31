@@ -13,6 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.3.2" />
     <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 
@@ -24,6 +26,8 @@
     <UseWPF>true</UseWPF>
     <StartupObject>Kleaner.App.Program</StartupObject>
     <ApplicationIcon>..\..\assets\icon\Kleaner.ico</ApplicationIcon>
+    <!-- MDIX 的 targets 据此把 build/Resources/Roboto 的 18 个 ttf（约 2.9 MB）复制到输出目录 -->
+    <IncludeMaterialDesignFont>True</IncludeMaterialDesignFont>
   </PropertyGroup>
 
 </Project>
