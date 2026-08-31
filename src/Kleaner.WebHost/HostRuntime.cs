@@ -1,5 +1,4 @@
 using System.Security.Principal;
-using System.Text.Json;
 using Kleaner.Core;
 using Kleaner.Executor;
 
@@ -19,7 +18,7 @@ internal static class HostRuntime
 
     /// <summary>隔离区根：seam → settings.json 的 QuarantineRoot → QuarantineManager.DefaultRoot（三段与 GUI 同语义）。</summary>
     public static string ResolveQuarantineRoot(KleanerWebHostOptions options) =>
-        options.QuarantineRoot ?? ReadSettingsQuarantineRoot() ?? QuarantineManager.DefaultRoot();
+        options.QuarantineRoot ?? SettingsStore.Load(options).QuarantineRoot ?? QuarantineManager.DefaultRoot();
 
     /// <summary>提权判定：seam 优先；否则 WindowsPrincipal 真实判定（语义同 Kleaner.App/Helpers.IsElevated）。</summary>
     public static bool IsElevated(KleanerWebHostOptions options) =>
@@ -38,34 +37,6 @@ internal static class HostRuntime
     public static StartupManager ResolveStartup(KleanerWebHostOptions options) =>
         options.StartupProvider?.Invoke()
         ?? new StartupManager(history: ResolveHistory(options));
-
-    private static string? ReadSettingsQuarantineRoot()
-    {
-        try
-        {
-            var path = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Kleaner", "settings.json");
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            using var doc = JsonDocument.Parse(File.ReadAllText(path));
-            if (doc.RootElement.TryGetProperty("QuarantineRoot", out var value) &&
-                value.ValueKind == JsonValueKind.String &&
-                value.GetString() is { Length: > 0 } root)
-            {
-                return root;
-            }
-        }
-        catch
-        {
-            // settings.json 缺失或损坏：与 GUI 的 AppSettings.Load 同策略，静默回退默认值
-        }
-
-        return null;
-    }
 
     private static bool CheckElevated()
     {

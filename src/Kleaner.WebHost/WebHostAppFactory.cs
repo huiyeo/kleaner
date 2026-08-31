@@ -42,6 +42,7 @@ public static class WebHostAppFactory
         builder.Services.AddSingleton<PlanRegistry>();
         builder.Services.AddSingleton<IJobEventBus, JobEventBus>();
         builder.Services.AddSingleton<IScanJobService, ScanJobService>();
+        builder.Services.AddSingleton<IToolboxJobService, ToolboxJobService>();
 
         if (options.EnableIdleExit)
         {
@@ -55,6 +56,32 @@ public static class WebHostAppFactory
         // 冒烟端点（工单 10）
         app.MapGet("/api/health", () => Results.Json(new { status = "ok" }));
         app.MapPost("/api/ping", () => Results.Json(new { status = "pong" }));
+
+        // 设置：与 GUI / CLI 共用同一份 settings.json 和同样的三字段，不引入第二套配置来源。
+        app.MapGet("/api/settings", (KleanerWebHostOptions options) => Results.Json(SettingsStore.Load(options)));
+        app.MapPut("/api/settings", (HostSettings settings, KleanerWebHostOptions options) =>
+        {
+            var normalized = settings.Normalize();
+            SettingsStore.Save(options, normalized);
+            return Results.Json(normalized);
+        });
+
+        // 规则更新：保留 Core 既有 下载 → SHA512 → 语义校验 → 用户覆盖文件 的完整校验链。
+        app.MapPost("/api/rules/update", async (KleanerWebHostOptions options) =>
+        {
+            var settings = SettingsStore.Load(options);
+            if (string.IsNullOrWhiteSpace(settings.RuleUpdateUrl) || string.IsNullOrWhiteSpace(settings.RuleUpdateSha512))
+            {
+                return Results.BadRequest(new { error = "请先在设置中填写规则更新地址和 SHA512" });
+            }
+
+            var update = options.RuleUpdateExecutor
+                ?? ((url, sha512) => RuleUpdateService.CheckAndUpdateAsync(url, sha512));
+            var error = await update(settings.RuleUpdateUrl, settings.RuleUpdateSha512);
+            return error is null
+                ? Results.Json(new { updated = true })
+                : Results.BadRequest(new { error });
+        });
 
         // Job 体系与 SSE 事件流（工单 11）：REST 快照 + 单一多路复用流，重连 = 先快照再增量（工单 07）。
         // scan/plan/confirm 等资源端点留工单 12–14。
@@ -72,6 +99,31 @@ public static class WebHostAppFactory
             JobCancelOutcome.Accepted => Results.Accepted(),
             JobCancelOutcome.NotFound => Results.NotFound(new { error = "job not found" }),
             _ => Results.Conflict(new { error = "job already finished" }),
+        });
+
+        // 工具箱：只读分析全部进通用 job 体系，可经 /api/jobs/{id}/cancel 取消；不产生隔离区或历史记录。
+        app.MapPost("/api/tools/large-files", (LargeFilesRequest request, IToolboxJobService tools) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Root) || request.MinBytes <= 0 || request.Top is < 1 or > 200)
+                return Results.BadRequest(new { error = "root、minBytes 与 top 参数不合法" });
+            var job = tools.Start(request with { Root = request.Root.Trim() });
+            return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
+        });
+
+        app.MapPost("/api/tools/duplicates", (DuplicatesRequest request, IToolboxJobService tools) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Root) || request.MinBytesPerFile <= 0)
+                return Results.BadRequest(new { error = "root 与 minBytesPerFile 参数不合法" });
+            var job = tools.Start(request with { Root = request.Root.Trim() });
+            return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
+        });
+
+        app.MapPost("/api/tools/usage", (UsageRequest request, IToolboxJobService tools) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Root))
+                return Results.BadRequest(new { error = "root 参数不合法" });
+            var job = tools.Start(request with { Root = request.Root.Trim() });
+            return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
         });
 
         // 单一多路复用 SSE：fetch 流式（原生 EventSource 无法带 token 头，工单 07），

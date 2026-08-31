@@ -38,9 +38,11 @@
 
 - [实施：隔离区、历史与启动项 API](issues/13-quarantine-history-startup-api.md)：七端点落地（批次列表 / restore / DELETE 单批 / purge、history 只读、startup 列表 / disable / restore）。关键决策：seam 延续 12 模式（History/Quarantine/Startup 三 Provider 进 options，HostRuntime 解析，测试指向临时目录 + `IStartupEnvironment` fake）；新增 `GuardBatchId` 路径安全闸（路由直收客户端 batchId，阻断 `..`/分隔符/盘符逃出隔离区根——GUI 无此攻击面）；启动项 disable 服务端按 id 重新枚举定位（不接受客户端伪造目标位置），HKLM 提权失败 409 + 备份回滚语义不变；manifest 缺失 404 / 损坏 500，`RestoreBatch` 异常外溢坑由 WebHost 层兜住；删除批次 UI 二次确认归工单 17 前端，服务端凭据闸仍只覆盖 clean apply。写路径全部经 `QuarantineManager` / `StartupManager`，Core/Executor 零改动。测试 104 → 119 全绿（WebHost 44 → 59）。
 
+- [实施：设置、规则更新与工具箱 API](issues/14-settings-rules-tools-api.md)：`GET/PUT /api/settings` 与 GUI/CLI 共用同一份三字段 `settings.json`（`QuarantineRoot` / `RuleUpdateUrl` / `RuleUpdateSha512`），WebHost 隔离区根同源解析；`POST /api/rules/update` 只直调既有 `RuleUpdateService`，下载、SHA512 与语义校验链不动。`POST /api/tools/large-files`、`/duplicates`、`/usage` 都进入 11 的 job 体系（202 + jobId，可取消，SSE v1 仅开始/结束），只做 Analysis 只读扫描，绝不产生隔离区或历史副作用。测试 119 → 124 全绿（WebHost 59 → 64）。
+
 ## Not yet specified
 
-（三个悬置项已随 08 切分挂靠到实施工单，在各票内落定后回填此处为空；当前前沿：14 后端轨与 15 前端轨均无阻塞，可任选其一）
+（三个悬置项已随 08 切分挂靠到实施工单，在各票内落定后回填此处为空；当前前沿：15 前端轨，无阻塞。）
 
 - 本地化文案策略：`Strings.zh-CN.json` 由后端出文案还是前端 i18n → 工单 15 内落定。
 - Service worker 缓存与更新策略细节（与规则库在线更新 `RuleUpdateService` 是两回事，后者走 API）→ 工单 15 内落定。

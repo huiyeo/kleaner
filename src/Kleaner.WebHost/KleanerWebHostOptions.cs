@@ -35,6 +35,15 @@ public sealed record KleanerWebHostOptions
     /// <summary>service.json 所在目录；null 时为 %APPDATA%\Kleaner。测试可指向临时目录。</summary>
     public string? ServiceStateDirectory { get; init; }
 
+    /// <summary>settings.json 路径覆盖；null 时与 GUI/CLI 共用 %APPDATA%\Kleaner\settings.json。仅测试使用覆盖。</summary>
+    public string? SettingsFilePath { get; init; }
+
+    /// <summary>规则更新执行 seam；生产为 RuleUpdateService.CheckAndUpdateAsync，测试不访问网络。</summary>
+    public Func<string, string, Task<string?>>? RuleUpdateExecutor { get; init; }
+
+    /// <summary>工具箱只读扫描 seam；生产调用 Kleaner.Analysis，测试注入可控任务验证取消。</summary>
+    public Func<ToolboxJobRequest, CancellationToken, object>? ToolboxExecutor { get; init; }
+
     /// <summary>
     /// 扫描执行器 seam（工单 11）：null 时用真实 <see cref="ScanEngine"/>（09 的 IProgress 每规则上报）；
     /// 集成测试注入慢速/可控 fake 来验证取消与断连语义。

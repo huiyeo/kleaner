@@ -1,0 +1,45 @@
+using System.Text.Json;
+
+namespace Kleaner.WebHost;
+
+/// <summary>与 WPF AppSettings 共享的 settings.json 三字段；WebHost 不引用 WPF 工程，故在此保持同一磁盘契约。</summary>
+public sealed record HostSettings(string? QuarantineRoot, string? RuleUpdateUrl, string? RuleUpdateSha512)
+{
+    public HostSettings Normalize() => this with
+    {
+        QuarantineRoot = NormalizeValue(QuarantineRoot),
+        RuleUpdateUrl = NormalizeValue(RuleUpdateUrl),
+        RuleUpdateSha512 = NormalizeValue(RuleUpdateSha512),
+    };
+
+    private static string? NormalizeValue(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+}
+
+internal static class SettingsStore
+{
+    public static string FilePath(KleanerWebHostOptions options) =>
+        options.SettingsFilePath ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Kleaner", "settings.json");
+
+    public static HostSettings Load(KleanerWebHostOptions options)
+    {
+        try
+        {
+            return (JsonSerializer.Deserialize<HostSettings>(File.ReadAllText(FilePath(options)))
+                ?? new HostSettings(null, null, null)).Normalize();
+        }
+        catch
+        {
+            // 与 Kleaner.App.AppSettings.Load 同语义：文件缺失或损坏时回退默认值。
+            return new HostSettings(null, null, null);
+        }
+    }
+
+    public static void Save(KleanerWebHostOptions options, HostSettings settings)
+    {
+        var path = FilePath(options);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, JsonSerializer.Serialize(settings.Normalize(), new JsonSerializerOptions { WriteIndented = true }));
+    }
+}
