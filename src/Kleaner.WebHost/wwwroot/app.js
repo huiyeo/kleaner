@@ -1,6 +1,7 @@
 const TOKEN_KEY = "kleaner.api-token";
 const LOCALE_URL = "/locales/zh-CN.json";
 let strings = {};
+let jobsSnapshot = [];
 
 const fallback = {
   appName: "Kleaner", dashboard: "清理概览", quarantine: "隔离区", history: "操作历史",
@@ -35,6 +36,17 @@ async function loadStrings() {
 function apiHeaders() {
   const token = sessionStorage.getItem(TOKEN_KEY);
   return token ? { "X-Kleaner-Token": token } : {};
+}
+
+class TokenExpiredError extends Error {}
+
+async function refreshJobsSnapshot() {
+  const response = await fetch("/api/jobs", { headers: apiHeaders(), cache: "no-store" });
+  if (response.status === 401 || response.status === 403) throw new TokenExpiredError();
+  if (!response.ok) throw new Error(`jobs ${response.status}`);
+  jobsSnapshot = await response.json();
+  window.dispatchEvent(new CustomEvent("kleaner.jobs-snapshot", { detail: jobsSnapshot }));
+  return jobsSnapshot;
 }
 
 class KleanerShell extends HTMLElement {
@@ -96,7 +108,10 @@ async function connectEvents() {
   let attempt = 0;
   while (true) {
     try {
+      // SSE 没有回放；每次连接前先恢复 REST 快照，避免断线期间漏掉任务终态。
+      await refreshJobsSnapshot();
       const response = await fetch("/api/events", { headers: apiHeaders(), cache: "no-store" });
+      if (response.status === 401 || response.status === 403) throw new TokenExpiredError();
       if (!response.ok || !response.body) throw new Error(`SSE ${response.status}`);
       attempt = 0;
       const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
@@ -113,7 +128,11 @@ async function connectEvents() {
           if (eventName && data) handleEvent(eventName, JSON.parse(data));
         }
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof TokenExpiredError) {
+        setConnection("error", "连接令牌已失效，请重新打开 Kleaner");
+        return;
+      }
       // 同端口同 token 的重启（提权 / Velopack）会在这里进入指数退避，成功后重新取得服务端快照。
     }
     const delay = Math.min(1000 * 2 ** attempt, 15000);

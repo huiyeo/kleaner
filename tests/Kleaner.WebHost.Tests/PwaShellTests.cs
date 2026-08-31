@@ -71,7 +71,10 @@ public sealed class PwaShellTests : IDisposable
         Assert.Contains("sessionStorage.setItem(TOKEN_KEY, token)", client);
         Assert.Contains("history.replaceState({}, \"\", url)", client);
         Assert.Contains("\"X-Kleaner-Token\": token", client);
+        Assert.Contains("fetch(\"/api/jobs\", { headers: apiHeaders(), cache: \"no-store\" })", client);
+        Assert.Contains("new CustomEvent(\"kleaner.jobs-snapshot\"", client);
         Assert.Contains("fetch(\"/api/events\", { headers: apiHeaders(), cache: \"no-store\" })", client);
+        Assert.Contains("response.status === 401 || response.status === 403", client);
         Assert.Contains("Math.min(1000 * 2 ** attempt, 15000)", client);
     }
 }
