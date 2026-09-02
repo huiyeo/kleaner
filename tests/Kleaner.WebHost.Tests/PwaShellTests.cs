@@ -57,7 +57,7 @@ public sealed class PwaShellTests : IDisposable
         Assert.Equal("image/svg+xml", root.GetProperty("icons")[0].GetProperty("type").GetString());
 
         var serviceWorker = await _client.GetStringAsync("/sw.js");
-        Assert.Contains("kleaner-shell-v7", serviceWorker);
+        Assert.Contains("kleaner-shell-v8", serviceWorker);
         Assert.Contains("/index.html", serviceWorker);
         Assert.Contains("url.pathname.startsWith(\"/api/\")", serviceWorker);
         Assert.Contains("SKIP_WAITING", serviceWorker);

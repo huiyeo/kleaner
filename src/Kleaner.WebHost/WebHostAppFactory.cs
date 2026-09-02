@@ -165,6 +165,12 @@ public static class WebHostAppFactory
         // 系统大件只提供原有的系统工具指引；WebHost 不执行命令，也不把这些项目纳入清理规则。
         app.MapGet("/api/tools/system-guide", () => Results.Json(SystemToolGuide.Items));
 
+        // 高级模式全部只读：SpecialOps 负责发现与指引，WebHost 不提供执行系统命令或修改注册表的端点。
+        app.MapGet("/api/advanced/wsl", (KleanerWebHostOptions options) =>
+            Results.Json((options.WslDetector ?? WslInspector.DetectVhdx)().Select(v => new { v.Path, v.SizeBytes, Guide = WslInspector.BuildCompactGuide(v) })));
+        app.MapGet("/api/advanced/registry", (KleanerWebHostOptions options) =>
+            Results.Json((options.RegistryScanner ?? RegistryInspector.ScanBrokenUninstallEntries)()));
+
         // 单一多路复用 SSE：fetch 流式（原生 EventSource 无法带 token 头，工单 07），
         // 过既有 token/Origin 中间件；断连只结束本连接、不取消任何 job（工单 07），无 Last-Event-ID 回放。
         app.MapGet("/api/events", async (HttpContext context, IJobEventBus bus) =>

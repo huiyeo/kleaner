@@ -5,7 +5,7 @@ let jobsSnapshot = [];
 
 const fallback = {
   appName: "Kleaner", dashboard: "清理概览", quarantine: "隔离区", history: "操作历史",
-  toolbox: "工具箱", startup: "启动项", settings: "设置", ready: "已连接到本地服务",
+  toolbox: "工具箱", advanced: "高级模式", startup: "启动项", settings: "设置", ready: "已连接到本地服务",
   reconnecting: "正在等待本地服务恢复…", offline: "本地服务不可用", install: "安装应用",
   updateReady: "发现新版本，点击更新", shellTitle: "安全、可预览、可还原的清理体验",
   shellBody: "选择规则、扫描、预览和确认将由后续页面逐步接入。此壳已建立本地服务连接并可在离线时打开。",
@@ -53,6 +53,7 @@ const mainScreen = { jobId: null, scan: null, selected: new Set(), plan: null, d
 const categoryNames = { temp: "临时文件", "browser-cache": "浏览器缓存", "dev-cache": "开发缓存", updater: "更新残留", system: "系统缓存", application: "应用缓存" };
 const secondaryScreen = { quarantine: null, history: null, startup: null, settings: null, message: "" };
 const toolboxScreen = { tab: "large-files", jobId: null, status: "", result: null, guide: [], root: "", largeMin: 100, duplicateMin: 1 };
+const advancedScreen = { tab: "wsl", wsl: [], registry: [], guide: [] };
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 const formatBytes = (bytes) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : bytes >= 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${bytes} B`;
 const formatTime = (value) => value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
@@ -232,6 +233,22 @@ async function cancelToolbox() {
   renderToolbox();
 }
 
+async function loadAdvanced() {
+  try { [advancedScreen.wsl, advancedScreen.registry, advancedScreen.guide] = await Promise.all([apiJson("/api/advanced/wsl"), apiJson("/api/advanced/registry"), apiJson("/api/tools/system-guide")]); } catch { }
+  renderAdvanced();
+}
+
+function renderAdvanced() {
+  const content = document.querySelector("#content");
+  if (!content || document.querySelector("[data-view][aria-current='page']")?.dataset.view !== "advanced") return;
+  const tab = advancedScreen.tab;
+  const tabs = [["wsl", "WSL 虚拟磁盘"], ["system", "系统大件指引"], ["registry", "注册表残留"]];
+  const body = tab === "wsl" ? (advancedScreen.wsl.length ? advancedScreen.wsl.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.path)}</b><small>${formatBytes(item.sizeBytes)}</small><pre>${escapeHtml(item.guide)}</pre></div></article>`).join("") : "<p class=\"empty\">未发现 WSL 虚拟磁盘。</p>") : tab === "registry" ? (advancedScreen.registry.length ? advancedScreen.registry.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.displayName)}</b><small>${escapeHtml(item.reason)}</small><small>${escapeHtml(item.key)}</small></div></article>`).join("") : "<p class=\"empty\">未发现指向不存在路径的卸载项。</p>") : advancedScreen.guide.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.note)}</small><small>${escapeHtml(item.command)}${item.requiresAdmin ? " · 需要管理员权限" : ""}</small></div></article>`).join("");
+  content.innerHTML = `<section class="secondary-page"><header><div><h2>高级模式</h2><p>仅做只读检测与操作指引；不会执行系统命令或修改注册表。</p></div><button class="button" data-advanced="refresh">刷新</button></header><div class="tool-tabs">${tabs.map(([id, label]) => `<button class="button ${tab === id ? "primary" : ""}" data-advanced-tab="${id}">${label}</button>`).join("")}</div><div class="data-list">${body}</div></section>`;
+  content.querySelectorAll("[data-advanced-tab]").forEach((button) => button.addEventListener("click", () => { advancedScreen.tab = button.dataset.advancedTab; renderAdvanced(); }));
+  content.querySelector("[data-advanced='refresh']")?.addEventListener("click", loadAdvanced);
+}
+
 class KleanerShell extends HTMLElement {
   connectedCallback() { this.render(); }
 
@@ -241,7 +258,7 @@ class KleanerShell extends HTMLElement {
         <div class="brand"><img src="/icons/kleaner.svg" alt=""><span>${t("appName")}</span></div>
         <section class="summary"><div class="ring">0 B</div><b>${t("dashboard")}</b><br><small>扫描后显示可释放空间</small></section>
         <nav class="nav" aria-label="主导航">
-          ${["dashboard", "quarantine", "history", "toolbox", "startup", "settings"].map((key) =>
+          ${["dashboard", "quarantine", "history", "toolbox", "advanced", "startup", "settings"].map((key) =>
             `<button type="button" data-view="${key}" ${key === "dashboard" ? 'aria-current="page"' : ""}>${t(key)}</button>`).join("")}
         </nav>
         <div class="safety">${t("whitelist")} · ${t("preview")} · ${t("restore")}</div>
@@ -275,6 +292,7 @@ class KleanerShell extends HTMLElement {
       loadSecondary(button.dataset.view);
     }
     else if (button.dataset.view === "toolbox") { renderToolbox(); loadToolbox(); }
+    else if (button.dataset.view === "advanced") { renderAdvanced(); loadAdvanced(); }
     else this.querySelector("#content").innerHTML = `<article class="hero"><h2>${button.textContent}</h2><p>该页面将在后续工单中接入真实数据与操作流程。</p></article>`;
   }
 }
