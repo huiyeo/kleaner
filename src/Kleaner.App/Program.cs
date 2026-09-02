@@ -15,6 +15,9 @@ public static class Program
         S.Load();
 
         var app = new App();
+        // 加载 App.xaml（BundledTheme + MaterialDesign2.Defaults）；自定义 Main 不会自动执行这一步，
+        // 缺了它 Application.Resources 为空，MainWindow 的 StaticResource（如 MaterialDesignRaisedButton）会启动即崩。
+        app.InitializeComponent();
         app.Run(new MainWindow());
     }
 }
