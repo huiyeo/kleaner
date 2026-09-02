@@ -49,6 +49,62 @@ async function refreshJobsSnapshot() {
   return jobsSnapshot;
 }
 
+const mainScreen = { jobId: null, scan: null, selected: new Set(), plan: null, drawer: false, progress: { ruleIds: new Set(), files: 0, bytes: 0 }, message: "扫描会严格按规则库预览，不会删除文件。" };
+const categoryNames = { temp: "临时文件", "browser-cache": "浏览器缓存", "dev-cache": "开发缓存", updater: "更新残留", system: "系统缓存", application: "应用缓存" };
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
+const formatBytes = (bytes) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : bytes >= 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${bytes} B`;
+
+async function apiJson(path, method = "GET", body) {
+  const headers = { ...apiHeaders() };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const response = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
+  if (response.status === 401 || response.status === 403) throw new TokenExpiredError();
+  const payload = response.status === 204 ? null : await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error ?? `请求失败（${response.status}）`);
+  return payload;
+}
+
+function updateFromJobs(jobs) {
+  const scan = [...jobs].reverse().find((job) => job.kind === "scan");
+  if (!scan) return;
+  mainScreen.jobId = scan.jobId;
+  if (scan.status === "Completed" && scan.result?.rules) {
+    mainScreen.scan = scan.result;
+    if (mainScreen.selected.size === 0) scan.result.rules.filter((rule) => rule.machineVerified).forEach((rule) => mainScreen.selected.add(rule.ruleId));
+    mainScreen.message = "扫描完成。请核对规则和安全说明后再预览清理计划。";
+  } else if (scan.status === "Running" || scan.status === "Cancelling") mainScreen.message = `正在只读扫描白名单规则… 已完成 ${mainScreen.progress.ruleIds.size} 条规则`;
+  else if (scan.status === "Cancelled") { mainScreen.jobId = null; mainScreen.progress = { ruleIds: new Set(), files: 0, bytes: 0 }; mainScreen.message = "扫描已取消，未生成清理计划。"; }
+  renderMainScreen();
+}
+
+window.addEventListener("kleaner.jobs-snapshot", (event) => updateFromJobs(event.detail));
+
+function renderMainScreen() {
+  const content = document.querySelector("#content");
+  if (!content || document.querySelector("[data-view][aria-current='page']")?.dataset.view !== "dashboard") return;
+  const rules = mainScreen.scan?.rules ?? [];
+  const selected = rules.filter((rule) => mainScreen.selected.has(rule.ruleId));
+  const bytes = selected.reduce((sum, rule) => sum + rule.totalBytes, 0);
+  const files = selected.reduce((sum, rule) => sum + rule.fileCount, 0);
+  const groups = Object.values(Object.groupBy(rules, (rule) => rule.category));
+  const scanning = mainScreen.jobId && !mainScreen.scan;
+  document.querySelector(".summary .ring")?.replaceChildren(rules.length ? formatBytes(bytes) : "0 B");
+  content.innerHTML = `<section class="main-dashboard"><div class="main-actions"><p>${escapeHtml(mainScreen.message)}</p><button class="button primary" data-main="scan" ${scanning ? "disabled" : ""}>${scanning ? "扫描中…" : "开始扫描"}</button></div>${rules.length ? `<div class="clean-summary"><b>已勾选 ${selected.length} 条规则</b><span>${files} 个文件 · ${formatBytes(bytes)}</span><button class="button primary" data-main="preview" ${selected.length ? "" : "disabled"}>预览并清理</button></div><div class="rule-groups">${groups.map((group) => `<details open class="rule-group"><summary>${escapeHtml(categoryNames[group[0].category] ?? group[0].category)} · ${group.length} 条规则</summary>${group.map((rule) => `<label class="rule-row"><input type="checkbox" data-rule="${escapeHtml(rule.ruleId)}" ${mainScreen.selected.has(rule.ruleId) ? "checked" : ""}><span class="rule-copy"><b>${escapeHtml(rule.ruleName)}</b><small>${escapeHtml(rule.safetyNotes)}</small><em>${rule.risk === "medium" ? "中风险" : "低风险"} · ${rule.machineVerified ? "已验证" : "未验证·默认不勾选"}${rule.requiresElevation ? " · 需要管理员权限" : ""}</em></span><span>${rule.fileCount} 个 · ${formatBytes(rule.totalBytes)}</span></label>`).join("")}</details>`).join("")}</div>` : `<article class="hero"><h2>准备扫描</h2><p>只会读取已启用的白名单规则。扫描不会删除或移动任何文件；完成后才可生成一次性确认的清理计划。</p></article>`}${scanning ? `<footer class="scan-strip"><span>只读预览中，已完成 ${mainScreen.progress.ruleIds.size} 条规则 · ${mainScreen.progress.files} 个文件 · ${formatBytes(mainScreen.progress.bytes)}。</span><div><i></i></div><button class="button" data-main="cancel">取消扫描</button></footer>` : ""}${mainScreen.drawer && mainScreen.plan ? `<aside class="clean-drawer"><h2>确认清理计划</h2><p>以下文件将移入隔离区，可还原，不会直接永久删除。</p>${mainScreen.plan.items.map((item) => `<div>${escapeHtml(item.ruleName)} <span>${item.fileCount} 个 · ${formatBytes(item.totalBytes)}</span></div>`).join("")}<strong>合计 ${mainScreen.plan.totalFiles} 个文件 · ${formatBytes(mainScreen.plan.totalBytes)}</strong><div class="drawer-actions"><button class="button" data-main="close">返回调整</button><button class="button primary" data-main="confirm">确认移入隔离区</button></div></aside>` : ""}</section>`;
+  content.querySelectorAll("[data-rule]").forEach((input) => input.addEventListener("change", () => { input.checked ? mainScreen.selected.add(input.dataset.rule) : mainScreen.selected.delete(input.dataset.rule); renderMainScreen(); }));
+  content.querySelectorAll("[data-main]").forEach((button) => button.addEventListener("click", () => runMainAction(button.dataset.main)));
+}
+
+async function runMainAction(action) {
+  try {
+    if (action === "scan") { const job = await apiJson("/api/scan", "POST", {}); mainScreen.jobId = job.jobId; mainScreen.scan = null; mainScreen.plan = null; mainScreen.drawer = false; mainScreen.progress = { ruleIds: new Set(), files: 0, bytes: 0 }; mainScreen.selected.clear(); mainScreen.message = "正在只读扫描白名单规则…"; }
+    else if (action === "cancel") { await apiJson(`/api/jobs/${mainScreen.jobId}/cancel`, "POST", {}); mainScreen.message = "已请求取消扫描，等待当前规则安全结束。"; }
+    else if (action === "preview") { mainScreen.plan = await apiJson("/api/plans", "POST", { jobId: mainScreen.jobId, ruleIds: [...mainScreen.selected] }); if (mainScreen.plan.needsElevation) { mainScreen.message = "所选规则需要管理员权限，正在请求重启并等待重连；恢复后请重新扫描以生成新的预览计划。"; await apiJson("/api/elevate", "POST", {}); mainScreen.plan = null; mainScreen.scan = null; mainScreen.jobId = null; mainScreen.selected.clear(); } else mainScreen.drawer = true; }
+    else if (action === "confirm") { const report = await apiJson(`/api/plans/${mainScreen.plan.planId}/confirm`, "POST", { confirmToken: mainScreen.plan.confirmToken }); mainScreen.drawer = false; mainScreen.message = `已移入隔离区：${report.movedCount} 个文件，跳过 ${report.skipped.length} 个；批次 ${report.batchId}。`; }
+    else if (action === "close") mainScreen.drawer = false;
+  } catch (error) { mainScreen.message = error instanceof TokenExpiredError ? "连接令牌已失效，请重新打开 Kleaner" : error.message; }
+  renderMainScreen();
+}
+
 class KleanerShell extends HTMLElement {
   connectedCallback() { this.render(); }
 
@@ -70,6 +126,7 @@ class KleanerShell extends HTMLElement {
       </section>
     </main><aside class="notice" hidden id="update-notice"><span>${t("updateReady")}</span> <button class="button primary" id="update">更新</button></aside>`;
     this.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => this.showView(button)));
+    renderMainScreen();
   }
 
   dashboard() {
@@ -84,7 +141,8 @@ class KleanerShell extends HTMLElement {
     this.querySelectorAll("[data-view]").forEach((item) => item.removeAttribute("aria-current"));
     button.setAttribute("aria-current", "page");
     this.querySelector("#page-title").textContent = button.textContent;
-    this.querySelector("#content").innerHTML = `<article class="hero"><h2>${button.textContent}</h2><p>该页面将在后续工单中接入真实数据与操作流程。</p></article>`;
+    if (button.dataset.view === "dashboard") renderMainScreen();
+    else this.querySelector("#content").innerHTML = `<article class="hero"><h2>${button.textContent}</h2><p>该页面将在后续工单中接入真实数据与操作流程。</p></article>`;
   }
 }
 
@@ -102,6 +160,16 @@ function handleEvent(eventName, payload) {
   if (eventName === "connected") setConnection("connected", t("ready"));
   if (eventName === "job.started") setConnection("connected", `正在执行 ${payload.kind ?? "任务"}`);
   if (eventName === "job.completed" || eventName === "job.cancelled") setConnection("connected", t("ready"));
+  if (eventName === "scan.progress") {
+    if (!mainScreen.progress.ruleIds.has(payload.ruleId)) {
+      mainScreen.progress.ruleIds.add(payload.ruleId);
+      mainScreen.progress.files += payload.fileCount ?? 0;
+      mainScreen.progress.bytes += payload.totalBytes ?? 0;
+    }
+    mainScreen.message = `正在只读扫描白名单规则… 已完成 ${mainScreen.progress.ruleIds.size} 条规则`;
+    renderMainScreen();
+  }
+  if (eventName === "job.completed" || eventName === "job.cancelled") refreshJobsSnapshot().catch(() => {});
 }
 
 async function connectEvents() {

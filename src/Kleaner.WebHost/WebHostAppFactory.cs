@@ -117,6 +117,25 @@ public static class WebHostAppFactory
             _ => Results.Conflict(new { error = "job already finished" }),
         });
 
+        // 提权交接：仅在未提权实例、已通过五层 API 防护的前端请求下启动 runas 子进程；
+        // 子进程沿用端口和 token，旧实例在响应发出后退出，浏览器以既有 SSE 退避重连。
+        app.MapPost("/api/elevate", (KleanerWebHostOptions options, LoopbackSecurityOptions security, IHostApplicationLifetime lifetime) =>
+        {
+            if (HostRuntime.IsElevated(options))
+                return Results.Conflict(new { error = "当前已是管理员权限" });
+
+            var restart = options.ElevationRestart ?? ElevationRestart.Start;
+            if (!restart(options.Port, security.Token))
+                return Results.Conflict(new { error = "管理员授权已取消或启动失败" });
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(100);
+                lifetime.StopApplication();
+            });
+            return Results.Accepted();
+        });
+
         // 工具箱：只读分析全部进通用 job 体系，可经 /api/jobs/{id}/cancel 取消；不产生隔离区或历史记录。
         app.MapPost("/api/tools/large-files", (LargeFilesRequest request, IToolboxJobService tools) =>
         {

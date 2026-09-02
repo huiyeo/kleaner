@@ -65,6 +65,9 @@ public sealed record KleanerWebHostOptions
     /// <summary>提权探测 seam（工单 12）：null 时用 WindowsPrincipal 真实判定。测试注入固定值。</summary>
     public Func<bool>? ElevationProbe { get; init; }
 
+    /// <summary>提权交接 seam；生产以 runas 重启同端口同 token 的宿主，测试只记录调用。</summary>
+    public Func<int, string, bool>? ElevationRestart { get; init; }
+
     /// <summary>
     /// 清理执行器 seam（工单 12）：null 时走真实 QuarantineManager.Execute（移入隔离区 + 落 clean 历史）。
     /// 集成测试注入 fake，绝不触碰真实文件系统。

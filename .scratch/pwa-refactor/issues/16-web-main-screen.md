@@ -1,7 +1,7 @@
 # 16 主界面（变体 C）web
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 11, 12, 15
 
 ## Task
@@ -18,3 +18,8 @@ Blocked by: 11, 12, 15
 - 原型对照验收：信息架构与交互不偏离变体 C 决策；中文文案完整（按 15 落定的策略）。
 
 ## Comments
+
+- 已实现变体 C 主流程：类别折叠卡使用中文类别名，规则行显示默认选择、风险、验证与管理员权限信息；左栏汇总随勾选变化。
+- 每条 `scan.progress` SSE 事件累计已完成规则、文件数和大小；扫描可取消。计划与确认仍只调用 12 的一次性 plan/confirm 闸，确认页明确仅移入隔离区。
+- `POST /api/elevate` 以同端口、同 token 的 runas 子进程交接；旧宿主在响应后退出，前端 SSE 退避重连。已覆盖已提权拒绝、交接参数以及 `dotnet app.dll` 启动时保留 DLL 参数。
+- 验证：`dotnet test Kleaner.slnx -c Release --no-restore`（Core 60、WebHost 74 全绿）；`node --check` 与 `git diff --check` 通过；本地浏览器无令牌壳页验收确认中文变体 C 初始布局和安全文案。未生成计划或执行任何文件移动。

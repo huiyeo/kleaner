@@ -9,12 +9,12 @@ internal static class SingleInstanceGuard
     public const string MutexName = @"Local\Kleaner.WebHost.SingleInstance";
 
     /// <returns>已有实例在跑返回 null；否则返回已持有的互斥体（调用方负责 Dispose/Release）。</returns>
-    public static Mutex? TryAcquire()
+    public static Mutex? TryAcquire(TimeSpan? wait = null)
     {
         var mutex = new Mutex(initiallyOwned: false, MutexName);
         try
         {
-            if (!mutex.WaitOne(TimeSpan.Zero))
+            if (!mutex.WaitOne(wait ?? TimeSpan.Zero))
             {
                 mutex.Dispose();
                 return null;

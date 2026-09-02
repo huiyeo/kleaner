@@ -1,4 +1,4 @@
-const CACHE_NAME = "kleaner-shell-v1";
+const CACHE_NAME = "kleaner-shell-v5";
 const SHELL = [
   "/", "/index.html", "/app.css", "/app.js", "/manifest.webmanifest",
   "/icons/kleaner.svg", "/locales/zh-CN.json"

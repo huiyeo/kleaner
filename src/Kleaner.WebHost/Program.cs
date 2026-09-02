@@ -15,7 +15,9 @@ public static class Program
         // Velopack 钩子必须最先运行（处理更新后的重启动与安装器回调，工单 02）
         VelopackApp.Build().Run();
 
-        using var mutex = SingleInstanceGuard.TryAcquire();
+        var isHandoff = ElevationRestart.TryParseHandoff(args, out var handoffPort, out var handoffToken);
+        var token = isHandoff ? handoffToken! : KleanerWebHostOptions.GenerateToken();
+        using var mutex = SingleInstanceGuard.TryAcquire(isHandoff ? TimeSpan.FromSeconds(10) : null);
         if (mutex is null)
         {
             // 二次启动：不开新服务，唤起已有实例的浏览器页面后自身退出
@@ -28,16 +30,17 @@ public static class Program
 
         var options = new KleanerWebHostOptions
         {
-            Port = PortPicker.PickFreePort(KleanerWebHostOptions.DefaultPreferredPort),
-            Token = KleanerWebHostOptions.GenerateToken(),
+            Port = isHandoff ? handoffPort : PortPicker.PickFreePort(KleanerWebHostOptions.DefaultPreferredPort),
+            Token = token,
             ContentRootPath = AppContext.BaseDirectory,
         };
 
         using var app = WebHostAppFactory.Build(options);
         app.Start();
 
-        ServiceStateFile.Write(options.Port, options.Token, options.ServiceStateDirectory);
-        FrontendLauncher.Open(FrontendLauncher.BuildUrl(options.Port, options.Token));
+        ServiceStateFile.Write(options.Port, token, options.ServiceStateDirectory);
+        if (!isHandoff)
+            FrontendLauncher.Open(FrontendLauncher.BuildUrl(options.Port, token));
 
         app.WaitForShutdown();
     }

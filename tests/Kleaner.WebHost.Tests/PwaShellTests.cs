@@ -57,7 +57,7 @@ public sealed class PwaShellTests : IDisposable
         Assert.Equal("image/svg+xml", root.GetProperty("icons")[0].GetProperty("type").GetString());
 
         var serviceWorker = await _client.GetStringAsync("/sw.js");
-        Assert.Contains("kleaner-shell-v1", serviceWorker);
+        Assert.Contains("kleaner-shell-v5", serviceWorker);
         Assert.Contains("/index.html", serviceWorker);
         Assert.Contains("url.pathname.startsWith(\"/api/\")", serviceWorker);
         Assert.Contains("SKIP_WAITING", serviceWorker);
@@ -76,5 +76,24 @@ public sealed class PwaShellTests : IDisposable
         Assert.Contains("fetch(\"/api/events\", { headers: apiHeaders(), cache: \"no-store\" })", client);
         Assert.Contains("response.status === 401 || response.status === 403", client);
         Assert.Contains("Math.min(1000 * 2 ** attempt, 15000)", client);
+    }
+
+    [Fact]
+    public async Task MainScreen_UsesTheGuardedScanPlanConfirmAndElevationResources()
+    {
+        var client = await _client.GetStringAsync("/app.js");
+
+        Assert.Contains("apiJson(\"/api/scan\", \"POST\", {})", client);
+        Assert.Contains("apiJson(\"/api/plans\", \"POST\"", client);
+        Assert.Contains("/confirm`, \"POST\"", client);
+        Assert.Contains("apiJson(\"/api/elevate\", \"POST\", {})", client);
+        Assert.Contains("mainScreen.selected.clear()", client);
+        Assert.Contains("恢复后请重新扫描以生成新的预览计划", client);
+        Assert.Contains("/api/jobs/${mainScreen.jobId}/cancel", client);
+        Assert.Contains("mainScreen.progress.ruleIds", client);
+        Assert.Contains("eventName === \"scan.progress\"", client);
+        Assert.Contains("浏览器缓存", client);
+        Assert.Contains("未验证·默认不勾选", client);
+        Assert.Contains("移入隔离区，可还原，不会直接永久删除", client);
     }
 }
