@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Kleaner.WebHost;
 
-/// <summary>与 WPF AppSettings 共享的 settings.json 三字段；WebHost 不引用 WPF 工程，故在此保持同一磁盘契约。</summary>
+/// <summary>settings.json 的三字段存储；保持既有磁盘契约。</summary>
 public sealed record HostSettings(string? QuarantineRoot, string? RuleUpdateUrl, string? RuleUpdateSha512)
 {
     public HostSettings Normalize() => this with
@@ -31,7 +31,7 @@ internal static class SettingsStore
         }
         catch
         {
-            // 与 Kleaner.App.AppSettings.Load 同语义：文件缺失或损坏时回退默认值。
+            // 文件缺失或损坏时回退默认值。
             return new HostSettings(null, null, null);
         }
     }

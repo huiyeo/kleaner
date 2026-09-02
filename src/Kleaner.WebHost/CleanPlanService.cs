@@ -15,7 +15,7 @@ public sealed record PlanResolvedItem(string RuleId, IReadOnlyList<FileCandidate
 
 /// <summary>
 /// 清理计划（dry-run 产物）：items 对外、resolved 对内，均只含「勾选中且文件数 &gt; 0」的规则。
-/// <see cref="NeedsElevation"/> 在勾选集上判定（含零文件规则，语义迁自 WPF 层 MainWindowViewModel.CleanAsync）。
+/// <see cref="NeedsElevation"/> 在勾选集上判定（含零文件规则）。
 /// </summary>
 public sealed record CleanPlan(
     IReadOnlyList<PlanItemView> Items,
@@ -33,7 +33,7 @@ public sealed record ConfirmRequest(string? ConfirmToken);
 /// <summary>
 /// 清理决策流水线的纯函数服务类（工单 04 决策：决策编排留宿主、可测）：
 /// 勾选 id + 扫描 envelope → plan / needsElevation / 摘要。不做任何 I/O。
-/// 语义逐条迁自 WPF 层 MainWindowViewModel.CleanAsync——提权检查在零文件过滤之前、零文件规则不进计划。
+/// 提权检查在零文件过滤之前、零文件规则不进计划。
 /// </summary>
 public static class CleanPlanService
 {

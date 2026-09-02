@@ -3,7 +3,7 @@ using Kleaner.WebHost;
 
 namespace Kleaner.WebHost.Tests;
 
-/// <summary>CleanPlanService 纯逻辑测试（工单 12）：语义逐条迁自 WPF 层 MainWindowViewModel.CleanAsync。</summary>
+/// <summary>CleanPlanService 纯逻辑测试（工单 12）。</summary>
 public sealed class CleanPlanServiceTests
 {
     private static ScanResultEnvelope SampleScan() => new(

@@ -94,7 +94,7 @@
 - **`risk` 只影响界面显示**，当前不参与任何执行分支。
 - **`verified` 才有行为**：以「本机实测」开头的规则默认勾选；其余默认**不勾选**并标注「未验证·默认不勾选」。未声明 `verified` 的旧规则视同已验证（兼容性处理）。
 
-这条策略定义在 `Kleaner.App/RuleRow.cs`。
+这条策略定义在 `Kleaner.Core/RuleSelectionPolicy.cs`。
 
 ## 三关流程
 

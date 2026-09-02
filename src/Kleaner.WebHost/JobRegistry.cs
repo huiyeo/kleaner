@@ -35,7 +35,7 @@ public sealed record JobSnapshot(
 
 /// <summary>
 /// 单个后台 job 的服务端记录：持有自己的 <see cref="CancellationTokenSource"/>
-///（照搬 ToolboxWindow._cts 模式，工单 07），状态迁移与终态清理全部在锁内完成。
+/// 状态迁移与终态清理全部在锁内完成。
 /// </summary>
 public sealed class JobRecord
 {

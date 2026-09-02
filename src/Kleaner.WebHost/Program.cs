@@ -4,7 +4,7 @@ using Velopack;
 namespace Kleaner.WebHost;
 
 /// <summary>
-/// WebHost 进程入口（工单 10；取代 Kleaner.App/Program.cs 的 GUI 入口，工单 04 决策）：
+/// WebHost 进程入口（工单 10；唯一 GUI 入口，工单 04 决策）：
 /// VelopackApp 钩子 → 互斥体单实例（二次启动唤起已有实例的浏览器页面后自身退出）→
 /// Kestrel 只绑 127.0.0.1（首选端口被占回退随机高端口）→ 写 service.json → 开浏览器 → 跑到空闲退出。
 /// </summary>

@@ -28,12 +28,12 @@
 - 隔离区：删除即移入（默认剩余空间最大的非系统盘），manifest 记录原路径，整批还原（冲突不覆盖）、7 天保留手动清空
 - **操作历史**：删除类操作全部自动落 `history.jsonl` 审计，界面可查
 - **CLI 安全契约**：`scan`/`clean --apply`/`--yes`/`large-files`/`duplicates`/`usage`，非交互无 `--yes` 拒绝删除（退出码 2），支持 `--format json`
-- **工具箱**：大文件清理、重复文件清理（内容指纹三级预筛，每组保一）、空间分析（列表下钻）——全部只读扫描、清理进隔离区
+- **工具箱**：大文件、重复文件（内容指纹三级预筛，每组保一）与空间分析（列表下钻）——全部只读扫描，不进入清理、隔离区或历史路径
 - 规则库：20 条规则，每条附安全性说明与验证状态标注；真机实测可释放约 2 GB
 - 高级模式：WSL vhdx 检测与压缩指引、休眠/还原点/WinSxS 引导（调起系统工具）、注册表卸载残留**只读**扫描
 - 发布链路：自包含单文件（免装 .NET）+ Velopack 安装版/便携版/自动更新清单（`scripts/release.sh`）
 
-质量：`dotnet test` 29/29 通过（引擎端到端、隔离区还原/冲突/占用、大文件/重复/空间分析、历史审计、更新校验）。
+质量：`dotnet test Kleaner.slnx -c Release` 当前 138/138 通过（Core 60、WebHost 78），覆盖引擎安全语义、隔离区/历史、Web API 安全闸与 PWA 静态契约。
 
 Roadmap：卸载器、启动项管理、treemap 空间视图。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
 
@@ -42,7 +42,7 @@ Roadmap：卸载器、启动项管理、treemap 空间视图。规则贡献见 [
 ```
 dotnet build Kleaner.slnx -c Release
 dotnet test tests/Kleaner.Core.Tests -c Release
-dotnet run --project src/Kleaner.App -c Release
+dotnet run --project src/Kleaner.WebHost -c Release
 ```
 
 > .NET 装在非默认位置时（如用户目录安装），框架依赖启动需设置 `DOTNET_ROOT` 指向运行时目录。
@@ -50,7 +50,7 @@ dotnet run --project src/Kleaner.App -c Release
 - `src/Kleaner.Core`：规则加载/校验/扫描匹配（纯逻辑，无 UI 依赖）
 - `src/Kleaner.Executor`：隔离区（manifest/移动/还原）、按需提权
 - `src/Kleaner.SpecialOps`：WSL 压缩、大件跳转、注册表只读扫描
-- `src/Kleaner.App`：WPF 界面
+- `src/Kleaner.WebHost`：本地 ASP.NET Core + 可安装 PWA 界面
 - `rules/`：规则库（`rules.v1.json` + schema + 安全性说明）
 
 ## 贡献规则

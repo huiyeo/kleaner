@@ -7,7 +7,7 @@ namespace Kleaner.WebHost;
 /// <summary>
 /// 宿主运行期解析（工单 12）：规则集来源、隔离区根目录、提权探测。
 /// 与 GUI 语义对齐——GUI 读 %APPDATA%\Kleaner\settings.json，CLI 也读同一个文件，WebHost 必须同源。
-/// Kleaner.App 的 AppSettings / Helpers 挂在 WPF 工程里，WebHost 不引用它，这里做最小同语义实现。
+/// WebHost 的运行时设置和权限判定适配；保持既有设置文件与权限语义。
 /// </summary>
 internal static class HostRuntime
 {
@@ -20,7 +20,7 @@ internal static class HostRuntime
     public static string ResolveQuarantineRoot(KleanerWebHostOptions options) =>
         options.QuarantineRoot ?? SettingsStore.Load(options).QuarantineRoot ?? QuarantineManager.DefaultRoot();
 
-    /// <summary>提权判定：seam 优先；否则 WindowsPrincipal 真实判定（语义同 Kleaner.App/Helpers.IsElevated）。</summary>
+    /// <summary>提权判定：seam 优先；否则以 WindowsPrincipal 作真实判定。</summary>
     public static bool IsElevated(KleanerWebHostOptions options) =>
         options.ElevationProbe?.Invoke() ?? CheckElevated();
 

@@ -8,7 +8,7 @@
 |---|---|
 | 严格白名单 | `ScanEngine.Scan` 只遍历 `set.Rules`，且只处理 `r.Enabled` |
 | 年龄阈值 | `RuleSelector.Apply` + `RuleSetLoader.EffectiveAgeDays` |
-| 强制预览 | CLI 无 `--apply` 只打印计划返回 0；GUI 二次确认 |
+| 强制预览 | CLI 无 `--apply` 只打印计划返回 0；Web 二次确认 |
 | 隔离区可还原 | `QuarantineManager`（详见下文） |
 
 ## 隔离区
@@ -17,7 +17,7 @@
 
 `QuarantineManager.DefaultRoot()`：在**固定盘 + 已就绪 + 非系统盘**中取剩余空间最大者，路径为 `<盘符根>\KleanerQuarantine`。找不到其他盘时回退 `%LOCALAPPDATA%\Kleaner\quarantine`（即仍在 C 盘）。全程 try-catch 静默。
 
-用户可在 GUI 设置里覆盖，持久化在 `%APPDATA%\Kleaner\settings.json` 的 `QuarantineRoot`。**CLI 读同一个文件**——GUI 改了隔离区位置，CLI 会跟着走。
+用户可在 Web 设置里覆盖，持久化在 `%APPDATA%\Kleaner\settings.json` 的 `QuarantineRoot`。**CLI 读同一个文件**——Web 改了隔离区位置，CLI 会跟着走。
 
 ### 移入
 
@@ -39,11 +39,11 @@
 
 `RestoreBatch` 整批还原。原路径已存在同名文件时，还原为 `{原路径}.restore-{batchId}`，**绝不覆盖现有文件**。还原后删除批次目录，落历史 `restore`。
 
-*坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch，异常会外溢（GUI 靠 `MessageBox` 兜底）。
+*坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；WebHost API 将异常转换为明确错误响应。
 
 ### 清空
 
-`PurgeOlderThan(TimeSpan)` 按 `CreatedUtc` 比对删除过期批次。**只由用户显式触发**——全仓唯一的真实调用点是 GUI 隔离区窗口的「清空 7 天前批次」按钮，没有定时器、没有启动自调用。
+`PurgeOlderThan(TimeSpan)` 按 `CreatedUtc` 比对删除过期批次。**只由用户显式触发**——全仓唯一的真实调用点是 Web 隔离区页的「清空 7 天前批次」按钮，没有定时器、没有启动自调用。
 
 `DeleteBatch` 落历史 `delete-batch`，`PurgeOlderThan` 落历史 `purge`。
 
@@ -89,7 +89,7 @@
 ### 坑
 
 - **`clean` 不传 `--rule` 会静默成功**：`--rule` 缺省为空集合，选中 0 条规则，plan 为 0，加 `--apply --yes` 后照常返回 0。看起来像"没有可清理项"，实为参数遗漏。
-- **`scan` 与 `clean` 不排除隔离区自身**：CLI 用无参 `new ScanEngine()`，未传 `quarantineRoot`；GUI 传了。若隔离区落在被规则命中的路径下，CLI 可能把已隔离文件再次计入。
+- **`scan` 与 `clean` 不排除隔离区自身**：CLI 用无参 `new ScanEngine()`，未传 `quarantineRoot`；WebHost 传了。若隔离区落在被规则命中的路径下，CLI 可能把已隔离文件再次计入。
 - **`RuleUpdateService` 的本地覆盖优先**：`%APPDATA%\Kleaner\rules\rules.v1.json` 存在时盖过内置规则库。
 
 ## 引擎层固定排除
@@ -106,7 +106,7 @@
 
 两条路径，互不通用：
 
-- **规则级**：`requiresElevation: true` 的规则，GUI 在勾选系统级清理时通过 `Helpers.RestartElevated` 整进程重启提权。
+- **规则级**：`requiresElevation: true` 的规则，Web 在勾选系统级清理时通过同端口、同 token 的 runas 交接整进程重启提权。
 - **启动项**：HKLM 下的启动项走 `reg.exe` + `runas` 提权（`StartupManager`），失败会回滚。
 
 ## 已知问题
@@ -114,5 +114,5 @@
 - `batchId` 用 `DateTime.Now`（本地时间）命名目录，而 manifest 内的 `CreatedUtc` 用 `UtcNow`。跨时区或跨零点时两者可能落在不同日期。
 - `PurgeOlderThan` 落历史时写 `purged > 0 ? "ok" : "ok"`——两个分支相同，这个三元表达式无意义。
 - `TryDeleteDir` 静默吞掉所有异常，删除失败不会上报。
-- GUI 工具箱把 `large-files` / `duplicates` 当作**伪规则 id** 塞进隔离区清单与历史——它们不是真实规则 id，做规则关联分析时要排除。
+- Web 工具箱将 `large-files` / `duplicates` 保持为只读分析结果，不会写入隔离区或历史。
 - `StartupManager` 无 xunit 覆盖，只有 CLI 的 `startup-test` 往返自检，而该自检会写真实注册表与启动文件夹，CI 上不可跑。

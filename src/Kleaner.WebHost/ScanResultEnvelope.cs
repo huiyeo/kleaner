@@ -18,7 +18,7 @@ public sealed record ScanRuleView(
 
 /// <summary>
 /// 扫描结果的对外形状（工单 12）：直接承载 Core 的 FileCandidate，另补前端展示缺口——
-/// MachineVerified 判定（迁自 WPF 层 RuleRow，经 <see cref="RuleSelectionPolicy"/>）、
+/// MachineVerified 判定（经 <see cref="RuleSelectionPolicy"/>）、
 /// 枚举的字符串化（category/risk 直接给 kebab-case，前端无需内置枚举表）。
 /// 作为扫描 job 的终态结果存进 JobRegistry，经 GET /api/jobs/{id} 快照直接可取（工单 07 重连语义）。
 /// </summary>

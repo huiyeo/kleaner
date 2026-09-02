@@ -1,6 +1,6 @@
 # Wayfinder 地图：PWA 前端重构
 
-`Label: wayfinder:map` · `Status: open`
+`Label: wayfinder:map` · `Status: resolved`
 
 ## Destination
 
@@ -43,13 +43,14 @@
 - [实施：Web 主界面（变体 C）](issues/16-web-main-screen.md)：分类折叠卡、勾选汇总、风险/验证/管理员权限标识、每规则 SSE 实时扫描条与取消、计划确认抽屉均接入既有 API；未验证规则默认不勾选，确认仅移入隔离区。新增受保护的 `/api/elevate`：runas 子进程沿用端口与 token，旧实例退出后依赖已有 SSE 退避重连；兼容发布 exe 与 `dotnet app.dll` 启动。测试 127 → 134 全绿（WebHost 67 → 74）。
 - [实施：次级 Web 页面](issues/17-web-pages-secondary.md)：隔离区批次列表、整批还原、单批永久删除和 7 天过期清空；只读历史；启用/已禁用启动项的禁用与还原；三项设置均接入既有 API。永久删除操作采用浏览器即时二次确认并明示不可还原；HKLM 启动项通过 16 的提权重连后再由用户确认。测试 134 → 135 全绿（WebHost 74 → 75）。
 - [实施：Web 工具箱](issues/18-web-toolbox-page.md)：大文件、重复文件、空间占用三个只读 job 视图接入 SSE 快照与取消；v1 空间占用使用列表而非 treemap。结果不会伪装成规则或进入清理路径；系统大件指引从 `SystemToolGuide` 只读暴露，WebHost 不执行命令。测试 135 → 137 全绿（WebHost 75 → 77）。
+- [实施：Web 高级模式](issues/19-advanced-web.md)：WSL vhdx、系统大件指引和注册表残留三 Tab 均已进入 PWA；后端只复用 SpecialOps 的只读检测与指引，不提供执行系统命令或修改注册表的端点。Core 60、WebHost 78 测试全绿。
 - [实施：发布对等验收（观察期 0.2.2）](issues/20-release-parity-acceptance.md)：发布脚本切换为裁剪、压缩的 WebHost 单文件 exe + 散文件 `wwwroot`；开启 JSON 反射兼容以修复裁剪启动。删除路径全量复核完成；真机验证 0.2.1 WPF → 0.2.2 WebHost 安装升级、已安装 WebHost HTTP 200，以及安装器回退至 0.2.1 全部成功。裁剪分析仍有 JSON 反射告警，留作后续 source-generation 改进。
+- [实施：移除 WPF 与文档同步](issues/21-remove-wpf-docs.md)：已移除旧桌面工程及解决方案引用；WebHost 成为唯一 GUI 入口。README、架构、删除路径与规则文档已同步到 PWA 语义，最终构建和 138 个测试均通过。
 
 ## Not yet specified
 
-（前两项已由工单 15 落定；当前前沿：16 前端轨，无阻塞。）
+所有已规划工单均已解决；本轮重构没有遗留未决项。
 
-- 文档同步时机：`architecture.md` / README / `deletion-path.md` 中 WPF 表述的更新 → 工单 21 删 WPF 时一并完成。
 
 ## Out of scope
 
