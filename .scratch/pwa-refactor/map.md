@@ -41,6 +41,7 @@
 - [实施：设置、规则更新与工具箱 API](issues/14-settings-rules-tools-api.md)：`GET/PUT /api/settings` 与 GUI/CLI 共用同一份三字段 `settings.json`（`QuarantineRoot` / `RuleUpdateUrl` / `RuleUpdateSha512`），WebHost 隔离区根同源解析；`POST /api/rules/update` 只直调既有 `RuleUpdateService`，下载、SHA512 与语义校验链不动。`POST /api/tools/large-files`、`/duplicates`、`/usage` 都进入 11 的 job 体系（202 + jobId，可取消，SSE v1 仅开始/结束），只做 Analysis 只读扫描，绝不产生隔离区或历史副作用。测试 119 → 124 全绿（WebHost 59 → 64）。
 - [实施：PWA 壳](issues/15-pwa-shell.md)：`wwwroot` 无构建原生 Web Components 壳（变体 C 左栏/状态栏/六入口），Web SDK `MapStaticAssets` + `MapFallbackToFile`；入口固定内容根且随包复制 `wwwroot`，从任意工作目录启动也能回退 SPA。前端静态 `zh-CN` i18n（离线内嵌回退），token 只存 `sessionStorage`；每次 fetch SSE 连接前先带 token 恢复 `/api/jobs` 快照，401/403 明确报令牌失效，其余以 1–15 秒退避重连；SW `kleaner-shell-v1` 预缓存壳、导航失败回 `index.html`、不缓存 API、用户确认后更新。Chrome 实测安装入口、离线壳与同端口同 token 的自动重连；测试 124 → 127 全绿（WebHost 64 → 67）。
 - [实施：Web 主界面（变体 C）](issues/16-web-main-screen.md)：分类折叠卡、勾选汇总、风险/验证/管理员权限标识、每规则 SSE 实时扫描条与取消、计划确认抽屉均接入既有 API；未验证规则默认不勾选，确认仅移入隔离区。新增受保护的 `/api/elevate`：runas 子进程沿用端口与 token，旧实例退出后依赖已有 SSE 退避重连；兼容发布 exe 与 `dotnet app.dll` 启动。测试 127 → 134 全绿（WebHost 67 → 74）。
+- [实施：次级 Web 页面](issues/17-web-pages-secondary.md)：隔离区批次列表、整批还原、单批永久删除和 7 天过期清空；只读历史；启用/已禁用启动项的禁用与还原；三项设置均接入既有 API。永久删除操作采用浏览器即时二次确认并明示不可还原；HKLM 启动项通过 16 的提权重连后再由用户确认。测试 134 → 135 全绿（WebHost 74 → 75）。
 
 ## Not yet specified
 

@@ -133,6 +133,7 @@ public sealed class QuarantineStartupApiTests : IDisposable
             QuarantineProvider = () => quarantine,
             HistoryProvider = () => history,
             StartupProvider = () => new StartupManager(BackupDir, history, env),
+            ElevationProbe = () => false,
         });
         app.Start();
         _apps.Add(app);
@@ -348,6 +349,7 @@ public sealed class QuarantineStartupApiTests : IDisposable
         var enabled = doc.RootElement.GetProperty("enabled");
         var disabled = doc.RootElement.GetProperty("disabled");
 
+        Assert.False(doc.RootElement.GetProperty("elevated").GetBoolean());
         Assert.Empty(disabled.EnumerateArray());
         Assert.Equal(3, enabled.GetArrayLength());
 

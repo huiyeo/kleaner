@@ -1,7 +1,7 @@
 # 17 次级页面 web：隔离区、历史、启动项、设置
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 13, 14, 15
 
 ## Task
@@ -20,3 +20,8 @@ Blocked by: 13, 14, 15
 - 6/7 窗口对等清点：Main(16) + Toolbox(18) + Quarantine/History/Settings/Startup(本票) 全部落位。
 
 ## Comments
+
+- 隔离区、历史、启动项和设置已接入 13/14 的既有 API；设置直接读写与 CLI 共用的 `settings.json`。
+- 删除隔离区批次与清空 7 天前批次均在浏览器中作即时二次确认，并明确「永久删除、不可还原」；还原仍遵循不覆盖原路径的服务端语义。
+- 启动项页区分启用与已禁用备份。HKLM 项在非管理员宿主时先调用 16 的 `/api/elevate`，以同端口同 token 重启并通过 SSE 重连，再由用户再次确认禁用。
+- 验证：浏览器无令牌壳页确认隔离区信息结构及不可还原文案；`dotnet test Kleaner.slnx -c Release --no-restore`（Core 60、WebHost 75 全绿），`node --check` 与 `git diff --check` 通过。未触发任何写入接口。

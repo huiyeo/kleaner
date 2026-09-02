@@ -375,6 +375,7 @@ public static class WebHostAppFactory
             {
                 enabled = manager.Enumerate().Select(StartupItemView.From).ToList(),
                 disabled = manager.ListDisabled().Select(DisabledStartupView.From).ToList(),
+                elevated = HostRuntime.IsElevated(options),
             });
         });
 

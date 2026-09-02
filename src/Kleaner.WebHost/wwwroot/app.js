@@ -51,8 +51,10 @@ async function refreshJobsSnapshot() {
 
 const mainScreen = { jobId: null, scan: null, selected: new Set(), plan: null, drawer: false, progress: { ruleIds: new Set(), files: 0, bytes: 0 }, message: "扫描会严格按规则库预览，不会删除文件。" };
 const categoryNames = { temp: "临时文件", "browser-cache": "浏览器缓存", "dev-cache": "开发缓存", updater: "更新残留", system: "系统缓存", application: "应用缓存" };
+const secondaryScreen = { quarantine: null, history: null, startup: null, settings: null, message: "" };
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 const formatBytes = (bytes) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : bytes >= 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${bytes} B`;
+const formatTime = (value) => value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
 
 async function apiJson(path, method = "GET", body) {
   const headers = { ...apiHeaders() };
@@ -105,6 +107,86 @@ async function runMainAction(action) {
   renderMainScreen();
 }
 
+async function loadSecondary(view) {
+  const paths = { quarantine: "/api/quarantine/batches", history: "/api/history?limit=200", startup: "/api/startup", settings: "/api/settings" };
+  if (!paths[view]) return;
+  try { secondaryScreen[view] = await apiJson(paths[view]); }
+  catch (error) { secondaryScreen.message = error instanceof TokenExpiredError ? "连接令牌已失效，请重新打开 Kleaner" : error.message; }
+  renderSecondaryScreen(view);
+}
+
+function renderSecondaryScreen(view) {
+  const content = document.querySelector("#content");
+  if (!content || document.querySelector("[data-view][aria-current='page']")?.dataset.view !== view) return;
+  const message = secondaryScreen.message ? `<p class="page-message">${escapeHtml(secondaryScreen.message)}</p>` : "";
+  if (view === "quarantine") {
+    const batches = secondaryScreen.quarantine ?? [];
+    content.innerHTML = `<section class="secondary-page"><header><div><h2>隔离区</h2><p>清理的文件在此可整批还原。删除批次或清空操作不可还原。</p></div><button class="button danger" data-secondary="purge">清空 7 天前批次</button></header>${message}<div class="data-list">${batches.length ? batches.map((batch) => `<article class="data-row"><div><b>${escapeHtml(batch.batchId)}</b><small>${formatTime(batch.createdUtc)} · ${batch.entryCount} 个文件 · ${formatBytes(batch.totalBytes)}</small></div><div class="row-actions"><button class="button" data-secondary="restore" data-id="${escapeHtml(batch.batchId)}">整批还原</button><button class="button danger" data-secondary="delete-batch" data-id="${escapeHtml(batch.batchId)}">删除批次</button></div></article>`).join("") : `<p class="empty">隔离区目前没有批次。</p>`}</div></section>`;
+  } else if (view === "history") {
+    const entries = secondaryScreen.history ?? [];
+    content.innerHTML = `<section class="secondary-page"><header><div><h2>操作历史</h2><p>仅展示审计记录，单条损坏记录会被自动忽略。</p></div><button class="button" data-secondary="refresh">刷新</button></header>${message}<div class="data-list">${entries.length ? entries.map((entry) => `<article class="data-row"><div><b>${escapeHtml(entry.action)}</b><small>${formatTime(entry.utc)} · ${entry.fileCount} 个文件 · ${formatBytes(entry.bytes)} · ${escapeHtml(entry.result)}</small><small>${escapeHtml(entry.detail)}</small></div></article>`).join("") : `<p class="empty">尚无操作记录。</p>`}</div></section>`;
+  } else if (view === "startup") {
+    const startup = secondaryScreen.startup ?? { enabled: [], disabled: [], elevated: false };
+    const enabled = startup.enabled ?? [];
+    const disabled = startup.disabled ?? [];
+    content.innerHTML = `<section class="secondary-page"><header><div><h2>启动项</h2><p>禁用会保存备份；还原不会覆盖已存在的目标。HKLM 项会先重启为管理员权限。</p></div><button class="button" data-secondary="refresh">刷新</button></header>${message}<h3>已启用</h3><div class="data-list">${enabled.length ? enabled.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.name)}</b><small>${escapeHtml(item.location)}${item.requiresElevation ? " · 需要管理员权限" : ""}</small><small>${escapeHtml(item.command)}</small></div><button class="button" data-secondary="disable-startup" data-id="${escapeHtml(item.id)}">禁用</button></article>`).join("") : `<p class="empty">没有已启用的启动项。</p>`}</div><h3>已禁用（可还原）</h3><div class="data-list">${disabled.length ? disabled.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.name)}</b><small>${formatTime(item.disabledUtc)} · ${escapeHtml(item.location)}</small></div><button class="button" data-secondary="restore-startup" data-id="${escapeHtml(item.id)}">还原</button></article>`).join("") : `<p class="empty">没有待还原的启动项。</p>`}</div></section>`;
+  } else if (view === "settings") {
+    const settings = secondaryScreen.settings ?? {};
+    content.innerHTML = `<section class="secondary-page settings-page"><header><div><h2>设置</h2><p>保存到与 CLI 共用的 settings.json，后续 CLI 操作会使用相同配置。</p></div></header>${message}<form id="settings-form" class="settings-form"><label>隔离区根目录<input name="quarantineRoot" value="${escapeHtml(settings.quarantineRoot)}" placeholder="留空则使用默认位置"></label><label>规则更新地址<input name="ruleUpdateUrl" value="${escapeHtml(settings.ruleUpdateUrl)}" placeholder="https://…"></label><label>规则更新 SHA512<input name="ruleUpdateSha512" value="${escapeHtml(settings.ruleUpdateSha512)}" placeholder="64 字节 SHA512 十六进制值"></label><button class="button primary" type="submit">保存设置</button></form></section>`;
+  }
+  content.querySelectorAll("[data-secondary]").forEach((button) => button.addEventListener("click", () => runSecondaryAction(view, button.dataset.secondary, button.dataset.id)));
+  content.querySelector("#settings-form")?.addEventListener("submit", (event) => runSettingsSave(event));
+}
+
+async function runSecondaryAction(view, action, id) {
+  try {
+    if (action === "refresh") return loadSecondary(view);
+    if (action === "restore") {
+      const result = await apiJson(`/api/quarantine/batches/${encodeURIComponent(id)}/restore`, "POST", {});
+      secondaryScreen.message = `已还原 ${result.restored} 个文件。`;
+    } else if (action === "delete-batch") {
+      if (!window.confirm("删除此隔离区批次会永久移除其中的文件，且不可还原。是否继续？")) return;
+      await apiJson(`/api/quarantine/batches/${encodeURIComponent(id)}`, "DELETE");
+      secondaryScreen.message = "批次已永久删除，无法还原。";
+    } else if (action === "purge") {
+      if (!window.confirm("将永久删除 7 天前的所有隔离区批次，且不可还原。是否继续？")) return;
+      const result = await apiJson("/api/quarantine/purge", "POST", {});
+      secondaryScreen.message = `已永久删除 ${result.purged} 个过期批次，无法还原。`;
+    } else if (action === "disable-startup") {
+      const item = secondaryScreen.startup?.enabled?.find((candidate) => candidate.id === id);
+      if (item?.requiresElevation && !secondaryScreen.startup.elevated) {
+        secondaryScreen.message = "此 HKLM 启动项需要管理员权限，正在请求重启并等待重连；恢复后请再次确认禁用。";
+        renderSecondaryScreen(view);
+        await apiJson("/api/elevate", "POST", {});
+        return;
+      }
+      await apiJson("/api/startup/disable", "POST", { id });
+      secondaryScreen.message = "启动项已禁用，并已保存可还原备份。";
+    } else if (action === "restore-startup") {
+      await apiJson("/api/startup/restore", "POST", { id });
+      secondaryScreen.message = "启动项已还原。";
+    }
+    await loadSecondary(view);
+  } catch (error) {
+    secondaryScreen.message = error instanceof TokenExpiredError ? "连接令牌已失效，请重新打开 Kleaner" : error.message;
+    renderSecondaryScreen(view);
+  }
+}
+
+async function runSettingsSave(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  try {
+    secondaryScreen.settings = await apiJson("/api/settings", "PUT", {
+      quarantineRoot: form.get("quarantineRoot"), ruleUpdateUrl: form.get("ruleUpdateUrl"), ruleUpdateSha512: form.get("ruleUpdateSha512"),
+    });
+    secondaryScreen.message = "设置已保存；CLI 将使用同一份配置。";
+  } catch (error) {
+    secondaryScreen.message = error instanceof TokenExpiredError ? "连接令牌已失效，请重新打开 Kleaner" : error.message;
+  }
+  renderSecondaryScreen("settings");
+}
+
 class KleanerShell extends HTMLElement {
   connectedCallback() { this.render(); }
 
@@ -142,7 +224,11 @@ class KleanerShell extends HTMLElement {
     button.setAttribute("aria-current", "page");
     this.querySelector("#page-title").textContent = button.textContent;
     if (button.dataset.view === "dashboard") renderMainScreen();
-    else this.querySelector("#content").innerHTML = `<article class="hero"><h2>${button.textContent}</h2><p>该页面将在后续工单中接入真实数据与操作流程。</p></article>`;
+    else if (["quarantine", "history", "startup", "settings"].includes(button.dataset.view)) {
+      secondaryScreen.message = "";
+      renderSecondaryScreen(button.dataset.view);
+      loadSecondary(button.dataset.view);
+    } else this.querySelector("#content").innerHTML = `<article class="hero"><h2>${button.textContent}</h2><p>该页面将在后续工单中接入真实数据与操作流程。</p></article>`;
   }
 }
 
