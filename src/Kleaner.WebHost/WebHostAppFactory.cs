@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Kleaner.Core;
 using Kleaner.Executor;
+using Kleaner.SpecialOps;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -160,6 +161,9 @@ public static class WebHostAppFactory
             var job = tools.Start(request with { Root = request.Root.Trim() });
             return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
         });
+
+        // 系统大件只提供原有的系统工具指引；WebHost 不执行命令，也不把这些项目纳入清理规则。
+        app.MapGet("/api/tools/system-guide", () => Results.Json(SystemToolGuide.Items));
 
         // 单一多路复用 SSE：fetch 流式（原生 EventSource 无法带 token 头，工单 07），
         // 过既有 token/Origin 中间件；断连只结束本连接、不取消任何 job（工单 07），无 Last-Event-ID 回放。

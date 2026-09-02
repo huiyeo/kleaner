@@ -188,4 +188,16 @@ public sealed class SettingsAndToolsApiTests : IDisposable
         Assert.Equal(JsonValueKind.Null, snapshot.GetProperty("result").ValueKind);
         Assert.False(sideEffect);
     }
+
+    [Fact]
+    public async Task Tools_SystemGuide_IsReadOnlyAndUsesTheSpecialOpsSource()
+    {
+        var (client, _) = BuildHost();
+
+        using var doc = JsonDocument.Parse(await client.GetStringAsync("/api/tools/system-guide"));
+
+        Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
+        Assert.Contains(doc.RootElement.EnumerateArray(), item =>
+            item.GetProperty("command").GetString() == "powercfg /h off");
+    }
 }

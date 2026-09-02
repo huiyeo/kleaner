@@ -52,6 +52,7 @@ async function refreshJobsSnapshot() {
 const mainScreen = { jobId: null, scan: null, selected: new Set(), plan: null, drawer: false, progress: { ruleIds: new Set(), files: 0, bytes: 0 }, message: "扫描会严格按规则库预览，不会删除文件。" };
 const categoryNames = { temp: "临时文件", "browser-cache": "浏览器缓存", "dev-cache": "开发缓存", updater: "更新残留", system: "系统缓存", application: "应用缓存" };
 const secondaryScreen = { quarantine: null, history: null, startup: null, settings: null, message: "" };
+const toolboxScreen = { tab: "large-files", jobId: null, status: "", result: null, guide: [], root: "", largeMin: 100, duplicateMin: 1 };
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 const formatBytes = (bytes) => bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : bytes >= 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${bytes} B`;
 const formatTime = (value) => value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
@@ -80,6 +81,14 @@ function updateFromJobs(jobs) {
 }
 
 window.addEventListener("kleaner.jobs-snapshot", (event) => updateFromJobs(event.detail));
+window.addEventListener("kleaner.jobs-snapshot", (event) => {
+  const job = event.detail.find((candidate) => candidate.jobId === toolboxScreen.jobId);
+  if (!job) return;
+  toolboxScreen.status = job.status;
+  if (job.status === "Completed") toolboxScreen.result = job.result;
+  if (job.status === "Cancelled") toolboxScreen.result = null;
+  renderToolbox();
+});
 
 function renderMainScreen() {
   const content = document.querySelector("#content");
@@ -187,6 +196,42 @@ async function runSettingsSave(event) {
   renderSecondaryScreen("settings");
 }
 
+async function loadToolbox() {
+  try { toolboxScreen.guide = await apiJson("/api/tools/system-guide"); }
+  catch { toolboxScreen.guide = []; }
+  renderToolbox();
+}
+
+function renderToolbox() {
+  const content = document.querySelector("#content");
+  if (!content || document.querySelector("[data-view][aria-current='page']")?.dataset.view !== "toolbox") return;
+  const tab = toolboxScreen.tab;
+  const min = tab === "large-files" ? toolboxScreen.largeMin : toolboxScreen.duplicateMin;
+  const titles = { "large-files": "大文件", duplicates: "重复文件", usage: "空间占用" };
+  const rows = Array.isArray(toolboxScreen.result) ? toolboxScreen.result : [];
+  const result = tab === "large-files" ? rows.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.path)}</b><small>${formatBytes(item.sizeBytes)} · ${formatTime(item.lastWriteTimeUtc)}</small></div></article>`).join("") : tab === "duplicates" ? rows.map((group) => `<article class="data-row"><div><b>${group.files?.length ?? 0} 个重复文件 · 每份 ${formatBytes(group.sizeBytes)}</b>${(group.files ?? []).map((file) => `<small>${escapeHtml(file)}</small>`).join("")}</div></article>`).join("") : rows.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.path)}</b><small>${item.isDirectory ? "文件夹" : "文件"} · ${formatBytes(item.sizeBytes)}</small></div></article>`).join("");
+  content.innerHTML = `<section class="secondary-page"><header><div><h2>工具箱</h2><p>所有分析均为只读扫描，不会创建清理规则、隔离区批次或历史记录。</p></div></header><div class="tool-tabs">${Object.entries(titles).map(([id, title]) => `<button class="button ${tab === id ? "primary" : ""}" data-tool-tab="${id}">${title}</button>`).join("")}</div><form id="toolbox-form" class="settings-form"><label>扫描目录<input name="root" value="${escapeHtml(toolboxScreen.root)}" placeholder="例如 C:\\Users\\你的用户名"></label>${tab === "usage" ? "" : `<label>最小大小（MB）<input name="min" type="number" min="1" value="${min}"></label>`}<div><button class="button primary" type="submit">开始${titles[tab]}扫描</button>${toolboxScreen.status === "Running" || toolboxScreen.status === "Cancelling" ? `<button class="button" type="button" data-tool-action="cancel">取消扫描</button>` : ""}</div></form>${toolboxScreen.status ? `<p class="page-message">任务状态：${escapeHtml(toolboxScreen.status)}</p>` : ""}<div class="data-list">${rows.length ? result : `<p class="empty">尚无结果。输入目录后开始只读扫描。</p>`}</div><h3>系统大件指引</h3><div class="data-list">${toolboxScreen.guide.map((item) => `<article class="data-row"><div><b>${escapeHtml(item.title)}</b><small>${escapeHtml(item.note)}</small><small>${escapeHtml(item.command)}${item.requiresAdmin ? " · 需要管理员权限" : ""}</small></div></article>`).join("") || `<p class="empty">暂未加载指引。</p>`}</div></section>`;
+  content.querySelectorAll("[data-tool-tab]").forEach((button) => button.addEventListener("click", () => { toolboxScreen.tab = button.dataset.toolTab; toolboxScreen.result = null; toolboxScreen.status = ""; renderToolbox(); }));
+  content.querySelector("#toolbox-form")?.addEventListener("submit", runToolbox);
+  content.querySelector("[data-tool-action='cancel']")?.addEventListener("click", cancelToolbox);
+}
+
+async function runToolbox(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget); const root = String(form.get("root") ?? "").trim(); const min = Number(form.get("min"));
+  toolboxScreen.root = root;
+  const requests = { "large-files": ["/api/tools/large-files", { root, minBytes: min * 1024 * 1024, top: 200 }], duplicates: ["/api/tools/duplicates", { root, minBytesPerFile: min * 1024 * 1024 }], usage: ["/api/tools/usage", { root }] };
+  try { const [path, body] = requests[toolboxScreen.tab]; const job = await apiJson(path, "POST", body); toolboxScreen.jobId = job.jobId; toolboxScreen.status = "Running"; toolboxScreen.result = null; }
+  catch (error) { toolboxScreen.status = error instanceof TokenExpiredError ? "连接令牌已失效，请重新打开 Kleaner" : error.message; }
+  renderToolbox();
+}
+
+async function cancelToolbox() {
+  try { await apiJson(`/api/jobs/${toolboxScreen.jobId}/cancel`, "POST", {}); toolboxScreen.status = "Cancelling"; }
+  catch (error) { toolboxScreen.status = error.message; }
+  renderToolbox();
+}
+
 class KleanerShell extends HTMLElement {
   connectedCallback() { this.render(); }
 
@@ -228,7 +273,9 @@ class KleanerShell extends HTMLElement {
       secondaryScreen.message = "";
       renderSecondaryScreen(button.dataset.view);
       loadSecondary(button.dataset.view);
-    } else this.querySelector("#content").innerHTML = `<article class="hero"><h2>${button.textContent}</h2><p>该页面将在后续工单中接入真实数据与操作流程。</p></article>`;
+    }
+    else if (button.dataset.view === "toolbox") { renderToolbox(); loadToolbox(); }
+    else this.querySelector("#content").innerHTML = `<article class="hero"><h2>${button.textContent}</h2><p>该页面将在后续工单中接入真实数据与操作流程。</p></article>`;
   }
 }
 

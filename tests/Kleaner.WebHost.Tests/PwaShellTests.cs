@@ -57,7 +57,7 @@ public sealed class PwaShellTests : IDisposable
         Assert.Equal("image/svg+xml", root.GetProperty("icons")[0].GetProperty("type").GetString());
 
         var serviceWorker = await _client.GetStringAsync("/sw.js");
-        Assert.Contains("kleaner-shell-v6", serviceWorker);
+        Assert.Contains("kleaner-shell-v7", serviceWorker);
         Assert.Contains("/index.html", serviceWorker);
         Assert.Contains("url.pathname.startsWith(\"/api/\")", serviceWorker);
         Assert.Contains("SKIP_WAITING", serviceWorker);
@@ -111,5 +111,17 @@ public sealed class PwaShellTests : IDisposable
         Assert.Contains("永久删除", client);
         Assert.Contains("不可还原", client);
         Assert.Contains("CLI 将使用同一份配置", client);
+    }
+
+    [Fact]
+    public async Task Toolbox_UsesReadOnlyJobsAndDoesNotExposePseudoRulesAsCleanup()
+    {
+        var client = await _client.GetStringAsync("/app.js");
+        Assert.Contains("/api/tools/large-files", client);
+        Assert.Contains("/api/tools/duplicates", client);
+        Assert.Contains("/api/tools/usage", client);
+        Assert.Contains("/api/tools/system-guide", client);
+        Assert.Contains("/api/jobs/${toolboxScreen.jobId}/cancel", client);
+        Assert.Contains("不会创建清理规则、隔离区批次或历史记录", client);
     }
 }
