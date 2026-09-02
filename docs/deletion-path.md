@@ -39,7 +39,7 @@
 
 `RestoreBatch` 整批还原。原路径已存在同名文件时，还原为 `{原路径}.restore-{batchId}`，**绝不覆盖现有文件**。还原后删除批次目录，落历史 `restore`。
 
-*坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；WebHost API 将异常转换为明确错误响应。
+*坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；GUI 层与 CLI 调用方需自行处理异常。
 
 ### 清空
 
@@ -89,7 +89,7 @@
 ### 坑
 
 - **`clean` 不传 `--rule` 会静默成功**：`--rule` 缺省为空集合，选中 0 条规则，plan 为 0，加 `--apply --yes` 后照常返回 0。看起来像"没有可清理项"，实为参数遗漏。
-- **`scan` 与 `clean` 不排除隔离区自身**：CLI 用无参 `new ScanEngine()`，未传 `quarantineRoot`；WebHost 传了。若隔离区落在被规则命中的路径下，CLI 可能把已隔离文件再次计入。
+- **`scan` 与 `clean` 不排除隔离区自身**：CLI 用无参 `new ScanEngine()`，未传 `quarantineRoot`；GUI 传了。若隔离区落在被规则命中的路径下，CLI 可能把已隔离文件再次计入。
 - **`RuleUpdateService` 的本地覆盖优先**：`%APPDATA%\Kleaner\rules\rules.v1.json` 存在时盖过内置规则库。
 
 ## 引擎层固定排除

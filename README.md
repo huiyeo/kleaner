@@ -22,35 +22,41 @@
 
 ## 状态
 
-**v0.2（当前）**：在 v0.1 基础上参照 [MangoDisk](https://github.com/harry0703/MangoDisk) 的安全方法论升级——
+**v0.2.4（当前）**：GUI 回归 WPF——`Kleaner.App`（WPF + Material Design，MVVM）是唯一 GUI 入口，过渡期的 `Kleaner.WebHost` Web 前端（含 PWA 壳）已整体移除。引擎层、CLI 安全契约与四道保险均未改动；GUI 与 CLI 是平级入口，共享 Core / Executor / Analysis，设置同写一份 `%APPDATA%\Kleaner\settings.json`。
+
+**v0.2 能力基线**：在 v0.1 基础上参照 [MangoDisk](https://github.com/harry0703/MangoDisk) 的安全方法论升级——
 
 - 规则引擎：`%ENV%` + `*`/`**` 通配扫描、年龄阈值、keepNewest 版本保留、exclude、reparse point 一律排除、被占用文件跳过
 - 隔离区：删除即移入（默认剩余空间最大的非系统盘），manifest 记录原路径，整批还原（冲突不覆盖）、7 天保留手动清空
 - **操作历史**：删除类操作全部自动落 `history.jsonl` 审计，界面可查
-- **CLI 安全契约**：`scan`/`clean --apply`/`--yes`/`large-files`/`duplicates`/`usage`，非交互无 `--yes` 拒绝删除（退出码 2），支持 `--format json`
+- **CLI 安全契约**：`scan`/`clean --apply`/`--yes`/`large-files`/`duplicates`/`usage`/`startup`，非交互无 `--yes` 拒绝删除（退出码 2），支持 `--format json`
 - **工具箱**：大文件、重复文件（内容指纹三级预筛，每组保一）与空间分析（列表下钻）——全部只读扫描，不进入清理、隔离区或历史路径
-- 规则库：20 条规则，每条附安全性说明与验证状态标注；真机实测可释放约 2 GB
+- 规则库：101 条规则，每条附安全性说明与验证状态标注；其中 24 条「本机实测」默认勾选，77 条仅有官方文档来源、默认不勾选
 - 高级模式：WSL vhdx 检测与压缩指引、休眠/还原点/WinSxS 引导（调起系统工具）、注册表卸载残留**只读**扫描
+- 启动项管理：启用/禁用/还原，HKLM 走 `reg.exe` 提权、失败回滚
 - 发布链路：自包含单文件（免装 .NET）+ Velopack 安装版/便携版/自动更新清单（`scripts/release.sh`）
 
-质量：`dotnet test Kleaner.slnx -c Release` 当前 138/138 通过（Core 60、WebHost 78），覆盖引擎安全语义、隔离区/历史、Web API 安全闸与 PWA 静态契约。
+质量：`dotnet test Kleaner.slnx -c Release` 当前 60/60 通过（Core），覆盖规则校验、扫描/年龄阈值/keepNewest 语义、重复文件选择策略等引擎安全语义（`Kleaner.Core.Tests`，引用 Core/Executor/SpecialOps/Analysis）。
 
-Roadmap：卸载器、启动项管理、treemap 空间视图。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
+Roadmap：卸载器、treemap 空间视图（`Kleaner.Analysis` 已有 `TreemapLayout`，Web 端 v1 暂用列表）。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
 
 ## 开发
 
 ```
 dotnet build Kleaner.slnx -c Release
-dotnet test tests/Kleaner.Core.Tests -c Release
-dotnet run --project src/Kleaner.WebHost -c Release
+dotnet test Kleaner.slnx -c Release
+dotnet run --project src/Kleaner.App -c Release
+dotnet run --project tools/Kleaner.ScanCli -c Release -- scan
 ```
 
 > .NET 装在非默认位置时（如用户目录安装），框架依赖启动需设置 `DOTNET_ROOT` 指向运行时目录。
 
 - `src/Kleaner.Core`：规则加载/校验/扫描匹配（纯逻辑，无 UI 依赖）
-- `src/Kleaner.Executor`：隔离区（manifest/移动/还原）、按需提权
+- `src/Kleaner.Analysis`：只读空间分析（大文件、重复文件、磁盘占用、treemap 布局）
+- `src/Kleaner.Executor`：隔离区（manifest/移动/还原）、操作历史、启动项写入、按需提权
 - `src/Kleaner.SpecialOps`：WSL 压缩、大件跳转、注册表只读扫描
-- `src/Kleaner.WebHost`：本地 ASP.NET Core + 可安装 PWA 界面
+- `src/Kleaner.App`：WPF 界面（唯一 GUI 入口；Material Design + MVVM）
+- `tools/Kleaner.ScanCli`：独立 CLI，自有命令面与安全契约
 - `rules/`：规则库（`rules.v1.json` + schema + 安全性说明）
 
 ## 贡献规则

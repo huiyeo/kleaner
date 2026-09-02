@@ -2,6 +2,9 @@
 status: accepted
 ---
 
+> **2026-09-02 起重新生效**：`Kleaner.App`（WPF）已恢复为唯一 GUI 入口，过渡期的 `Kleaner.WebHost` Web 前端已整体移除。
+> 期间的状态变更（superseded → accepted）只反映 GUI 层技术栈的往返，本文件的技术结论（选型理由、MDIX 5.x 配置陷阱）始终有效。
+
 # 采用 MaterialDesignThemes 5.3.2 作为 UI 主题库
 
 Kleaner 此前使用 WPF 内置的官方 Fluent 主题（`PresentationFramework.Fluent`），但它只接管控件皮肤、不动布局骨架——9 个等宽 96px 按钮挤成一排、DataGrid 保持经典样式、窗口标题栏仍是 Win32 风格，观感只做到"不难看"。因此改用 `MaterialDesignThemes` 5.3.2，并**同步改造布局**（只换库不改布局会重蹈"老格局贴新壁纸"的覆辙），采用样板先行（先改 MainWindow 一个窗口验证风格再铺开）、严格使用边界（只用公开控件与主题资源，不改 ControlTemplate，保留将来换回的能力）。
