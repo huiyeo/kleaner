@@ -1,7 +1,7 @@
 # 20 发布链路落地与对等验收（观察期版本）
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 16, 17, 18, 19
 
 ## Task
