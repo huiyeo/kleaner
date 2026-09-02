@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <StartupObject>Kleaner.WebHost.Program</StartupObject>
     <ApplicationIcon>..\..\assets\icon\Kleaner.ico</ApplicationIcon>
+    <!-- 过渡期仍有 settings/manifest 等反射式 JSON 契约；裁剪发布不可默认关闭序列化反射。 -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>
