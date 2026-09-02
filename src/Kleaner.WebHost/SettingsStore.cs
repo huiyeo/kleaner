@@ -26,7 +26,7 @@ internal static class SettingsStore
     {
         try
         {
-            return (JsonSerializer.Deserialize<HostSettings>(File.ReadAllText(FilePath(options)))
+            return (JsonSerializer.Deserialize(File.ReadAllText(FilePath(options)), SettingsFileJsonContext.Default.HostSettings)
                 ?? new HostSettings(null, null, null)).Normalize();
         }
         catch
@@ -40,6 +40,7 @@ internal static class SettingsStore
     {
         var path = FilePath(options);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(settings.Normalize(), new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(path, JsonSerializer.Serialize(
+            settings.Normalize(), SettingsFileJsonContext.Default.HostSettings));
     }
 }

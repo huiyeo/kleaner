@@ -40,6 +40,8 @@ public static class WebHostAppFactory
         }
 
         builder.Services.AddSingleton(options);
+        builder.Services.ConfigureHttpJsonOptions(json =>
+            json.SerializerOptions.TypeInfoResolverChain.Insert(0, KleanerJsonContext.Default));
         builder.Services.AddSingleton(new LoopbackSecurityOptions
         {
             Port = options.Port,
@@ -143,7 +145,7 @@ public static class WebHostAppFactory
             if (string.IsNullOrWhiteSpace(request.Root) || request.MinBytes <= 0 || request.Top is < 1 or > 200)
                 return Results.BadRequest(new { error = "root、minBytes 与 top 参数不合法" });
             var job = tools.Start(request with { Root = request.Root.Trim() });
-            return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
+            return Results.Accepted($"/api/jobs/{job.JobId}", new JobAcceptedView(job.JobId));
         });
 
         app.MapPost("/api/tools/duplicates", (DuplicatesRequest request, IToolboxJobService tools) =>
@@ -151,7 +153,7 @@ public static class WebHostAppFactory
             if (string.IsNullOrWhiteSpace(request.Root) || request.MinBytesPerFile <= 0)
                 return Results.BadRequest(new { error = "root 与 minBytesPerFile 参数不合法" });
             var job = tools.Start(request with { Root = request.Root.Trim() });
-            return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
+            return Results.Accepted($"/api/jobs/{job.JobId}", new JobAcceptedView(job.JobId));
         });
 
         app.MapPost("/api/tools/usage", (UsageRequest request, IToolboxJobService tools) =>
@@ -159,7 +161,7 @@ public static class WebHostAppFactory
             if (string.IsNullOrWhiteSpace(request.Root))
                 return Results.BadRequest(new { error = "root 参数不合法" });
             var job = tools.Start(request with { Root = request.Root.Trim() });
-            return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
+            return Results.Accepted($"/api/jobs/{job.JobId}", new JobAcceptedView(job.JobId));
         });
 
         // 系统大件只提供原有的系统工具指引；WebHost 不执行命令，也不把这些项目纳入清理规则。
@@ -232,13 +234,20 @@ public static class WebHostAppFactory
             }
 
             var job = scans.Start(set);
-            return Results.Accepted($"/api/jobs/{job.JobId}", new { jobId = job.JobId });
+            return Results.Accepted($"/api/jobs/{job.JobId}", new JobAcceptedView(job.JobId));
         });
 
         // 计划（dry-run）：勾选 id + 已完成的扫描结果 → plan + 一次性 confirmToken。
         // 未知规则 id / 空勾选集一律 400（不复刻 CLI「--rule 缺省静默成功」的坑）。
-        app.MapPost("/api/plans", (PlanRequest request, JobRegistry jobs, PlanRegistry plans, KleanerWebHostOptions options) =>
+        app.MapPost("/api/plans", async (HttpRequest httpRequest, JobRegistry jobs, PlanRegistry plans, KleanerWebHostOptions options) =>
         {
+            // 显式使用源生成上下文，不能依赖裁剪后 RDG 的隐式 body 绑定保留 record 元数据。
+            var request = await httpRequest.ReadFromJsonAsync(KleanerJsonContext.Default.PlanRequest);
+            if (request is null || string.IsNullOrWhiteSpace(request.JobId) || request.RuleIds is null)
+            {
+                return Results.BadRequest(new { error = "计划请求缺少 jobId 或 ruleIds" });
+            }
+
             var job = jobs.Get(request.JobId);
             if (job is null)
             {
@@ -272,15 +281,17 @@ public static class WebHostAppFactory
 
         // 确认执行（删除闸）：凭据校验 → 烧毁 → QuarantineManager.Execute（移入隔离区 + 落 clean 历史）。
         // 需提权的计划在本进程内拒绝执行（409）；前端走工单 03 的提权重启 + 重连约定后重新出计划。
-        app.MapPost("/api/plans/{planId}/confirm", async (string planId, ConfirmRequest request, PlanRegistry plans, KleanerWebHostOptions options) =>
+        app.MapPost("/api/plans/{planId}/confirm", async (string planId, HttpRequest httpRequest, PlanRegistry plans, KleanerWebHostOptions options) =>
         {
+            // 同上：确认凭据是删除闸，裁剪版本绝不能因隐式绑定丢失而退化为 500。
+            var request = await httpRequest.ReadFromJsonAsync(KleanerJsonContext.Default.ConfirmRequest);
             var record = plans.Get(planId);
             if (record is null)
             {
                 return Results.NotFound(new { error = "plan not found" });
             }
 
-            var outcome = record.TryConsume(request.ConfirmToken ?? string.Empty);
+            var outcome = record.TryConsume(request?.ConfirmToken ?? string.Empty);
             switch (outcome)
             {
                 case ConfirmOutcome.BadToken:

@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Kleaner.WebHost;
 
+/// <summary>异步任务创建响应；裁剪发布中不能使用匿名 JSON 对象。</summary>
+public sealed record JobAcceptedView(string JobId);
+
 /// <summary>confirm 端点对凭据的判定结果（工单 03 第 5 层：无预览凭据一律拒绝）。</summary>
 public enum ConfirmOutcome
 {

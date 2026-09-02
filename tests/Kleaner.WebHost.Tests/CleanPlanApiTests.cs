@@ -294,4 +294,16 @@ public sealed class CleanPlanApiTests : IDisposable
         Assert.Equal("low", ruleA.GetProperty("risk").GetString());
         Assert.Equal("medium", ruleElev.GetProperty("risk").GetString());
     }
+
+    [Fact]
+    public void TrimSafeJsonContext_DeserializesPlanRequest()
+    {
+        var request = JsonSerializer.Deserialize(
+            """{"jobId":"scan-1","ruleIds":["rule-a"]}""",
+            KleanerJsonContext.Default.PlanRequest);
+
+        Assert.NotNull(request);
+        Assert.Equal("scan-1", request.JobId);
+        Assert.Equal(new[] { "rule-a" }, request.RuleIds);
+    }
 }
