@@ -1,7 +1,7 @@
 # 20 发布链路落地与对等验收（观察期版本）
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 16, 17, 18, 19
 
 ## Task
@@ -32,4 +32,10 @@ Blocked by: 16, 17, 18, 19
 
 ### 未完成的发布前置
 
-- [ ] Velopack 安装、更新与装回旧版回退需以指定观察期版本在真实安装环境执行；本票保持 `claimed`，不把本地 publish smoke 视为该验收的替代。
+- [x] Velopack 安装、更新与装回旧版回退已以 0.2.2 观察期版本在真实安装环境执行；本地 publish smoke 不作为该验收的替代。
+
+### 已完成：观察期真机验证（0.2.2）
+
+- [x] 以已安装的 `0.2.1` WPF 版为基线，用 `Kleaner-win-Setup.exe --silent` 安装 `0.2.2`：退出码 0，安装目录由 `Kleaner.App.exe` 切换为 `Kleaner.WebHost.exe`、散文件 `wwwroot` 与规则库。
+- [x] 从已安装的 `0.2.2` 启动 WebHost（交接模式），本地壳页返回 HTTP 200。
+- [x] 用预先备份的 `0.2.1` 安装器静默安装回退：退出码 0，安装目录恢复为 `Kleaner.App.exe` 及 WPF 依赖。
