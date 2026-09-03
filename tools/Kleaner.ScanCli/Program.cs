@@ -11,6 +11,7 @@ using Microsoft.Win32;
 //   duplicates --root R    重复文件只读列表
 //   usage --root R         空间占用排行（只读）
 // 通用参数：--format text|json（默认 text）、--yes
+// 位置覆盖（测试与便携场景用）：--rules P 直接加载指定规则文件（绕过更新通道覆盖）、--quarantine-root R、--history-path F
 // 任何删除动作：默认 dry-run；非交互（输入重定向）无 --yes 时拒绝执行并以退出码 2 结束。
 
 if (args.Contains("--help") || args.Contains("-h") || (args.Length > 0 && args[0] == "help"))
@@ -30,7 +31,9 @@ string? Opt(string name)
     return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
 }
 
-var history = new HistoryManager();
+var rulesOverride = Opt("--rules");
+var quarantineOverride = Opt("--quarantine-root");
+var history = new HistoryManager(Opt("--history-path"));
 
 try
 {
@@ -38,11 +41,14 @@ try
     {
         case "scan":
         {
-            var (source, set) = RuleUpdateService.LoadEffective(BundledRulesPath());
+            var rulesPath = rulesOverride ?? BundledRulesPath();
+            var set = rulesOverride is null
+                ? RuleUpdateService.LoadEffective(rulesPath).Set
+                : RuleSetLoader.LoadFromFile(rulesPath);
             var errors = RuleSetLoader.Validate(set);
             if (errors.Count > 0)
                 return Fail(json, errors);
-            var report = new ScanEngine(EffectiveQuarantineRoot()).Scan(set);
+            var report = new ScanEngine(quarantineOverride ?? EffectiveQuarantineRoot()).Scan(set);
             Output(json, report, set);
             return 0;
         }
@@ -51,7 +57,10 @@ try
             var ruleIds = (Opt("--rule") ?? string.Empty)
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToHashSet(StringComparer.Ordinal);
-            var (_, set) = RuleUpdateService.LoadEffective(BundledRulesPath());
+            var rulesPath = rulesOverride ?? BundledRulesPath();
+            var set = rulesOverride is null
+                ? RuleUpdateService.LoadEffective(rulesPath).Set
+                : RuleSetLoader.LoadFromFile(rulesPath);
             var errors = RuleSetLoader.Validate(set);
             if (errors.Count > 0)
                 return Fail(json, errors);
@@ -90,7 +99,7 @@ try
                 }
             }
 
-            var manager = new QuarantineManager(EffectiveQuarantineRoot(), history);
+            var manager = new QuarantineManager(quarantineOverride ?? EffectiveQuarantineRoot(), history);
             var items = selected.SelectMany(r => r.Files.Select(f => (r.RuleId, f))).ToList();
             var exec = manager.Execute(items);
             if (json)
@@ -292,6 +301,7 @@ static void Usage()
     System.Console.WriteLine("  startup                       只读列出启动项（含已禁用备份）");
     System.Console.WriteLine("  startup-test                  启动项禁用/还原往返自检（临时测试项，自动清理）");
     System.Console.WriteLine("  通用：--format text|json   --yes");
+    System.Console.WriteLine("  位置覆盖：--rules P（直接加载，绕过更新通道）  --quarantine-root R  --history-path F");
 }
 
 static JsonSerializerOptions JsonIndented() => new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };

@@ -22,3 +22,4 @@
 ## 进度记录
 
 - 2026-09-04 建立长期目标机制。阶段 A 就绪：工单 04–07 待实施（04 CLI 契约测试 / 05 SpecialOps 注入测试 / 06 对话框编排下沉 / 07 .gitattributes）。基线：构建 0 告警、测试 60/60、main 已同步远程。
+- 2026-09-04（第二轮，人工即时驱动）工单 04 完成：CLI 新增 `--rules`/`--quarantine-root`/`--history-path` 位置覆盖参数；`CliSafetyContractTests` 5 例锁定安全契约（scan 只读 / dry-run 退 0 / 非交互无 --yes 退 2 / --yes 走注入隔离区并写审计 / 未知规则退 1）。全套 65/65。下一步：工单 05（SpecialOps 注册表只读注入测试）。

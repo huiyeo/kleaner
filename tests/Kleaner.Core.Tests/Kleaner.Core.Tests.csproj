@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Kleaner.Executor\Kleaner.Executor.csproj" />
     <ProjectReference Include="..\..\src\Kleaner.SpecialOps\Kleaner.SpecialOps.csproj" />
     <ProjectReference Include="..\..\src\Kleaner.Analysis\Kleaner.Analysis.csproj" />
+    <ProjectReference Include="..\..\tools\Kleaner.ScanCli\Kleaner.ScanCli.csproj" />
   </ItemGroup>
 
   <ItemGroup>
