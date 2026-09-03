@@ -101,8 +101,8 @@ public sealed class GlobScannerTests : IDisposable
     {
         var re = GlobScanner.ToRegex("%TEMP%\\sub\\**");
         var tempRoot = Environment.GetEnvironmentVariable("TEMP")!;
-        Assert.True(re.IsMatch(W(tempRoot) + "\\sub\\a\\b.tmp"));
-        Assert.True(re.IsMatch(W(tempRoot).ToUpperInvariant() + "\\SUB\\a\\b.tmp"));
-        Assert.False(re.IsMatch(W(tempRoot) + "\\other\\a\\b.tmp"));
+        Assert.Matches(re, W(tempRoot) + "\\sub\\a\\b.tmp");
+        Assert.Matches(re, W(tempRoot).ToUpperInvariant() + "\\SUB\\a\\b.tmp");
+        Assert.DoesNotMatch(re, W(tempRoot) + "\\other\\a\\b.tmp");
     }
 }
