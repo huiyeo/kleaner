@@ -1,86 +1,76 @@
 <Window x:Class="Kleaner.App.ToolboxWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="工具箱" Height="640" Width="1000"
-        WindowStartupLocation="CenterOwner">
-    <DockPanel Margin="8">
-        <StatusBar DockPanel.Dock="Bottom">
-            <StatusBarItem>
-                <TextBlock x:Name="StatusText" Text="…" />
-            </StatusBarItem>
+        Title="工具箱" Height="680" Width="1040" MinHeight="560" MinWidth="820"
+        WindowStartupLocation="CenterOwner" Style="{StaticResource KleanerDialogWindow}">
+    <DockPanel Margin="28,24,28,0">
+        <StatusBar DockPanel.Dock="Bottom" Style="{StaticResource KleanerStatusBar}">
+            <StatusBarItem><TextBlock x:Name="StatusText" Text="…" /></StatusBarItem>
         </StatusBar>
-        <TabControl>
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+            <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="22" FontWeight="SemiBold" />
+        </StackPanel>
+        <TabControl Style="{StaticResource KleanerTabControl}">
             <TabItem x:Name="UsageTab" Header="空间分析">
-                <DockPanel Margin="6">
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBlock x:Name="UsageRootLabel" VerticalAlignment="Center" />
-                        <TextBox x:Name="UsageRootBox" Width="520" Height="24" VerticalContentAlignment="Center" Margin="6,0,0,0" />
-                        <Button x:Name="UsageBrowseButton" Click="OnUsageBrowse" Width="72" Margin="6,0,0,0" />
-                        <Button x:Name="UsageScanButton" Click="OnUsageScan" Width="72" Margin="6,0,0,0" />
-                        <Button x:Name="UsageEnterButton" Click="OnUsageEnter" Width="110" Margin="6,0,0,0" />
-                        <RadioButton x:Name="UsageViewList" GroupName="UsageView" IsChecked="True"
-                                     VerticalAlignment="Center" Margin="24,0,0,0" Checked="OnUsageViewChanged" />
-                        <RadioButton x:Name="UsageViewTreemap" GroupName="UsageView"
-                                     VerticalAlignment="Center" Margin="8,0,0,0" Checked="OnUsageViewChanged" />
-                    </StackPanel>
-                    <Grid>
-                        <DataGrid x:Name="UsageGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
-                                  SelectionMode="Single">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Binding="{Binding Path}" Width="*" />
-                                <DataGridTextColumn Binding="{Binding SizeDisplay}" Width="110" />
-                                <DataGridTextColumn Binding="{Binding TypeDisplay}" Width="70" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <ScrollViewer x:Name="TreemapHost" Visibility="Collapsed"
-                                      HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
-                            <Canvas x:Name="TreemapCanvas" Background="White" MouseLeftButtonDown="OnTreemapMouseDown" />
-                        </ScrollViewer>
+                <Grid Margin="0,18,0,12">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <Border Style="{StaticResource KleanerCard}" Padding="16" Margin="0,0,0,14">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <TextBlock x:Name="UsageRootLabel" FontWeight="SemiBold" Foreground="#575963" />
+                            <DockPanel Grid.Row="1" Margin="0,8,16,0">
+                                <Button x:Name="UsageBrowseButton" Click="OnUsageBrowse" DockPanel.Dock="Right" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" />
+                                <TextBox x:Name="UsageRootBox" Height="34" VerticalContentAlignment="Center" />
+                            </DockPanel>
+                            <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" VerticalAlignment="Bottom">
+                                <Button x:Name="UsageScanButton" Click="OnUsageScan" Style="{StaticResource KleanerPrimaryButton}" />
+                                <Button x:Name="UsageEnterButton" Click="OnUsageEnter" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <RadioButton x:Name="UsageViewList" GroupName="UsageView" IsChecked="True" Checked="OnUsageViewChanged" Margin="0,0,18,0" />
+                            <RadioButton x:Name="UsageViewTreemap" GroupName="UsageView" Checked="OnUsageViewChanged" />
+                        </StackPanel>
+                        <Border Grid.Row="1" Style="{StaticResource KleanerCard}">
+                            <Grid>
+                                <DataGrid x:Name="UsageGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" SelectionMode="Single" Style="{StaticResource KleanerDataGrid}">
+                                    <DataGrid.Columns><DataGridTextColumn Binding="{Binding Path}" Width="*" /><DataGridTextColumn Binding="{Binding SizeDisplay}" Width="110" /><DataGridTextColumn Binding="{Binding TypeDisplay}" Width="90" /></DataGrid.Columns>
+                                </DataGrid>
+                                <ScrollViewer x:Name="TreemapHost" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled"><Canvas x:Name="TreemapCanvas" Background="White" MouseLeftButtonDown="OnTreemapMouseDown" /></ScrollViewer>
+                            </Grid>
+                        </Border>
                     </Grid>
-                </DockPanel>
+                </Grid>
             </TabItem>
             <TabItem x:Name="LargeTab" Header="大文件">
-                <DockPanel Margin="6">
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBlock x:Name="LargeRootLabel" VerticalAlignment="Center" />
-                        <TextBox x:Name="LargeRootBox" Width="400" Height="24" VerticalContentAlignment="Center" Margin="6,0,0,0" />
-                        <Button x:Name="LargeBrowseButton" Click="OnLargeBrowse" Width="72" Margin="6,0,0,0" />
-                        <TextBlock x:Name="LargeMinLabel" VerticalAlignment="Center" Margin="10,0,0,0" />
-                        <TextBox x:Name="LargeMinBox" Width="60" Height="24" Text="100" VerticalContentAlignment="Center" Margin="4,0,0,0" />
-                        <Button x:Name="LargeScanButton" Click="OnLargeScan" Width="72" Margin="10,0,0,0" />
-                        <Button x:Name="LargeCleanButton" Click="OnLargeClean" Width="170" Margin="10,0,0,0" />
-                    </StackPanel>
-                    <DataGrid x:Name="LargeGrid" AutoGenerateColumns="False" CanUserAddRows="False">
-                        <DataGrid.Columns>
-                            <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="46" />
-                            <DataGridTextColumn Binding="{Binding Path}" Width="*" />
-                            <DataGridTextColumn Binding="{Binding Col1}" Width="110" />
-                            <DataGridTextColumn Binding="{Binding Col2}" Width="150" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </DockPanel>
+                <Grid Margin="0,18,0,12">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <Border Style="{StaticResource KleanerCard}" Padding="16" Margin="0,0,0,14">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <TextBlock x:Name="LargeRootLabel" FontWeight="SemiBold" Foreground="#575963" />
+                            <DockPanel Grid.Row="1" Margin="0,8,16,0"><Button x:Name="LargeBrowseButton" Click="OnLargeBrowse" DockPanel.Dock="Right" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" /><TextBox x:Name="LargeRootBox" Height="34" VerticalContentAlignment="Center" /></DockPanel>
+                            <StackPanel Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Bottom"><StackPanel Orientation="Horizontal"><TextBlock x:Name="LargeMinLabel" VerticalAlignment="Center" Margin="0,0,6,0" /><TextBox x:Name="LargeMinBox" Width="58" Height="34" Text="100" VerticalContentAlignment="Center" /><Button x:Name="LargeScanButton" Click="OnLargeScan" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" /></StackPanel><Button x:Name="LargeCleanButton" Click="OnLargeClean" Style="{StaticResource KleanerPrimaryButton}" Margin="0,10,0,0" HorizontalAlignment="Right" /></StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="1" Style="{StaticResource KleanerCard}"><DataGrid x:Name="LargeGrid" AutoGenerateColumns="False" CanUserAddRows="False" Style="{StaticResource KleanerDataGrid}"><DataGrid.Columns><DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="46" /><DataGridTextColumn Binding="{Binding Path}" Width="*" /><DataGridTextColumn Binding="{Binding Col1}" Width="110" /><DataGridTextColumn Binding="{Binding Col2}" Width="150" /></DataGrid.Columns></DataGrid></Border>
+                </Grid>
             </TabItem>
             <TabItem x:Name="DupTab" Header="重复文件">
-                <DockPanel Margin="6">
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBlock x:Name="DupRootLabel" VerticalAlignment="Center" />
-                        <TextBox x:Name="DupRootBox" Width="400" Height="24" VerticalContentAlignment="Center" Margin="6,0,0,0" />
-                        <Button x:Name="DupBrowseButton" Click="OnDupBrowse" Width="72" Margin="6,0,0,0" />
-                        <TextBlock x:Name="DupMinLabel" VerticalAlignment="Center" Margin="10,0,0,0" />
-                        <TextBox x:Name="DupMinBox" Width="60" Height="24" Text="1" VerticalContentAlignment="Center" Margin="4,0,0,0" />
-                        <Button x:Name="DupScanButton" Click="OnDupScan" Width="72" Margin="10,0,0,0" />
-                        <Button x:Name="DupCleanButton" Click="OnDupClean" Width="200" Margin="10,0,0,0" />
-                    </StackPanel>
-                    <DataGrid x:Name="DupGrid" AutoGenerateColumns="False" CanUserAddRows="False">
-                        <DataGrid.Columns>
-                            <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="46" />
-                            <DataGridTextColumn Binding="{Binding GroupIndex}" Width="60" />
-                            <DataGridTextColumn Binding="{Binding Path}" Width="*" />
-                            <DataGridTextColumn Binding="{Binding SizeDisplay}" Width="100" />
-                            <DataGridTextColumn Binding="{Binding TagDisplay}" Width="90" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </DockPanel>
+                <Grid Margin="0,18,0,12">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <Border Style="{StaticResource KleanerCard}" Padding="16" Margin="0,0,0,14">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                            <TextBlock x:Name="DupRootLabel" FontWeight="SemiBold" Foreground="#575963" />
+                            <DockPanel Grid.Row="1" Margin="0,8,16,0"><Button x:Name="DupBrowseButton" Click="OnDupBrowse" DockPanel.Dock="Right" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" /><TextBox x:Name="DupRootBox" Height="34" VerticalContentAlignment="Center" /></DockPanel>
+                            <StackPanel Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Bottom"><StackPanel Orientation="Horizontal"><TextBlock x:Name="DupMinLabel" VerticalAlignment="Center" Margin="0,0,6,0" /><TextBox x:Name="DupMinBox" Width="58" Height="34" Text="1" VerticalContentAlignment="Center" /><Button x:Name="DupScanButton" Click="OnDupScan" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" /></StackPanel><Button x:Name="DupCleanButton" Click="OnDupClean" Style="{StaticResource KleanerPrimaryButton}" Margin="0,10,0,0" HorizontalAlignment="Right" /></StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Grid.Row="1" Style="{StaticResource KleanerCard}"><DataGrid x:Name="DupGrid" AutoGenerateColumns="False" CanUserAddRows="False" Style="{StaticResource KleanerDataGrid}"><DataGrid.Columns><DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="46" /><DataGridTextColumn Binding="{Binding GroupIndex}" Width="60" /><DataGridTextColumn Binding="{Binding Path}" Width="*" /><DataGridTextColumn Binding="{Binding SizeDisplay}" Width="100" /><DataGridTextColumn Binding="{Binding TagDisplay}" Width="90" /></DataGrid.Columns></DataGrid></Border>
+                </Grid>
             </TabItem>
         </TabControl>
     </DockPanel>

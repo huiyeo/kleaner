@@ -2,25 +2,27 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="高级模式" Height="560" Width="860"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner" Style="{StaticResource KleanerDialogWindow}">
     <Window.Resources>
         <DataTemplate x:Key="BigItemTemplate">
-            <Border BorderBrush="#DDD" BorderThickness="0,0,0,1" Padding="0,8" Margin="0,0,0,6">
+            <Border BorderBrush="#ECECF1" BorderThickness="0,0,0,1" Padding="16" Margin="0,0,0,10" Background="White" CornerRadius="8">
                 <StackPanel>
                     <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Note}" Foreground="#666" TextWrapping="Wrap" Margin="0,2,0,6" />
                     <Button Content="{Binding RunLabel}" Click="OnRunTool" Tag="{Binding}"
-                            Width="84" HorizontalAlignment="Left" Padding="0,3" />
+                            HorizontalAlignment="Left" Style="{StaticResource KleanerSecondaryButton}" />
                 </StackPanel>
             </Border>
         </DataTemplate>
     </Window.Resources>
-    <TabControl Margin="8">
+    <Grid Margin="28,24"><Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,16" />
+    <TabControl Grid.Row="1" Style="{StaticResource KleanerTabControl}">
         <TabItem x:Name="WslTab" Header="WSL">
             <DockPanel Margin="8">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,6">
-                    <Button x:Name="WslDetectButton" Click="OnDetectWsl" Width="110" Padding="0,4" />
-                    <Button x:Name="WslCopyButton" Click="OnCopyGuide" Width="140" Padding="0,4" Margin="8,0,0,0" />
+                    <Button x:Name="WslDetectButton" Click="OnDetectWsl" Style="{StaticResource KleanerPrimaryButton}" />
+                    <Button x:Name="WslCopyButton" Click="OnCopyGuide" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" />
                 </StackPanel>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -28,14 +30,14 @@
                         <RowDefinition Height="8" />
                         <RowDefinition Height="3*" />
                     </Grid.RowDefinitions>
-                    <ListView x:Name="WslList" Grid.Row="0" SelectionChanged="OnWslSelectionChanged">
+                    <Border Grid.Row="0" Style="{StaticResource KleanerCard}"><ListView x:Name="WslList" SelectionChanged="OnWslSelectionChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn x:Name="WslColPath" DisplayMemberBinding="{Binding Path}" Width="520" />
                                 <GridViewColumn x:Name="WslColSize" DisplayMemberBinding="{Binding SizeDisplay}" Width="140" />
                             </GridView>
                         </ListView.View>
-                    </ListView>
+                    </ListView></Border>
                     <GroupBox x:Name="WslGuideBox" Grid.Row="2" Padding="6">
                         <TextBox x:Name="WslGuide" IsReadOnly="True" TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" />
@@ -51,10 +53,10 @@
         <TabItem x:Name="RegistryTab" Header="Registry">
             <DockPanel Margin="8">
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                    <Button x:Name="RegistryScanButton" Click="OnRegistryScan" Width="90" Padding="0,4" HorizontalAlignment="Left" />
+                    <Button x:Name="RegistryScanButton" Click="OnRegistryScan" Style="{StaticResource KleanerPrimaryButton}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="RegistryNoteText" TextWrapping="Wrap" Margin="0,8,0,0" Foreground="#666" />
                 </StackPanel>
-                <ListView x:Name="RegistryList">
+                <Border Style="{StaticResource KleanerCard}"><ListView x:Name="RegistryList">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn x:Name="RegColName" DisplayMemberBinding="{Binding DisplayName}" Width="200" />
@@ -62,8 +64,8 @@
                             <GridViewColumn x:Name="RegColKey" DisplayMemberBinding="{Binding Key}" Width="380" />
                         </GridView>
                     </ListView.View>
-                </ListView>
+                </ListView></Border>
             </DockPanel>
         </TabItem>
-    </TabControl>
+    </TabControl></Grid>
 </Window>

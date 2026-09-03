@@ -9,6 +9,60 @@
                 <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Indigo" SecondaryColor="Amber" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign2.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- 共享的轻量窗口语言：主界面与所有工具窗口保持同一阅读节奏。 -->
+            <Style x:Key="KleanerDialogWindow" TargetType="Window">
+                <Setter Property="Background" Value="#F8F8FA" />
+                <!-- MaterialDesignFont 是图标字体；正文使用系统中文 UI 字体，避免 CJK 字形被模板裁切。 -->
+                <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
+                <Setter Property="TextElement.Foreground" Value="#202126" />
+            </Style>
+            <Style x:Key="KleanerCard" TargetType="Border">
+                <Setter Property="Background" Value="White" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="BorderBrush" Value="#E8E8EE" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+            <Style x:Key="KleanerPrimaryButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                <Setter Property="MinHeight" Value="42" /><Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Padding" Value="16,8" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+            <Style x:Key="KleanerSecondaryButton" TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                <Setter Property="MinHeight" Value="42" /><Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Padding" Value="14,8" />
+                <Setter Property="Foreground" Value="#4E5060" />
+            </Style>
+            <Style x:Key="KleanerDangerButton" TargetType="Button" BasedOn="{StaticResource KleanerSecondaryButton}">
+                <Setter Property="Foreground" Value="#B42318" />
+            </Style>
+            <Style x:Key="KleanerDataGrid" TargetType="DataGrid">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="GridLinesVisibility" Value="None" />
+                <Setter Property="RowHeight" Value="44" />
+                <Setter Property="ColumnHeaderStyle"><Setter.Value><Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Background" Value="#FAFAFC" /><Setter Property="Foreground" Value="#777984" />
+                    <Setter Property="FontSize" Value="12" /><Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="Padding" Value="12,11" /><Setter Property="BorderBrush" Value="#ECECF1" />
+                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                </Style></Setter.Value></Setter>
+                <Setter Property="CellStyle"><Setter.Value><Style TargetType="DataGridCell">
+                    <Setter Property="Padding" Value="12,0" /><Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                </Style></Setter.Value></Setter>
+                <Setter Property="RowStyle"><Setter.Value><Style TargetType="DataGridRow">
+                    <Setter Property="BorderBrush" Value="#F0F0F3" /><Setter Property="BorderThickness" Value="0,0,0,1" />
+                    <Style.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#F7F7FF" /></Trigger><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#EEEEFF" /></Trigger></Style.Triggers>
+                </Style></Setter.Value></Setter>
+            </Style>
+            <Style x:Key="KleanerStatusBar" TargetType="StatusBar">
+                <Setter Property="Background" Value="#FDFDFF" /><Setter Property="Foreground" Value="#6F717C" />
+                <Setter Property="BorderBrush" Value="#E8E8EE" /><Setter Property="BorderThickness" Value="0,1,0,0" />
+                <Setter Property="Padding" Value="12,2" />
+            </Style>
+            <Style x:Key="KleanerTabControl" TargetType="TabControl">
+                <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
