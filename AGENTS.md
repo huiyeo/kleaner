@@ -16,6 +16,7 @@
 - reparse point 一律排除；被占用文件跳过并在报告中提示，绝不强制删除。
 - 规则的新增与修改必须过三关，见 `docs/rules.md`。
 - 任何"可能含用户数据"的目录不予合并；拿不准的一律排除。
+- 提交信息、注释语言、UI 文案通道遵循 `docs/conventions.md`。
 
 ## 按需查阅
 
@@ -25,6 +26,7 @@
 | 动隔离区、还原、manifest、history、CLI 安全契约、提权 | `docs/deletion-path.md` |
 | 找某个类在哪、判断新代码该放哪个工程、改 csproj 依赖 | `docs/architecture.md` |
 | 术语拿不准、同一个词在不同处含义冲突 | `docs/context.md` |
+| 写提交信息、写注释、新增界面文案、改代码风格配置 | `docs/conventions.md` |
 
 ## 环境备注
 

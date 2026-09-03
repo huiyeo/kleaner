@@ -1,0 +1,27 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,slnx,props,targets,json,yml,yaml,md}]
+indent_style = space
+indent_size = 2
+
+[*.{cs,xaml}]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+
+[*.cs]
+# 警告级基线：可见但不阻塞构建（docs/conventions.md §4）
+dotnet_style_require_accessibility_modifiers = always:warning
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_prefer_braces = true:warning
+dotnet_diagnostic.CS8600.severity = warning
+dotnet_diagnostic.CS8618.severity = warning
+dotnet_diagnostic.CS8601.severity = warning
+dotnet_diagnostic.CS8602.severity = warning
+dotnet_diagnostic.CS8603.severity = warning
+dotnet_diagnostic.CS8604.severity = warning
