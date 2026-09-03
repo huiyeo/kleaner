@@ -15,7 +15,7 @@ public partial class AdvancedWindow : Window
         RegistryTab.Header = S.Get("TabRegistry");
         WslDetectButton.Content = S.Get("WslDetect");
         WslCopyButton.Content = S.Get("BtnCopyScript");
-        WslColPath.Header = "Path";
+        WslColPath.Header = S.Get("ColPath");
         WslColSize.Header = S.Get("ColSize");
         WslGuideBox.Header = S.Get("WslGuideHeader");
         RegistryScanButton.Content = S.Get("BtnRegistryScan");

@@ -13,6 +13,7 @@
   "ColCategory": "类别",
   "ColFiles": "文件数",
   "ColSize": "可释放",
+  "ColPath": "路径",
   "ColRisk": "风险",
   "ColElevated": "管理员",
   "ColNote": "备注",

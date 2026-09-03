@@ -1,7 +1,7 @@
 <Window x:Class="Kleaner.App.AdvancedWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="高级模式" Height="560" Width="860"
+        Title="AdvancedTitle" Height="560" Width="860"
         WindowStartupLocation="CenterOwner" Style="{StaticResource KleanerDialogWindow}">
     <Window.Resources>
         <DataTemplate x:Key="BigItemTemplate">
