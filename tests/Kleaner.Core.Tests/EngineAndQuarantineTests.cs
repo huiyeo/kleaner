@@ -24,6 +24,19 @@ public sealed class EngineAndQuarantineTests : IDisposable
 
     private static string JsonEscape(string s) => s.Replace("\\", "\\\\");
 
+    private static CleanupPlan CreatePlan(string quarantineRoot, string ruleId, params string[] paths)
+    {
+        var sourceDir = Path.GetDirectoryName(paths[0])!;
+        var rule = new Rule(
+            ruleId, "测试授权规则", RuleCategory.Application, RiskLevel.Low,
+            new[] { Path.Combine(sourceDir, "**") }, Array.Empty<string>(),
+            AgeDays: 0, KeepNewest: null, RequiresElevation: false, Enabled: true,
+            SafetyNotes: "仅用于隔离区测试的临时目录授权规则，绝不触及真实用户文件。");
+        var set = new RuleSet(1, null, 0, new[] { rule });
+        var scan = new ScanEngine(quarantineRoot).Scan(set);
+        return CleanupPlanBuilder.Create(set, scan, new[] { ruleId }, quarantineRoot);
+    }
+
     /// <summary>同步收集 ScanProgress 上报的 IProgress 实现，避免 Progress&lt;T&gt; 的线程语义带来的竞态。</summary>
     private sealed class CollectingProgress : IProgress<ScanProgress>
     {
@@ -200,12 +213,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         var quarantineRoot = Path.Combine(_root, "quarantine");
         var manager = new QuarantineManager(quarantineRoot);
 
-        var candidates = new[]
-        {
-            new FileCandidate(f1, 5, DateTime.UtcNow.AddDays(-30)),
-            new FileCandidate(f2, 5, DateTime.UtcNow.AddDays(-30)),
-        };
-        var report = manager.Execute(candidates.Select(c => ("test-rule", c)));
+        var report = manager.Execute(CreatePlan(quarantineRoot, "test-rule", f1, f2));
 
         Assert.Equal(2, report.MovedCount);
         Assert.Equal(10, report.MovedBytes);
@@ -238,11 +246,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         var manager = new QuarantineManager(Path.Combine(_root, "quarantine2"));
 
         using var handle = File.Open(locked, FileMode.Open, FileAccess.Read, FileShare.None);
-        var report = manager.Execute(new[]
-        {
-            ("rule", new FileCandidate(locked, 1, DateTime.UtcNow)),
-            ("rule", new FileCandidate(normal, 1, DateTime.UtcNow)),
-        });
+        var report = manager.Execute(CreatePlan(manager.Root, "rule", locked, normal));
 
         Assert.Equal(1, report.MovedCount);
         Assert.Single(report.Skipped);
@@ -258,7 +262,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         var f = Path.Combine(sourceDir, "c.txt");
         File.WriteAllText(f, "original");
         var manager = new QuarantineManager(Path.Combine(_root, "quarantine3"));
-        var report = manager.Execute(new[] { ("r", new FileCandidate(f, 8, DateTime.UtcNow)) });
+        var report = manager.Execute(CreatePlan(manager.Root, "r", f));
         File.WriteAllText(f, "new-content"); // 原位置出现新文件
 
         manager.RestoreBatch(report.BatchId);
@@ -275,7 +279,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         Directory.CreateDirectory(dir);
         var f = Path.Combine(dir, "p.txt");
         File.WriteAllText(f, "x");
-        var report = manager.Execute(new[] { ("r", new FileCandidate(f, 1, DateTime.UtcNow)) });
+        var report = manager.Execute(CreatePlan(manager.Root, "r", f));
 
         // 手工构造一个 8 天前的过期批次
         var oldBatchDir = Path.Combine(manager.Root, "20260101-000000");

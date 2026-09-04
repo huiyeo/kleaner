@@ -10,7 +10,7 @@
 
 1. **严格白名单**：只有规则库中的类别才可清理，无黑名单推断。
 2. **年龄阈值**：默认仅清理 14 天未修改的文件（缓存类 7 天，更新器按"保留最新 1 份"），规则级可覆盖。
-3. **强制预览（dry-run）**：先展示"将删除什么、每类多少"，确认后才执行。
+3. **强制预览（dry-run）**：先展示"将移入隔离区什么、每类多少"，确认后才执行；执行器只接受 Core 根据本次扫描构造的清理计划，并在移动前再次复验。
 4. **隔离区可还原**：删除即移入自管隔离区（默认非系统盘），manifest 记录原路径，保留 7 天，支持一键还原。
 
 引擎层固定排除：reparse point（OneDrive/云盘占位文件）、被占用文件（跳过并在报告提示）。
@@ -36,9 +36,9 @@
 - 启动项管理：启用/禁用/还原，HKLM 走 `reg.exe` 提权、失败回滚
 - 发布链路：自包含单文件（免装 .NET）+ Velopack 安装版/便携版/自动更新清单（`scripts/release.sh`）
 
-质量：`dotnet test Kleaner.slnx -c Release` 当前 60/60 通过（Core），覆盖规则校验、扫描/年龄阈值/keepNewest 语义、重复文件选择策略等引擎安全语义（`Kleaner.Core.Tests`，引用 Core/Executor/SpecialOps/Analysis）。
+质量：`dotnet test Kleaner.slnx -c Release` 当前 75/75 通过，覆盖规则校验、扫描/年龄阈值/keepNewest 语义、重复文件选择策略，以及清理计划的伪造与执行前复验等安全语义（`Kleaner.Core.Tests`，引用 Core/Executor/SpecialOps/Analysis/App）。
 
-Roadmap：卸载器、treemap 空间视图（`Kleaner.Analysis` 已有 `TreemapLayout`，Web 端 v1 暂用列表）。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
+当前路线与发布闸门见 [docs/goals.md](docs/goals.md)：先完成清理授权、审计与事务性的 Phase 0，再考虑功能扩展。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
 
 ## 开发
 

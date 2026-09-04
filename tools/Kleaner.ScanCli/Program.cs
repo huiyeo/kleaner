@@ -70,9 +70,11 @@ try
             if (missing.Count > 0)
                 return Fail(json, new[] { $"未知规则 id：{string.Join(",", missing)}" });
 
-            var report = new ScanEngine(EffectiveQuarantineRoot()).Scan(set);
+            var effectiveQuarantineRoot = quarantineOverride ?? EffectiveQuarantineRoot();
+            var report = new ScanEngine(effectiveQuarantineRoot).Scan(set);
             var selected = report.Results.Where(r => chosen.Any(c => c.Id == r.RuleId) && r.FileCount > 0).ToList();
-            var plan = (Files: selected.Sum(r => r.FileCount), Bytes: selected.Sum(r => r.TotalBytes));
+            var cleanupPlan = CleanupPlanBuilder.Create(set, report, ruleIds, effectiveQuarantineRoot);
+            var plan = (Files: cleanupPlan.Items.Count, Bytes: cleanupPlan.Items.Sum(item => item.File.SizeBytes));
 
             if (!args.Contains("--apply"))
             {
@@ -100,8 +102,7 @@ try
             }
 
             var manager = new QuarantineManager(quarantineOverride ?? EffectiveQuarantineRoot(), history);
-            var items = selected.SelectMany(r => r.Files.Select(f => (r.RuleId, f))).ToList();
-            var exec = manager.Execute(items);
+            var exec = manager.Execute(cleanupPlan);
             if (json)
                 System.Console.WriteLine(JsonSerializer.Serialize(new
                 {
@@ -334,4 +335,3 @@ static string? AppSettingsRoot()
 
 /// <summary>生效隔离区根：设置覆盖优先，缺省回退到剩余空间最大的非系统盘（与 GUI 一致）。</summary>
 static string EffectiveQuarantineRoot() => AppSettingsRoot() ?? QuarantineManager.DefaultRoot();
-

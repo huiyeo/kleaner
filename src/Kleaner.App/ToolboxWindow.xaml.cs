@@ -6,7 +6,6 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using Kleaner.Analysis;
 using Kleaner.Core;
-using Kleaner.Executor;
 
 namespace Kleaner.App;
 
@@ -36,8 +35,6 @@ public partial class ToolboxWindow : Window
         UsageViewTreemap.Content = S.Get("BtnViewTreemap");
         LargeMinLabel.Text = S.Get("MinSizeLabel");
         DupMinLabel.Text = S.Get("MinSizeLabel");
-        LargeCleanButton.Content = S.Get("BtnCleanSelected");
-        DupCleanButton.Content = S.Get("BtnCleanDupSelected");
         UsageRootBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         LargeRootBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         DupRootBox.Text = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -74,8 +71,6 @@ public partial class ToolboxWindow : Window
         UsageScanButton.IsEnabled = !busy;
         LargeScanButton.IsEnabled = !busy;
         DupScanButton.IsEnabled = !busy;
-        LargeCleanButton.IsEnabled = !busy;
-        DupCleanButton.IsEnabled = !busy;
     }
 
     private async void OnUsageScan(object sender, RoutedEventArgs e) => await ScanUsageAsync();
@@ -275,17 +270,6 @@ public partial class ToolboxWindow : Window
         }
     }
 
-    private async void OnLargeClean(object sender, RoutedEventArgs e)
-    {
-        var rows = LargeGrid.ItemsSource?.Cast<SelectableRow<LargeFileItem>>()
-            .Where(r => r.IsSelected).ToList() ?? new List<SelectableRow<LargeFileItem>>();
-        await CleanSelectedAsync(
-            rows.Select(r => new FileCandidate(r.Item.Path, r.Item.SizeBytes, r.Item.LastWriteTimeUtc)),
-            "large-files", rows.Sum(r => r.Item.SizeBytes));
-        if (rows.Count > 0)
-            await ScanLargeAsync();
-    }
-
     private async void OnDupScan(object sender, RoutedEventArgs e) => await ScanDupAsync();
 
     private async Task ScanDupAsync()
@@ -358,65 +342,6 @@ public partial class ToolboxWindow : Window
         }
     }
 
-    private async void OnDupClean(object sender, RoutedEventArgs e)
-    {
-        var rows = DupGrid.ItemsSource?.Cast<DupRow>().Where(r => r.IsSelected).ToList();
-        if (rows is null || rows.Count == 0)
-            return;
-
-        // 安全底线：每组必须至少保留一份
-        var keepByGroup = DupGrid.ItemsSource!.Cast<DupRow>()
-            .Where(r => !r.IsSelected).Select(r => r.GroupIndex).ToHashSet();
-        var offending = rows.Where(r => !keepByGroup.Contains(r.GroupIndex)).ToList();
-        if (offending.Count > 0)
-        {
-            MessageBox.Show(S.Get("DupKeepOneRequired"), Title);
-            return;
-        }
-
-        var files = rows.Select(r => new FileCandidate(r.Path, r.SizeBytes, r.LastWriteTimeUtc));
-        await CleanSelectedAsync(files, "duplicates", rows.Sum(r => r.SizeBytes));
-        if (rows.Count > 0)
-            await ScanDupAsync();
-    }
-
-    private async Task CleanSelectedAsync(
-        IEnumerable<FileCandidate> items, string action, long totalBytes)
-    {
-        var list = items.ToList();
-        if (list.Count == 0)
-        {
-            MessageBox.Show(S.Get("NothingSelected"), Title);
-            return;
-        }
-        if (MessageBox.Show(
-                S.Format("ConfirmCleanBody", list.Count, Helpers.FormatBytes(totalBytes)),
-                S.Get("ConfirmCleanTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Question)
-            != MessageBoxResult.OK)
-            return;
-
-        var settings = AppSettings.Load();
-        var history = new HistoryManager();
-        var manager = new QuarantineManager(settings.EffectiveQuarantineRoot, history);
-        SetBusy(true);
-        StatusText.Text = S.Get("StatusCleaning");
-        try
-        {
-            var report = await Task.Run(() => manager.Execute(list.Select(f => (action, f))));
-            MessageBox.Show(
-                S.Format("CleanDoneBody", report.MovedCount, Helpers.FormatBytes(report.MovedBytes),
-                    report.Skipped.Count, report.QuarantineDir),
-                S.Get("CleanDoneTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, S.Get("Error"));
-        }
-        finally
-        {
-            SetBusy(false);
-        }
-    }
 
     private void OnUsageBrowse(object sender, RoutedEventArgs e)
     {

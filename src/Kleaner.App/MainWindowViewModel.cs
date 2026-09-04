@@ -24,6 +24,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 {
     private readonly ObservableCollection<RuleRow> _rows = new();
     private RuleSet? _ruleSet;
+    private ScanReport? _lastScanReport;
     private string _rulesPath = string.Empty;
     private CancellationTokenSource? _scanCts;
     private bool _cancelRequested;
@@ -129,6 +130,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_ruleSet is null || _scanCts is not null)
             return;
         var rules = _ruleSet;
+        _lastScanReport = null;
         var settings = AppSettings.Load();
         var engine = new ScanEngine(settings.EffectiveQuarantineRoot);
         var cts = new CancellationTokenSource();
@@ -139,6 +141,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             var token = cts.Token;
             var report = await Task.Run(() => engine.Scan(rules, token), token);
+            _lastScanReport = report;
             foreach (var result in report.Results)
             {
                 var row = _rows.FirstOrDefault(r => r.Id == result.RuleId);
@@ -182,7 +185,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanClean))]
     private async Task CleanAsync()
     {
-        if (_ruleSet is null)
+        if (_ruleSet is null || _lastScanReport is null)
             return;
 
         var checkedRows = _rows.Where(r => r.IsSelected).ToList();
@@ -210,21 +213,31 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        var totalFiles = selected.Sum(r => r.FileCount);
-        var totalBytes = selected.Sum(r => r.Result!.TotalBytes);
+        var settings = AppSettings.Load();
+        var plan = CleanupPlanBuilder.Create(
+            _ruleSet,
+            _lastScanReport,
+            selected.Select(row => row.Id),
+            settings.EffectiveQuarantineRoot);
+        if (plan.Items.Count == 0)
+        {
+            MessageBox.Show(S.Get("NothingSelected"), Title);
+            return;
+        }
+
+        var totalFiles = plan.Items.Count;
+        var totalBytes = plan.Items.Sum(item => item.File.SizeBytes);
         if (MessageBox.Show(S.Format("ConfirmCleanBody", totalFiles, Helpers.FormatBytes(totalBytes)),
                 S.Get("ConfirmCleanTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Question)
             != MessageBoxResult.OK)
             return;
 
-        var settings = AppSettings.Load();
         var manager = new QuarantineManager(settings.EffectiveQuarantineRoot);
-        var items = selected.SelectMany(r => r.Result!.Files.Select(f => (r.Id, f))).ToList();
         IsBusy = true;
         StatusText = S.Get("StatusCleaning");
         try
         {
-            var report = await Task.Run(() => manager.Execute(items));
+            var report = await Task.Run(() => manager.Execute(plan));
             MessageBox.Show(
                 S.Format("CleanDoneBody", report.MovedCount, Helpers.FormatBytes(report.MovedBytes),
                     report.Skipped.Count, report.QuarantineDir),

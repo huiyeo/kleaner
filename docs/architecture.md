@@ -12,7 +12,7 @@
 | `Kleaner.SpecialOps` | `net10.0-windows` | 库 | Core |
 | `Kleaner.App` | `net10.0-windows` | `WinExe`，`UseWPF` | Core, Executor, SpecialOps, Analysis |
 | `Kleaner.ScanCli` | `net10.0-windows` | `Exe` | Core, Executor, Analysis |
-| `Kleaner.Core.Tests` | `net10.0-windows` | 库（xunit） | Core, Executor, SpecialOps, Analysis |
+| `Kleaner.Core.Tests` | `net10.0-windows` | 库（xunit） | Core, Executor, SpecialOps, Analysis, App |
 
 依赖**单向无环**。没有 `Directory.Build.props`、`global.json`、`.config/dotnet-tools.json`——无 SDK 版本锁定，无集中包管理。
 
@@ -22,7 +22,7 @@
 - **Analysis 也不引用任何东西**，包括 Core。它靠 `FileCandidate` 这类记录与 Core 在 App/CLI 层组合，而非编译期耦合。
 
 `Kleaner.ScanCli` 不引用 SpecialOps——高级模式（WSL、注册表、系统工具引导）只有 GUI 有。
-`Kleaner.Core.Tests` 不引用 App——WPF 层无测试覆盖。
+`Kleaner.Core.Tests` 为清理计划入口契约引用 App；直接的 WPF 控件与视觉回归仍无自动化覆盖。
 
 ## 各工程源文件与职责
 
@@ -35,6 +35,7 @@
 | `RuleSelector.cs` | 对候选集应用 `keepNewest` 或年龄阈值（二者互斥） |
 | `GlobScanner.cs` | `%ENV%` 展开、`*` / `**` 通配枚举、reparse point 排除 |
 | `ScanEngine.cs` | 按规则枚举候选 → exclude → 选择，产出 `ScanReport`。**只读** |
+| `CleanupPlan.cs` | 将规则快照、本次扫描与用户选择收束为不可伪造的清理授权；执行前重新核对候选 |
 | `RuleUpdateService.cs` | 规则在线更新：下载 → SHA512 校验 → 语义校验 → 落用户目录 |
 
 *注意*：README 称 Core 是"纯逻辑、无 UI 依赖"，方向正确但不完全——`RuleUpdateService` 做了 HTTP 下载与文件写入。它无 UI 依赖，但不是无 IO。
@@ -112,7 +113,7 @@
 - **CLI 定位内置规则的.path 很脆**：`BundledRulesPath()` 从 `AppContext.BaseDirectory` 向上跳 5 级再拼 `rules/rules.v1.json`。输出目录层级一变就失效。
 - **`StartupWindow` 的表头未完全走本地化**：XAML 里硬编码了列头，再在 `LoadStrings()` 里按列索引覆盖。列顺序一旦调整，文案就会错位。（`MainWindow`/`ToolboxWindow`/`QuarantineWindow` 同样按列索引设表头——列顺序调整时需同步，见各窗口 `LoadStrings()`。）
 - **`RuleUpdateService` 的本地覆盖会静默生效**：`%APPDATA%\Kleaner\rules\rules.v1.json` 存在时优先于内置规则库。排查"改了 rules.v1.json 却没生效"时先看这里。
-- **WPF 层零控件测试**：`Kleaner.Core.Tests` 不引用 App。可剥离的纯逻辑会下沉到 `Kleaner.Analysis`/`Kleaner.Core` 并补测试（例：`DuplicateSelectionPolicy`、`ScanEngine.Scan` 的取消语义）。
+- **WPF 层零控件测试**：虽然 `Kleaner.Core.Tests` 为清理计划协调契约引用 App，仍未自动化点击或截图验证窗口控件。可剥离的纯逻辑会下沉到 `Kleaner.Analysis`/`Kleaner.Core` 并补测试（例：`DuplicateSelectionPolicy`、`ScanEngine.Scan` 的取消语义）。
 
 ## 前端工程约定（本次优化新增）
 

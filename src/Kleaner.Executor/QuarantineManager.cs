@@ -61,18 +61,23 @@ public sealed class QuarantineManager
             "Kleaner", "quarantine");
     }
 
-    public ExecutionReport Execute(IEnumerable<(string RuleId, FileCandidate File)> items)
+    /// <summary>只执行由 Core 签发的计划；移动前强制复验，拒绝裸路径和伪规则 ID。</summary>
+    public ExecutionReport Execute(CleanupPlan plan)
     {
+        ArgumentNullException.ThrowIfNull(plan);
         var batchId = DateTime.Now.ToString("yyyyMMdd-HHmmss");
         var batchDir = Path.Combine(_root, batchId);
         Directory.CreateDirectory(batchDir);
 
         var entries = new List<QuarantineEntry>();
-        var skipped = new List<string>();
+        var revalidation = plan.Revalidate();
+        var skipped = revalidation.Skipped.ToList();
         long bytes = 0;
 
-        foreach (var (ruleId, file) in items)
+        foreach (var item in revalidation.AuthorizedItems)
         {
+            var ruleId = item.RuleId;
+            var file = item.File;
             var dest = Path.Combine(batchDir, MapRelative(file.FullPath));
             try
             {

@@ -142,7 +142,15 @@ public sealed class AnalysisAndHistoryTests : IDisposable
         var history = new HistoryManager(Path.Combine(_root, "h2.jsonl"));
         var manager = new QuarantineManager(Path.Combine(_root, "q"), history);
 
-        var report = manager.Execute(new[] { ("rule-a", new Kleaner.Core.FileCandidate(f, 4, DateTime.UtcNow)) });
+        var rule = new Rule(
+            "rule-a", "测试审计规则", RuleCategory.Application, RiskLevel.Low,
+            new[] { Path.Combine(src, "**") }, Array.Empty<string>(),
+            AgeDays: 0, KeepNewest: null, RequiresElevation: false, Enabled: true,
+            SafetyNotes: "仅用于操作历史测试的临时目录授权规则，绝不触及真实用户文件。");
+        var set = new RuleSet(1, null, 0, new[] { rule });
+        var scan = new ScanEngine(manager.Root).Scan(set);
+        var plan = CleanupPlanBuilder.Create(set, scan, new[] { rule.Id }, manager.Root);
+        var report = manager.Execute(plan);
         manager.RestoreBatch(report.BatchId);
 
         var entries = history.Recent();
