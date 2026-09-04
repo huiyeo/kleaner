@@ -57,6 +57,18 @@ public interface IStartupEnvironment
     void SetRunValue(StartupHive hive, string keyPath, string valueName, string data);
 }
 
+/// <summary>启动项业务操作抽象，供界面协调层注入测试替身。</summary>
+public interface IStartupManager
+{
+    IReadOnlyList<StartupItem> Enumerate();
+
+    IReadOnlyList<DisabledStartup> ListDisabled();
+
+    void Disable(StartupItem item);
+
+    void Restore(string id);
+}
+
 /// <summary>Windows 真实实现：HKCU/HKLM Run 键与用户/公共启动文件夹；HKLM 修改经 UAC 提权调用 reg.exe。</summary>
 public sealed class WindowsStartupEnvironment : IStartupEnvironment
 {
@@ -154,7 +166,7 @@ public sealed class WindowsStartupEnvironment : IStartupEnvironment
 /// （注册表删值 / 文件移入备份目录），还原 = 按记录重建。HKLM 修改经 UAC 提权调用 reg.exe。
 /// 全部操作写入 history.jsonl 审计。
 /// </summary>
-public sealed class StartupManager
+public sealed class StartupManager : IStartupManager
 {
     private static readonly JsonSerializerOptions JsonOpts = new()
     {

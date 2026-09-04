@@ -63,15 +63,23 @@ public sealed class StartupRow : INotifyPropertyChanged
 public partial class StartupWindow : Window
 {
     private readonly ObservableCollection<StartupRow> _rows = new();
-    private readonly StartupManager _manager;
+    private readonly StartupWindowCoordinator _coordinator;
     private string _summaryText = string.Empty;
 
     public StartupWindow()
+        : this(new StartupManager(), new MessageBoxStartupWindowDialog(), Helpers.IsElevated)
+    {
+    }
+
+    public StartupWindow(
+        IStartupManager manager,
+        IStartupWindowDialog dialog,
+        Func<bool> isElevated)
     {
         InitializeComponent();
         LoadStrings();
         StartupGrid.ItemsSource = _rows;
-        _manager = new StartupManager();
+        _coordinator = new StartupWindowCoordinator(manager, dialog, isElevated);
         Loaded += (_, _) => Reload();
     }
 
@@ -93,13 +101,9 @@ public partial class StartupWindow : Window
     private void Reload()
     {
         _rows.Clear();
-        foreach (var item in _manager.Enumerate())
-            _rows.Add(new StartupRow(item));
-        foreach (var disabled in _manager.ListDisabled())
-            _rows.Add(new StartupRow(disabled));
-        _summaryText = _rows.Count == 0
-            ? S.Get("StartupNone")
-            : S.Format("StartupStatusLoaded", _rows.Count(r => !r.IsDisabled), _rows.Count(r => r.IsDisabled));
+        foreach (var row in _coordinator.LoadRows())
+            _rows.Add(row);
+        _summaryText = _coordinator.FormatSummary(_rows);
         StatusText.Text = _summaryText;
     }
 
@@ -114,67 +118,17 @@ public partial class StartupWindow : Window
             : _summaryText;
     }
 
-    private void OnDisable(object sender, RoutedEventArgs e)
+    private void OnDisable(object sender, RoutedEventArgs e) =>
+        Apply(_coordinator.DisableSelected(_rows));
+
+    private void OnRestore(object sender, RoutedEventArgs e) =>
+        Apply(_coordinator.RestoreSelected(_rows));
+
+    private void Apply(StartupWindowOperationResult result)
     {
-        var targets = _rows.Where(r => r.IsSelected && !r.IsDisabled).ToList();
-        if (targets.Count == 0)
-        {
-            MessageBox.Show(S.Get("StartupNothingSelected"), Title);
-            return;
-        }
-        if (targets.Any(t => t.Item!.RequiresElevation) && !Helpers.IsElevated())
-        {
-            if (MessageBox.Show(S.Get("StartupHklmConfirm"), Title,
-                    MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
-                return;
-        }
-
-        var ok = 0;
-        var errors = new List<string>();
-        foreach (var row in targets)
-        {
-            try
-            {
-                _manager.Disable(row.Item!);
-                ok++;
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"{row.Name}: {ex.Message}");
-            }
-        }
-        Reload();
-        StatusText.Text = errors.Count == 0
-            ? S.Format("StartupDisableDone", ok)
-            : S.Format("StartupPartial", ok, string.Join("；", errors));
-    }
-
-    private void OnRestore(object sender, RoutedEventArgs e)
-    {
-        var targets = _rows.Where(r => r.IsSelected && r.IsDisabled).ToList();
-        if (targets.Count == 0)
-        {
-            MessageBox.Show(S.Get("StartupNothingSelected"), Title);
-            return;
-        }
-
-        var ok = 0;
-        var errors = new List<string>();
-        foreach (var row in targets)
-        {
-            try
-            {
-                _manager.Restore(row.Id);
-                ok++;
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"{row.Name}: {ex.Message}");
-            }
-        }
-        Reload();
-        StatusText.Text = errors.Count == 0
-            ? S.Format("StartupRestoreDone", ok)
-            : S.Format("StartupPartial", ok, string.Join("；", errors));
+        if (result.Refresh)
+            Reload();
+        if (result.StatusText is not null)
+            StatusText.Text = result.StatusText;
     }
 }

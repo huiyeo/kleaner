@@ -23,11 +23,13 @@
     <ProjectReference Include="..\..\src\Kleaner.Executor\Kleaner.Executor.csproj" />
     <ProjectReference Include="..\..\src\Kleaner.SpecialOps\Kleaner.SpecialOps.csproj" />
     <ProjectReference Include="..\..\src\Kleaner.Analysis\Kleaner.Analysis.csproj" />
+    <ProjectReference Include="..\..\src\Kleaner.App\Kleaner.App.csproj" />
     <ProjectReference Include="..\..\tools\Kleaner.ScanCli\Kleaner.ScanCli.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="..\..\rules\rules.v1.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\src\Kleaner.App\Resources\Strings.zh-CN.json" Link="Resources\Strings.zh-CN.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
