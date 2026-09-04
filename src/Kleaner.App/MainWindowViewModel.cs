@@ -232,7 +232,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             != MessageBoxResult.OK)
             return;
 
-        var manager = new QuarantineManager(settings.EffectiveQuarantineRoot);
+        var manager = new QuarantineManager(settings.EffectiveQuarantineRoot, new HistoryManager());
         IsBusy = true;
         StatusText = S.Get("StatusCleaning");
         try

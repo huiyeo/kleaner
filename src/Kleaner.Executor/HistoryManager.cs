@@ -34,6 +34,17 @@ public sealed class HistoryManager
 
     public string FilePath => _path;
 
+    /// <summary>在改变文件状态前确认审计日志可创建、可写入并已落盘。</summary>
+    public void EnsureWritable()
+    {
+        lock (_lock)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+            using var stream = new FileStream(_path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            stream.Flush(flushToDisk: true);
+        }
+    }
+
     public void Append(string action, string detail, int fileCount, long bytes, string result)
     {
         var entry = new HistoryEntry(
@@ -48,7 +59,11 @@ public sealed class HistoryManager
         lock (_lock)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.AppendAllText(_path, line + Environment.NewLine);
+            using var stream = new FileStream(_path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            using var writer = new StreamWriter(stream);
+            writer.WriteLine(line);
+            writer.Flush();
+            stream.Flush(flushToDisk: true);
         }
     }
 

@@ -56,8 +56,8 @@
 
 | 文件 | 职责 |
 |---|---|
-| `QuarantineManager.cs` | 隔离区：移入、还原、清空、批次清单 |
-| `HistoryManager.cs` | 操作历史（只追加 JSONL） |
+| `QuarantineManager.cs` | 隔离区：带强制审计的移入、还原、手动清空、原子批次清单 |
+| `HistoryManager.cs` | 操作历史（只追加 JSONL；在文件状态变化前验证可写） |
 | `StartupManager.cs` | 启动项枚举 / 禁用 / 还原（含注册表与启动文件夹） |
 
 **这一层是唯一的写入出口。** 详见 `deletion-path.md`。

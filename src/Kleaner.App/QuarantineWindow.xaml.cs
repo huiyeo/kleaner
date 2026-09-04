@@ -19,7 +19,7 @@ public partial class QuarantineWindow : Window
         for (var i = 0; i < headers.Length && i < BatchesGrid.Columns.Count; i++)
             BatchesGrid.Columns[i].Header = headers[i];
 
-        _manager = new QuarantineManager(AppSettings.Load().EffectiveQuarantineRoot);
+        _manager = new QuarantineManager(AppSettings.Load().EffectiveQuarantineRoot, new HistoryManager());
         Refresh();
     }
 
@@ -33,8 +33,11 @@ public partial class QuarantineWindow : Window
     {
         if (BatchesGrid.SelectedItem is not BatchRow row)
             return;
-        var restored = _manager.RestoreBatch(row.Batch.BatchId);
-        MessageBox.Show(S.Format("RestoreDone", restored), Title);
+        var report = _manager.RestoreBatch(row.Batch.BatchId);
+        var message = report.IsComplete
+            ? S.Format("RestoreDone", report.RestoredCount)
+            : S.Format("RestorePartial", report.RestoredCount, string.Join("\n", report.Skipped.Concat(report.Failed)));
+        MessageBox.Show(message, Title, MessageBoxButton.OK, report.IsComplete ? MessageBoxImage.Information : MessageBoxImage.Warning);
         Refresh();
     }
 
@@ -48,7 +51,9 @@ public partial class QuarantineWindow : Window
                 S.Get("ConfirmDeleteBatchTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
             != MessageBoxResult.Yes)
             return;
-        _manager.DeleteBatch(row.Batch.BatchId);
+        var report = _manager.DeleteBatch(row.Batch.BatchId);
+        if (!report.Deleted)
+            MessageBox.Show(S.Format("DeleteBatchFailed", string.Join("\n", report.Failed)), Title, MessageBoxButton.OK, MessageBoxImage.Warning);
         Refresh();
     }
 

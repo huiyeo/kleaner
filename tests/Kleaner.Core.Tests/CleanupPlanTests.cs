@@ -57,7 +57,7 @@ public sealed class CleanupPlanTests : IDisposable
 
         File.WriteAllText(file, "changed");
         File.SetLastWriteTimeUtc(file, DateTime.UtcNow);
-        var report = new QuarantineManager(quarantine).Execute(plan);
+        var report = new QuarantineManager(quarantine, new HistoryManager(Path.Combine(_root, "history.jsonl"))).Execute(plan);
 
         Assert.Equal(0, report.MovedCount);
         Assert.Contains(report.Skipped, skipped => skipped.Contains(file, StringComparison.OrdinalIgnoreCase));

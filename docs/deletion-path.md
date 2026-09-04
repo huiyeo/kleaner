@@ -21,29 +21,30 @@
 
 ### 移入
 
-`Execute(CleanupPlan)` 一次调用是一个批次。它不接收调用方任意拼出的路径或规则 ID；先对计划快照重新扫描并核对候选元数据，再执行以下步骤：
+`Execute(CleanupPlan)` 一次调用是一个批次。它不接收调用方任意拼出的路径或规则 ID；先对计划快照重新扫描并核对候选元数据，再执行以下步骤。审计日志不可写或初始 manifest 落盘失败时，到此为止，**不会移动任何文件**：
 
-- 批次目录名 `batchId` = `DateTime.Now` 的 `yyyyMMdd-HHmmss`
+- 批次目录名 `batchId` = UTC 毫秒时间 + 随机 GUID，保证并发和同秒执行时不冲突
 - 文件落位 `MapRelative` 把盘符变成首层目录：`C:\Users\x\a.txt` → `<batchDir>\C\Users\x\a.txt`。不同盘的文件因此可共存于同一批次，反向也能推回原盘
+- 每项移动前先把 `pending` 条目原子写入 manifest；移动成功后更新为 `moved`，任何异常都保留已有 manifest 与隔离文件
 - 逐文件 `File.Move`，**任何异常只跳过并记录，绝不强制删除**
-- 写 `manifest.json`（缩进 JSON、小驼峰）
-- 落历史 `clean`
+- `manifest.json` 以同目录临时文件、落盘刷新、覆盖替换的方式更新；不接受一次移动完再补写清单
+- 写入 `clean-start` 与最终 `clean` 历史；最终结果如有跳过则为 `partial`
 
 ### 清单（manifest）
 
-位于 `<隔离区根>/<batchId>/manifest.json`，每条记录四个字段：`OriginalPath`、`QuarantinedPath`、`SizeBytes`、`RuleId`。
+位于 `<隔离区根>/<batchId>/manifest.json`，每条记录五个字段：`OriginalPath`、`QuarantinedPath`、`SizeBytes`、`RuleId`、`State`（`pending` 或 `moved`）。
 
 **不记录修改时间、哈希、权限**。还原只保证路径与内容，不还原时间戳。
 
 ### 还原
 
-`RestoreBatch` 整批还原。原路径已存在同名文件时，还原为 `{原路径}.restore-{batchId}`，**绝不覆盖现有文件**。还原后删除批次目录，落历史 `restore`。
+`RestoreBatch` 整批还原。原路径已存在同名文件时，还原为 `{原路径}.restore-{batchId}`，**绝不覆盖现有文件**。每成功还原一项就原子更新 manifest；只在所有条目均已恢复后删除空批次目录。任何缺失、被占用或移动失败都会保留整个批次与尚存隔离文件，并在 `RestoreReport` / `restore` 历史中报告 `partial`。
 
 *坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；GUI 层与 CLI 调用方需自行处理异常。
 
 ### 清空
 
-`PurgeOlderThan(TimeSpan)` 按 `CreatedUtc` 比对删除过期批次。**只由用户显式触发**——全仓唯一的真实调用点是 Web 隔离区页的「清空 7 天前批次」按钮，没有定时器、没有启动自调用。
+`PurgeOlderThan(TimeSpan)` 按 `CreatedUtc` 比对删除过期批次。**只由用户显式触发**——全仓唯一的真实调用点是 WPF 隔离区页的「清空 7 天前批次」按钮，没有定时器、没有启动自调用。
 
 `DeleteBatch` 落历史 `delete-batch`，`PurgeOlderThan` 落历史 `purge`。
 
@@ -55,9 +56,9 @@
 
 | Action | 触发点 |
 |---|---|
-| `clean` | 隔离区移入成功/部分成功 |
-| `restore` | 整批还原 |
-| `delete-batch` | 删除单个批次 |
+| `clean-start` / `clean` | 隔离区移入的审计起始 / 最终成功或部分成功 |
+| `restore-start` / `restore` | 整批还原的审计起始 / 最终成功或部分成功 |
+| `delete-batch-start` / `delete-batch` | 删除单个批次的审计起始 / 最终成功或部分成功 |
 | `purge` | 清空过期批次 |
 | `cli-clean` | CLI 用户在确认环节取消 |
 | `startup-disable` | 禁用启动项 |
@@ -110,7 +111,4 @@
 
 ## 已知问题
 
-- `batchId` 用 `DateTime.Now`（本地时间）命名目录，而 manifest 内的 `CreatedUtc` 用 `UtcNow`。跨时区或跨零点时两者可能落在不同日期。
-- `PurgeOlderThan` 落历史时写 `purged > 0 ? "ok" : "ok"`——两个分支相同，这个三元表达式无意义。
-- `TryDeleteDir` 静默吞掉所有异常，删除失败不会上报。
 - `StartupManager` 无 xunit 覆盖，只有 CLI 的 `startup-test` 往返自检，而该自检会写真实注册表与启动文件夹，CI 上不可跑。

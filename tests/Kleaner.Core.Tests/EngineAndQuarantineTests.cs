@@ -211,7 +211,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         File.WriteAllText(f2, "world");
 
         var quarantineRoot = Path.Combine(_root, "quarantine");
-        var manager = new QuarantineManager(quarantineRoot);
+        var manager = CreateManager(quarantineRoot, "restore");
 
         var report = manager.Execute(CreatePlan(quarantineRoot, "test-rule", f1, f2));
 
@@ -226,7 +226,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         Assert.Equal(2, batch.Entries.Count);
 
         var restored = manager.RestoreBatch(batch.BatchId);
-        Assert.Equal(2, restored);
+        Assert.Equal(2, restored.RestoredCount);
         Assert.True(File.Exists(f1));
         Assert.True(File.Exists(f2));
         Assert.Equal("hello", File.ReadAllText(f1));
@@ -243,7 +243,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         File.WriteAllText(locked, "x");
         File.WriteAllText(normal, "y");
 
-        var manager = new QuarantineManager(Path.Combine(_root, "quarantine2"));
+        var manager = CreateManager(Path.Combine(_root, "quarantine2"), "locked");
 
         using var handle = File.Open(locked, FileMode.Open, FileAccess.Read, FileShare.None);
         var report = manager.Execute(CreatePlan(manager.Root, "rule", locked, normal));
@@ -261,7 +261,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
         Directory.CreateDirectory(sourceDir);
         var f = Path.Combine(sourceDir, "c.txt");
         File.WriteAllText(f, "original");
-        var manager = new QuarantineManager(Path.Combine(_root, "quarantine3"));
+        var manager = CreateManager(Path.Combine(_root, "quarantine3"), "conflict");
         var report = manager.Execute(CreatePlan(manager.Root, "r", f));
         File.WriteAllText(f, "new-content"); // 原位置出现新文件
 
@@ -274,7 +274,7 @@ public sealed class EngineAndQuarantineTests : IDisposable
     [Fact]
     public void 隔离区_手动清空仅清过期批次()
     {
-        var manager = new QuarantineManager(Path.Combine(_root, "quarantine4"));
+        var manager = CreateManager(Path.Combine(_root, "quarantine4"), "purge");
         var dir = Path.Combine(_root, "purge-src");
         Directory.CreateDirectory(dir);
         var f = Path.Combine(dir, "p.txt");
@@ -296,6 +296,82 @@ public sealed class EngineAndQuarantineTests : IDisposable
     }
 
     [Fact]
+    public void 隔离区_还原部分失败时保留未恢复文件与批次()
+    {
+        var source = Path.Combine(_root, "partial-restore");
+        Directory.CreateDirectory(source);
+        var blocked = Path.Combine(source, "blocked.txt");
+        var normal = Path.Combine(source, "normal.txt");
+        File.WriteAllText(blocked, "blocked");
+        File.WriteAllText(normal, "normal");
+        var manager = CreateManager(Path.Combine(_root, "partial-quarantine"), "partial-restore");
+        var execution = manager.Execute(CreatePlan(manager.Root, "partial", blocked, normal));
+
+        Directory.CreateDirectory(blocked); // 同名目录使恢复目标不可写入文件。
+        var restore = manager.RestoreBatch(execution.BatchId);
+
+        Assert.Equal(1, restore.RestoredCount);
+        Assert.NotEmpty(restore.Failed);
+        Assert.True(File.Exists(normal));
+        var batch = Assert.Single(manager.ListBatches());
+        Assert.Contains(batch.Entries, entry => entry.OriginalPath == blocked && File.Exists(entry.QuarantinedPath));
+    }
+
+    [Fact]
+    public void 隔离区_批次编号唯一且manifest只保留最终状态()
+    {
+        var source = Path.Combine(_root, "unique-batches");
+        Directory.CreateDirectory(source);
+        var first = Path.Combine(source, "first.txt");
+        var second = Path.Combine(source, "second.txt");
+        File.WriteAllText(first, "one");
+        File.WriteAllText(second, "two");
+        var manager = CreateManager(Path.Combine(_root, "unique-quarantine"), "unique");
+
+        var firstExecution = manager.Execute(CreatePlan(manager.Root, "unique", first));
+        var secondExecution = manager.Execute(CreatePlan(manager.Root, "unique", second));
+
+        Assert.NotEqual(firstExecution.BatchId, secondExecution.BatchId);
+        Assert.All(manager.ListBatches().SelectMany(batch => batch.Entries), entry => Assert.Equal("moved", entry.State));
+        Assert.Empty(Directory.GetFiles(manager.Root, "*.tmp", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public void 隔离区_永久清空失败不会伪报成功()
+    {
+        var source = Path.Combine(_root, "delete-failure");
+        Directory.CreateDirectory(source);
+        var file = Path.Combine(source, "locked.txt");
+        File.WriteAllText(file, "locked");
+        var history = new HistoryManager(Path.Combine(_root, "delete-failure.history.jsonl"));
+        var manager = new QuarantineManager(Path.Combine(_root, "delete-failure-quarantine"), history);
+        var execution = manager.Execute(CreatePlan(manager.Root, "delete", file));
+        var entry = Assert.Single(Assert.Single(manager.ListBatches()).Entries);
+
+        using var handle = File.Open(entry.QuarantinedPath, FileMode.Open, FileAccess.Read, FileShare.None);
+        var deletion = manager.DeleteBatch(execution.BatchId);
+
+        Assert.False(deletion.Deleted);
+        Assert.NotEmpty(deletion.Failed);
+        Assert.True(Directory.Exists(execution.QuarantineDir));
+        Assert.Contains(history.Recent(), item => item.Action == "delete-batch" && item.Result == "partial");
+    }
+
+    [Fact]
+    public void 隔离区_审计不可写时拒绝初始化且不移动文件()
+    {
+        var source = Path.Combine(_root, "audit-failure");
+        Directory.CreateDirectory(source);
+        var file = Path.Combine(source, "original.txt");
+        File.WriteAllText(file, "keep");
+        var invalidHistoryPath = Path.Combine(_root, "history-directory");
+        Directory.CreateDirectory(invalidHistoryPath);
+
+        Assert.ThrowsAny<Exception>(() => new QuarantineManager(Path.Combine(_root, "audit-failure-quarantine"), new HistoryManager(invalidHistoryPath)));
+        Assert.True(File.Exists(file));
+    }
+
+    [Fact]
     public void 更新校验_SHA512通过与否均正确判定()
     {
         var payload = "hello kleaner"u8.ToArray();
@@ -304,6 +380,9 @@ public sealed class EngineAndQuarantineTests : IDisposable
         Assert.True(RuleUpdateService.VerifySha512(payload, good.ToLowerInvariant()));
         Assert.False(RuleUpdateService.VerifySha512(payload, "ABCD"));
     }
+
+    private QuarantineManager CreateManager(string quarantineRoot, string name) =>
+        new(quarantineRoot, new HistoryManager(Path.Combine(_root, $"{name}.history.jsonl")));
 
     [Fact]
     public void SpecialOps_检测不抛异常()
