@@ -1,6 +1,7 @@
 # 文本默认按 Git 自动识别；仓库内维护的源与文档统一以 CRLF 检出。
 * text=auto
 .gitattributes text eol=crlf
+.editorconfig text eol=crlf
 
 *.cs text eol=crlf
 *.xaml text eol=crlf

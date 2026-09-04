@@ -26,8 +26,9 @@
 ## 4. 代码风格与分析器
 
 - 缩进、换行、命名以仓库根 `.editorconfig` 为准；不因个人编辑器习惯改动全局配置。
-- 分析器基线为警告级，不设 `TreatWarningsAsErrors`：新代码不得引入新告警，存量告警清单化观察（`docs/analyzer-baseline.md`），观察期结束后再评估是否升级为 error。
+- 已完成观察的代码风格与可空性规则为 error 级；不设 `TreatWarningsAsErrors`，避免将 SDK、第三方或未来未评估的告警一并升级。新增或调整规则先以警告级观察，并在 `docs/analyzer-baseline.md` 清零后再收紧。
 
 ## 变更记录
 
 - 2026-09-03 初版：提交信息 / 注释 / UI 文案 / 代码风格与分析器四节。
+- 2026-09-05：既有分析器基线清零后，将七条已观察规则收紧为 error；继续不启用全局 `TreatWarningsAsErrors`。

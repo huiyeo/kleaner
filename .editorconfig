@@ -15,13 +15,13 @@ indent_size = 4
 end_of_line = crlf
 
 [*.cs]
-# 警告级基线：可见但不阻塞构建（docs/conventions.md §4）
-dotnet_style_require_accessibility_modifiers = always:warning
+# 已清零并完成观察的规则直接阻塞构建（docs/conventions.md §4）。
+dotnet_style_require_accessibility_modifiers = always:error
 csharp_style_var_when_type_is_apparent = true:suggestion
-csharp_prefer_braces = true:warning
-dotnet_diagnostic.CS8600.severity = warning
-dotnet_diagnostic.CS8618.severity = warning
-dotnet_diagnostic.CS8601.severity = warning
-dotnet_diagnostic.CS8602.severity = warning
-dotnet_diagnostic.CS8603.severity = warning
-dotnet_diagnostic.CS8604.severity = warning
+csharp_prefer_braces = true:error
+dotnet_diagnostic.CS8600.severity = error
+dotnet_diagnostic.CS8618.severity = error
+dotnet_diagnostic.CS8601.severity = error
+dotnet_diagnostic.CS8602.severity = error
+dotnet_diagnostic.CS8603.severity = error
+dotnet_diagnostic.CS8604.severity = error
