@@ -4,9 +4,11 @@
 
 **Blocked by:** None（可立即开始）
 
-**Status:** ready-for-agent
+**Status:** complete
 
-- [ ] `.gitattributes`：`* text=auto` 为基线；`*.cs`、`*.xaml`、`*.csproj`、`*.slnx`、`*.json`、`*.md` 显式 `text eol=crlf`（与 .editorconfig 一致）；`*.png`、`*.ico`、`*.exe` 等显式 `binary`
-- [ ] 执行 `git add --renormalize .`，提交前确认 diff 仅含换行差异、无内容变化
-- [ ] 提交后任意 `git add`/`git checkout` 不再出现换行告警
-- [ ] Windows 上构建与 60/60 测试保持绿色
+- [x] `.gitattributes`：`* text=auto` 为基线；`*.cs`、`*.xaml`、`*.csproj`、`*.slnx`、`*.json`、`*.md` 显式 `text eol=crlf`（与 .editorconfig 一致）；`*.png`、`*.ico`、`*.exe` 等显式 `binary`
+- [x] 执行 `git add --renormalize .`，提交前确认未产生已跟踪文本的内容或行尾差异
+- [x] 提交前复验 `git add`/`git checkout` 不再出现换行告警
+- [x] Windows 上 Release 构建 0 警告/0 错误，完整测试 72/72 通过
+
+完成于 2026-09-05：规范化未产生既有文本差异；规则只新增换行与二进制文件声明。

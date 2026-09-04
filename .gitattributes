@@ -1,0 +1,19 @@
+# 文本默认按 Git 自动识别；仓库内维护的源与文档统一以 CRLF 检出。
+* text=auto
+.gitattributes text eol=crlf
+
+*.cs text eol=crlf
+*.xaml text eol=crlf
+*.csproj text eol=crlf
+*.slnx text eol=crlf
+*.json text eol=crlf
+*.md text eol=crlf
+
+# 图标、图像、字体与可执行产物绝不做换行转换。
+*.png binary
+*.ico binary
+*.exe binary
+*.dll binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
