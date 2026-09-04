@@ -14,8 +14,8 @@ public sealed partial class RuleRow : ObservableObject
 
     public Rule Rule { get; }
 
-    /// <summary>verified 以「本机实测」开头的规则视为已在本机验证；未声明 verified 的旧规则视同已验证。</summary>
-    public bool MachineVerified => Rule.Verified?.StartsWith("本机实测", StringComparison.Ordinal) ?? true;
+    /// <summary>默认选择统一由 Core 的验证状态策略决定，缺失状态一律按未验证处理。</summary>
+    public bool MachineVerified => RuleSelectionPolicy.IsDefaultSelectable(Rule);
 
     public string Id => Rule.Id;
 

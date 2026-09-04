@@ -20,7 +20,8 @@ public sealed class RuleSelectionPolicyTests
         Verified: verified);
 
     [Theory]
-    [InlineData(null, true)]                 // 未声明 verified 的旧规则视同已验证
+    [InlineData(null, false)]                // 缺失状态必须按未验证处理
+    [InlineData("   ", false)]               // 空白状态不能被静默视作已验证
     [InlineData("本机实测", true)]            // 精确前缀
     [InlineData("本机实测：2026-08-01 于本机清理验证", true)] // 前缀 + 补充说明
     [InlineData("本机实测验", true)]          // 前缀出现在更长的词首，按 Ordinal 前缀语义仍成立

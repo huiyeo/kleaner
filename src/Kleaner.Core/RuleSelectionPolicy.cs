@@ -4,10 +4,10 @@ namespace Kleaner.Core;
 public static class RuleSelectionPolicy
 {
     /// <summary>
-    /// verified 以「本机实测」开头的规则视为已在本机验证，默认勾选；
-    /// 未声明 verified 的旧规则视同已验证，同样默认勾选。
-    /// （保留既有“仅机器验证规则默认选中”的安全语义，供 Web UI 复用。）
+    /// 只有明确以「本机实测」开头的规则才默认勾选。
+    /// 缺失、空白或其他验证状态均按未验证处理，避免规则字段遗漏时静默放宽默认清理范围。
     /// </summary>
     public static bool IsDefaultSelectable(Rule rule) =>
-        rule.Verified?.StartsWith("本机实测", StringComparison.Ordinal) ?? true;
+        !string.IsNullOrWhiteSpace(rule.Verified) &&
+        rule.Verified.StartsWith("本机实测", StringComparison.Ordinal);
 }

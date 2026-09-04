@@ -20,6 +20,18 @@ public class RuleSetTests
     }
 
     [Fact]
+    public void 随库规则_都有非空验证状态与安全说明锚点()
+    {
+        var set = LoadShipped();
+
+        Assert.All(set.Rules, rule =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(rule.Verified), $"规则 {rule.Id} 缺少 verified");
+            Assert.False(string.IsNullOrWhiteSpace(rule.SafetyDoc), $"规则 {rule.Id} 缺少 safetyDoc");
+        });
+    }
+
+    [Fact]
     public void 分类默认_年龄解析正确()
     {
         var set = LoadShipped();
