@@ -226,13 +226,31 @@ public sealed class QuarantineManager
                     throw new InvalidDataException("还原目标缺失或内容不匹配，保留清单待核对");
                 }
                 restored++;
-                remaining.Remove(currentEntry);
             }
             catch (Exception ex)
             {
                 failed.Add($"{entry.QuarantinedPath}（{ex.GetType().Name}）");
                 continue;
             }
+            try
+            {
+                // 先保存逐项证据，再移除恢复意图；审计失败不能继续移动下一项。
+                _history.Append("restore-file", JsonSerializer.Serialize(new
+                {
+                    BatchId = batchId,
+                    currentEntry.OriginalPath,
+                    currentEntry.QuarantinedPath,
+                    currentEntry.RestoreTarget,
+                    currentEntry.RestoreSha256,
+                    Reconciled = !sourceExists
+                }, JsonOpts), 1, currentEntry.SizeBytes, "ok");
+            }
+            catch (Exception ex)
+            {
+                failed.Add($"逐项还原审计失败，已停止后续还原并保留意图（{ex.GetType().Name}）");
+                break;
+            }
+            remaining.Remove(currentEntry);
             try
             {
                 WriteManifestAtomic(batchDir, batch with { Entries = remaining.ToArray() });

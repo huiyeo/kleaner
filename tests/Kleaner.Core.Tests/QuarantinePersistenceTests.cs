@@ -166,5 +166,65 @@ public sealed class QuarantinePersistenceTests : IDisposable
         Assert.Empty(Assert.Single(manager.ListBatches()).Entries);
     }
 
+    [Fact]
+    public void 还原逐项审计失败保留意图并停止后续移动()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var plan = MakePlan(quarantine);
+        var normal = new QuarantineManager(quarantine, history);
+        var execution = normal.Execute(plan);
+        FileStream? locked = null;
+        var faulty = new QuarantineManager(quarantine, history, snapshot =>
+        {
+            if (locked is null && snapshot.Entries.Any(entry => entry.State == "restoring"))
+                locked = File.Open(history.FilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        });
+        try
+        {
+            Assert.Throws<IOException>(() => faulty.RestoreBatch(execution.BatchId));
+            var persisted = Assert.Single(normal.ListBatches());
+            Assert.Equal(2, persisted.Entries.Count);
+            Assert.Equal("restoring", persisted.Entries[0].State);
+            Assert.Single(plan.Items, item => File.Exists(item.File.FullPath));
+        }
+        finally { locked?.Dispose(); }
+
+        Assert.True(normal.RestoreBatch(execution.BatchId).IsComplete);
+        Assert.Equal(2, history.Recent().Count(entry => entry.Action == "restore-file"));
+        Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
+    }
+
+    [Fact]
+    public void 还原最终汇总审计失败仍保留全部逐项证据()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var plan = MakePlan(quarantine);
+        var execution = new QuarantineManager(quarantine, history).Execute(plan);
+        FileStream? locked = null;
+        var faulty = new QuarantineManager(quarantine, history, snapshot =>
+        {
+            if (snapshot.Entries.Count == 0)
+                locked = File.Open(history.FilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        });
+        try { Assert.Throws<IOException>(() => faulty.RestoreBatch(execution.BatchId)); }
+        finally { locked?.Dispose(); }
+
+        var records = history.Recent().Where(entry => entry.Action == "restore-file").ToArray();
+        Assert.Equal(2, records.Length);
+        Assert.All(records, record =>
+        {
+            using var detail = System.Text.Json.JsonDocument.Parse(record.Detail);
+            Assert.Equal(execution.BatchId, detail.RootElement.GetProperty("batchId").GetString());
+            var target = detail.RootElement.GetProperty("restoreTarget").GetString()!;
+            Assert.Equal("content", File.ReadAllText(target));
+            Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(target))),
+                detail.RootElement.GetProperty("restoreSha256").GetString());
+        });
+        Assert.DoesNotContain(history.Recent(), entry => entry.Action == "restore");
+        Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
+    }
+
     public void Dispose() => Directory.Delete(_root, recursive: true);
 }
