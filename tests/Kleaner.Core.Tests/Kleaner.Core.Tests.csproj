@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Kleaner.Core\Kleaner.Core.csproj" />
+    <ProjectReference Include="..\Kleaner.CrashWorker\Kleaner.CrashWorker.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\..\src\Kleaner.Executor\Kleaner.Executor.csproj" />
     <ProjectReference Include="..\..\src\Kleaner.SpecialOps\Kleaner.SpecialOps.csproj" />
     <ProjectReference Include="..\..\src\Kleaner.Analysis\Kleaner.Analysis.csproj" />
@@ -31,5 +32,12 @@
     <Content Include="..\..\rules\rules.v1.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\Kleaner.App\Resources\Strings.zh-CN.json" Link="Resources\Strings.zh-CN.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <Target Name="CopyCrashWorker" AfterTargets="Build">
+    <ItemGroup>
+      <CrashWorkerFiles Include="$(MSBuildProjectDirectory)\..\Kleaner.CrashWorker\bin\$(Configuration)\net10.0-windows\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CrashWorkerFiles)" DestinationFolder="$(OutDir)crash-worker" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

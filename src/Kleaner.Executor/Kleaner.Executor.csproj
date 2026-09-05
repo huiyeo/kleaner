@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Kleaner.Core\Kleaner.Core.csproj" />
     <InternalsVisibleTo Include="Kleaner.Core.Tests" />
+    <InternalsVisibleTo Include="Kleaner.CrashWorker" />
   </ItemGroup>
 
   <PropertyGroup>

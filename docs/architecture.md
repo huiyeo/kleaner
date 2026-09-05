@@ -2,7 +2,7 @@
 
 ## 工程清单
 
-7 个工程，分三个虚拟文件夹（`Kleaner.slnx`）。全部面向 .NET 10，Windows 专属（`net10.0-windows`），仅 `Kleaner.Core` 例外。
+8 个工程，分三个虚拟文件夹（`Kleaner.slnx`）。全部面向 .NET 10，Windows 专属（`net10.0-windows`），仅 `Kleaner.Core` 例外。
 
 | 工程 | TFM | 类型 | 引用 |
 |---|---|---|---|
@@ -12,7 +12,8 @@
 | `Kleaner.SpecialOps` | `net10.0-windows` | 库 | Core |
 | `Kleaner.App` | `net10.0-windows` | `WinExe`，`UseWPF` | Core, Executor, SpecialOps, Analysis |
 | `Kleaner.ScanCli` | `net10.0-windows` | `Exe` | Core, Executor, Analysis |
-| `Kleaner.Core.Tests` | `net10.0-windows` | 库（xunit） | Core, Executor, SpecialOps, Analysis, App |
+| `Kleaner.Core.Tests` | `net10.0-windows` | 库（xunit） | Core, Executor, SpecialOps, Analysis, App, ScanCli；CrashWorker 仅构建依赖 |
+| `Kleaner.CrashWorker` | `net10.0-windows` | `Exe`，仅测试 | Executor（传递引用 Core） |
 
 依赖**单向无环**。没有 `Directory.Build.props`、`global.json`、`.config/dotnet-tools.json`——无 SDK 版本锁定，无集中包管理。
 
@@ -23,6 +24,8 @@
 
 `Kleaner.ScanCli` 不引用 SpecialOps——高级模式（WSL、注册表、系统工具引导）只有 GUI 有。
 `Kleaner.Core.Tests` 为清理计划入口契约引用 App；直接的 WPF 控件与视觉回归仍无自动化覆盖。
+
+`Kleaner.CrashWorker` 仅在测试输出的 `crash-worker` 子目录运行，不进入 App/CLI 发布依赖。它只接受系统临时目录下的空 GUID 夹具；通过 Executor 的内部测试注入点在移动后、清单替换前调用 `Environment.Exit(73)`，由父测试进程验证持久化恢复。此退出不执行 finally，不等同于断电。
 
 ## 各工程源文件与职责
 
