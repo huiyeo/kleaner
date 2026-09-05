@@ -93,5 +93,50 @@ public sealed class QuarantineProcessRecoveryTests : IDisposable
         Assert.Contains(history.Recent(), entry => entry.Action == "restore" && entry.Result == "partial");
     }
 
+    [Theory]
+    [InlineData("prepared")]
+    [InlineData("finalized")]
+    [InlineData("appended")]
+    public async Task 还原收尾进程退出后补记汇总且不重复(string stage)
+    {
+        var dotnet = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH")
+            ?? Path.GetFullPath(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", "dotnet.exe"));
+        var start = new ProcessStartInfo(dotnet)
+        {
+            UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        foreach (var arg in new[] { Path.Combine(AppContext.BaseDirectory, "crash-worker", "Kleaner.CrashWorker.dll"), "audit-" + stage, _root })
+            start.ArgumentList.Add(arg);
+        using var process = Process.Start(start)!;
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        try { await process.WaitForExitAsync(timeout.Token); }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync();
+            Assert.Fail("测试子进程未及时到达收尾中断点");
+        }
+        Assert.True(process.ExitCode == 73, $"退出码 {process.ExitCode}；{await stdout}；{await stderr}");
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var receipts = Path.Combine(quarantine, ".pending-audit");
+        Assert.Single(Directory.GetFiles(receipts, "*.json"));
+        Assert.Equal(stage == "appended" ? 1 : 0, history.Recent().Count(entry => entry.Action == "restore"));
+        var reopened = new QuarantineManager(quarantine, history);
+        reopened.RecoverPendingAudit();
+        reopened.RecoverPendingAudit();
+        var summary = Assert.Single(history.Recent(), entry => entry.Action == "restore");
+        Assert.Equal(2, summary.FileCount);
+        Assert.Equal(stage == "prepared" ? "partial" : "ok", summary.Result);
+        Assert.Empty(Directory.GetFiles(receipts, "*.json"));
+        if (stage == "prepared") Assert.Single(reopened.ListBatches());
+        else Assert.Empty(reopened.ListBatches());
+        foreach (var file in new[] { "a.txt", "b.txt" })
+            Assert.Equal(file + "-content", File.ReadAllText(Path.Combine(_root, "source", file)));
+    }
+
     public void Dispose() => Directory.Delete(_root, recursive: true);
 }

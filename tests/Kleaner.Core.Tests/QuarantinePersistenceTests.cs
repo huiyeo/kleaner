@@ -224,6 +224,60 @@ public sealed class QuarantinePersistenceTests : IDisposable
                 detail.RootElement.GetProperty("restoreSha256").GetString());
         });
         Assert.DoesNotContain(history.Recent(), entry => entry.Action == "restore");
+        Assert.True(Directory.Exists(Path.Combine(quarantine, ".pending-audit")), "汇总失败必须保留独立于批次的待补记凭据");
+        var receiptPath = Assert.Single(Directory.GetFiles(Path.Combine(quarantine, ".pending-audit"), "*.json"));
+        var receiptBytes = File.ReadAllBytes(receiptPath);
+        var reopened = new QuarantineManager(quarantine, history);
+        reopened.RecoverPendingAudit();
+        var summary = Assert.Single(history.Recent(), entry => entry.Action == "restore");
+        Assert.Equal(2, summary.FileCount);
+        Assert.Equal("ok", summary.Result);
+        Assert.False(File.Exists(receiptPath));
+        File.WriteAllBytes(receiptPath, receiptBytes); // 模拟审计成功后、凭据移除前中断。
+        reopened.RecoverPendingAudit();
+        Assert.Single(history.Recent(), entry => entry.Action == "restore");
+        Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
+    }
+
+    [Theory]
+    [InlineData("{broken")]
+    [InlineData("null")]
+    public void 损坏待补记凭据阻止新清理并保留证据(string corrupt)
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var plan = MakePlan(quarantine);
+        var manager = new QuarantineManager(quarantine, history);
+        var directory = Path.Combine(quarantine, ".pending-audit");
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".json");
+        File.WriteAllText(path, corrupt);
+
+        Assert.NotNull(Record.Exception(() => manager.Execute(plan)));
+        Assert.Equal(corrupt, File.ReadAllText(path));
+        Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
+        Assert.Empty(history.Recent());
+        Assert.Empty(manager.ListBatches());
+    }
+
+    [Fact]
+    public void 待补记目录不可写时不删除批次清单()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var plan = MakePlan(quarantine);
+        var manager = new QuarantineManager(quarantine, history);
+        var execution = manager.Execute(plan);
+        var interrupted = new QuarantineManager(quarantine, history, snapshot =>
+        {
+            if (snapshot.Entries.Count == 0)
+                File.WriteAllText(Path.Combine(quarantine, ".pending-audit"), "保留的冲突文件");
+        });
+        Assert.Throws<IOException>(() => interrupted.RestoreBatch(execution.BatchId));
+        Assert.True(File.Exists(Path.Combine(execution.QuarantineDir, "manifest.json")));
+        Assert.Equal("保留的冲突文件", File.ReadAllText(Path.Combine(quarantine, ".pending-audit")));
+        Assert.Throws<InvalidDataException>(() => manager.Execute(plan));
+        Assert.DoesNotContain(history.Recent(), entry => entry.Action == "restore");
         Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
     }
 

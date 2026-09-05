@@ -2,7 +2,8 @@ using Kleaner.Core;
 using Kleaner.Executor;
 
 // 仅供测试：根目录必须是临时目录下新建的空夹具，不接受用户隔离区。
-if (args.Length != 2 || args[0] is not ("clean-moved" or "restore-moved" or "restore-held")) return 2;
+if (args.Length != 2 || args[0] is not ("clean-moved" or "restore-moved" or "restore-held"
+    or "audit-prepared" or "audit-finalized" or "audit-appended")) return 2;
 var root = Path.GetFullPath(args[1]);
 var name = Path.GetFileName(root);
 if (!string.Equals(Path.GetDirectoryName(root), Path.TrimEndingDirectorySeparator(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase)
@@ -29,7 +30,7 @@ var crashing = new QuarantineManager(quarantine, history, snapshot =>
 {
     var stop = args[0] == "clean-moved"
         ? snapshot.Entries.Any(entry => entry.State == "moved")
-        : snapshot.Entries.Count == 1;
+        : args[0] is ("restore-moved" or "restore-held") && snapshot.Entries.Count == 1;
     // 在真实移动及临时清单 Flush 后退出，故意不执行 finally；不模拟断电。
     if (stop)
     {
@@ -41,6 +42,9 @@ var crashing = new QuarantineManager(quarantine, history, snapshot =>
         }
         Environment.Exit(73);
     }
+}, stage =>
+{
+    if (args[0] == "audit-" + stage) Environment.Exit(73);
 });
 if (args[0] == "clean-moved") crashing.Execute(plan);
 else
