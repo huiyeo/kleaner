@@ -33,9 +33,17 @@ public sealed class QuarantineManager
 
     private readonly string _root;
     private readonly HistoryManager _history;
+    private readonly Action<QuarantineBatch>? _beforeManifestReplace;
 
     public QuarantineManager(string? root, HistoryManager history)
+        : this(root, history, null)
     {
+    }
+
+    // 仅测试程序集注入故障；生产调用仍固定走真实文件写入、刷新和原子替换。
+    internal QuarantineManager(string? root, HistoryManager history, Action<QuarantineBatch>? beforeManifestReplace)
+    {
+        _beforeManifestReplace = beforeManifestReplace;
         ArgumentNullException.ThrowIfNull(history);
         _root = Path.GetFullPath(root ?? DefaultRoot());
         _history = history;
@@ -95,18 +103,18 @@ public sealed class QuarantineManager
 
             var entry = new QuarantineEntry(file.FullPath, destination, file.SizeBytes, item.RuleId);
             entries.Add(entry);
+            // 恢复记录写入失败属于事务故障，不能由逐文件跳过逻辑吞掉。
+            WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
             try
             {
                 EnsureNoReparsePoints(file.FullPath);
                 EnsureNoReparsePoints(destination);
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
                 EnsureNoReparsePoints(file.FullPath);
                 EnsureNoReparsePoints(destination);
                 File.Move(file.FullPath, destination);
                 entries[^1] = entry with { State = "moved" };
                 bytes += file.SizeBytes;
-                WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
             }
             catch (Exception ex)
             {
@@ -114,6 +122,7 @@ public sealed class QuarantineManager
                     entries.Remove(entry);
                 skipped.Add($"{file.FullPath}（{ex.GetType().Name}）");
             }
+            WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
         }
 
         WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
@@ -177,11 +186,20 @@ public sealed class QuarantineManager
                 File.Move(entry.QuarantinedPath, target);
                 restored++;
                 remaining.Remove(entry);
-                WriteManifestAtomic(batchDir, batch with { Entries = remaining.ToArray() });
             }
             catch (Exception ex)
             {
                 failed.Add($"{entry.QuarantinedPath}（{ex.GetType().Name}）");
+                continue;
+            }
+            try
+            {
+                WriteManifestAtomic(batchDir, batch with { Entries = remaining.ToArray() });
+            }
+            catch (Exception ex)
+            {
+                failed.Add($"批次清单更新失败，已停止后续还原（{ex.GetType().Name}）");
+                break;
             }
         }
 
@@ -287,7 +305,7 @@ public sealed class QuarantineManager
         }
     }
 
-    private static void WriteManifestAtomic(string batchDir, QuarantineBatch batch)
+    private void WriteManifestAtomic(string batchDir, QuarantineBatch batch)
     {
         var manifest = Path.Combine(batchDir, "manifest.json");
         EnsureNoReparsePoints(manifest);
@@ -300,6 +318,7 @@ public sealed class QuarantineManager
                 stream.Flush(flushToDisk: true);
             }
             EnsureNoReparsePoints(manifest);
+            _beforeManifestReplace?.Invoke(batch);
             File.Move(temporary, manifest, overwrite: true);
         }
         finally

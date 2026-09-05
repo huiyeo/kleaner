@@ -30,6 +30,8 @@
 - `manifest.json` 以同目录临时文件、落盘刷新、覆盖替换的方式更新；不接受一次移动完再补写清单
 - 写入 `clean-start` 与最终 `clean` 历史；最终结果如有跳过则为 `partial`
 
+清单持久化错误不进入逐文件跳过分支：预写或移动后替换失败会中止 `Execute`，保留上次有效 manifest。若移动已完成但 moved 状态尚未落盘，pending 条目仍能指向隔离文件并用于还原；异常不得被视作成功的清理报告。
+
 ### 清单（manifest）
 
 位于 `<隔离区根>/<batchId>/manifest.json`，每条记录五个字段：`OriginalPath`、`QuarantinedPath`、`SizeBytes`、`RuleId`、`State`（`pending` 或 `moved`）。
@@ -47,6 +49,8 @@
 *坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；GUI 层与 CLI 调用方需自行处理异常。
 
 收尾仅移除空目录与本批次 `manifest.json`。发现未登记文件、reparse point 或目录处理异常时保留清单，禁止删除未知内容；最终 `restore` 历史在收尾之后记录，收尾失败也是 `partial`。
+
+还原成功一项后若清单更新失败，停止后续移动并返回 partial，保留旧清单。重试可恢复剩余隔离文件；已恢复项在旧清单中会显示隔离文件缺失，暂不自动判定它已成功恢复（目标身份和中断状态核对协议仍待完成）。
 
 ### 清空
 

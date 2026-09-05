@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Kleaner.Core\Kleaner.Core.csproj" />
+    <InternalsVisibleTo Include="Kleaner.Core.Tests" />
   </ItemGroup>
 
   <PropertyGroup>
