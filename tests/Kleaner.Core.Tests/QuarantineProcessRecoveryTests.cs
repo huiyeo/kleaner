@@ -13,6 +13,7 @@ public sealed class QuarantineProcessRecoveryTests : IDisposable
     [Theory]
     [InlineData("clean-moved")]
     [InlineData("restore-moved")]
+    [InlineData("restore-held")]
     public async Task 进程在移动后退出仍能核对并恢复全部文件(string phase)
     {
         var worker = Path.Combine(AppContext.BaseDirectory, "crash-worker", "Kleaner.CrashWorker.dll");
@@ -25,10 +26,31 @@ public sealed class QuarantineProcessRecoveryTests : IDisposable
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
-            RedirectStandardError = true
+            RedirectStandardError = true,
+            RedirectStandardInput = true
         };
         foreach (var arg in new[] { worker, phase, _root }) start.ArgumentList.Add(arg);
         using var process = Process.Start(start)!;
+        if (phase == "restore-held")
+        {
+            try
+            {
+                Assert.Equal("held", await process.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(30)));
+                var competingHistory = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+                var competing = new QuarantineManager(Path.Combine(_root, "q"), competingHistory);
+                var activeBatch = Assert.Single(competing.ListBatches());
+                Assert.Throws<IOException>(() => competing.RestoreBatch(activeBatch.BatchId));
+                Assert.Single(competingHistory.Recent(), entry => entry.Action == "restore-start");
+                await process.StandardInput.WriteLineAsync("exit");
+                process.StandardInput.Close();
+            }
+            catch
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+                throw;
+            }
+        }
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));

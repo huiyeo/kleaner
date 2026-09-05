@@ -153,8 +153,9 @@ public sealed class CliSafetyContractTests : IDisposable
         Assert.True(doc.RootElement.GetProperty("applied").GetBoolean());
         Assert.Equal(2, doc.RootElement.GetProperty("moved").GetInt32());
         Assert.Empty(Directory.EnumerateFiles(_fixtureDir));
-        // 隔离区内：2 个被移入文件 + 1 份批次 manifest.json
+        // 根目录保留操作锁；批次内仍只有两个隔离文件和一份清单。
         var quarantined = Directory.EnumerateFiles(_quarantineDir, "*", SearchOption.AllDirectories).ToList();
+        Assert.True(quarantined.Remove(Path.Combine(_quarantineDir, ".operation.lock")));
         Assert.Equal(2, quarantined.Count(f => !f.EndsWith("manifest.json", StringComparison.OrdinalIgnoreCase)));
         Assert.Contains(quarantined, f => f.EndsWith("manifest.json", StringComparison.OrdinalIgnoreCase));
         Assert.True(File.Exists(_historyFile));

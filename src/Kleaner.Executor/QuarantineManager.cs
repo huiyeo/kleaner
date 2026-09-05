@@ -79,6 +79,7 @@ public sealed class QuarantineManager
     public ExecutionReport Execute(CleanupPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        using var operation = AcquireOperation();
         var revalidation = plan.Revalidate();
         var skipped = revalidation.Skipped.ToList();
         if (revalidation.AuthorizedItems.Count == 0)
@@ -161,6 +162,7 @@ public sealed class QuarantineManager
     /// <summary>只要存在未恢复、缺失或失败的条目，就保留整个批次及 manifest。</summary>
     public RestoreReport RestoreBatch(string batchId)
     {
+        using var operation = AcquireOperation();
         var batchDir = GetBatchDirectory(batchId);
         var batch = ReadBatch(batchDir);
         _history.Append("restore-start", $"批次 {batchId}", batch.Entries.Count, 0, "started");
@@ -276,6 +278,12 @@ public sealed class QuarantineManager
 
     public BatchDeletionReport DeleteBatch(string batchId)
     {
+        using var operation = AcquireOperation();
+        return DeleteBatchCore(batchId);
+    }
+
+    private BatchDeletionReport DeleteBatchCore(string batchId)
+    {
         var batchDir = GetBatchDirectory(batchId);
         _history.Append("delete-batch-start", $"批次 {batchId}", 0, 0, "started");
         var failed = DeleteDirectoryContents(batchDir);
@@ -286,17 +294,34 @@ public sealed class QuarantineManager
 
     public int PurgeOlderThan(TimeSpan age)
     {
+        using var operation = AcquireOperation();
         var cutoff = DateTime.UtcNow - age;
         var successful = 0;
         var partial = false;
         foreach (var batch in ListBatches().Where(b => b.CreatedUtc < cutoff))
         {
-            var report = DeleteBatch(batch.BatchId);
+            var report = DeleteBatchCore(batch.BatchId);
             if (report.Deleted) successful++;
             else partial = true;
         }
         _history.Append("purge", "清空过期批次", successful, 0, partial ? "partial" : "ok");
         return successful;
+    }
+
+    private FileStream AcquireOperation()
+    {
+        var path = Path.Combine(_root, ".operation.lock");
+        EnsureNoReparsePoints(path);
+        // 不能按“锁文件存在”判断占用，也不能在释放后删除：文件身份必须跨操作保持一致。
+        // OS 在正常 Dispose 或进程退出时释放句柄；不等待竞争者，避免阻塞界面。
+        try
+        {
+            return new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException ex) when ((ex.HResult & 0xffff) is 32 or 33)
+        {
+            throw new IOException("隔离区正在处理另一项操作，请完成后重试。", ex);
+        }
     }
 
     private string GetBatchDirectory(string batchId)
