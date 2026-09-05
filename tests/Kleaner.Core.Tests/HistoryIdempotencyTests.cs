@@ -65,5 +65,66 @@ public sealed class HistoryIdempotencyTests : IDisposable
         Assert.Single(history.Recent());
     }
 
+    [Fact]
+    public void 超长历史行拒绝审计追加且不覆盖()
+    {
+        var line = System.Text.Json.JsonSerializer.Serialize(new HistoryEntry("old", DateTime.UtcNow,
+            "restore-file", new string('x', 70_000), 1, 7, "ok"),
+            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+        File.WriteAllText(HistoryPath, line);
+        Assert.Throws<InvalidDataException>(() => new HistoryManager(HistoryPath)
+            .AppendOnce("stable", "restore-file", "detail", 1, 7, "ok"));
+        Assert.Equal(line, File.ReadAllText(HistoryPath));
+    }
+
+    [Fact]
+    public void 历史展示跳过超长及空记录并保留后续正常行()
+    {
+        var history = new HistoryManager(HistoryPath);
+        File.WriteAllText(HistoryPath, "null\n" + new string('x', 70_000) + "\n");
+        history.Append("clean", "normal", 1, 7, "ok");
+        Assert.Equal("normal", Assert.Single(history.Recent()).Detail);
+    }
+
+    [Fact]
+    public void 审计读取超长无换行输入在有限读取量内拒绝()
+    {
+        using var reader = new RepeatingReader();
+        Assert.Throws<InvalidDataException>(() => HistoryManager.ReadBoundedLines(reader, false).ToList());
+        Assert.InRange(reader.CharactersRead, HistoryManager.MaxLineChars + 1, HistoryManager.MaxLineChars + 4096);
+    }
+
+    [Theory]
+    [InlineData("\r\n")]
+    [InlineData("\n")]
+    [InlineData("\r")]
+    public void 分块读取保持行边界与末尾无换行(string separator)
+    {
+        var first = new string('a', 4095);
+        using var reader = new StringReader(first + separator + new string('b', HistoryManager.MaxLineChars) + separator + "tail");
+        var lines = HistoryManager.ReadBoundedLines(reader, false).ToArray();
+        Assert.Equal(new[] { first, new string('b', HistoryManager.MaxLineChars), "tail" }, lines);
+    }
+
+    [Fact]
+    public void 超限新记录在打开日志前拒绝()
+    {
+        var history = new HistoryManager(HistoryPath);
+        Assert.Throws<InvalidDataException>(() => history.Append("test", new string('x', 70_000), 0, 0, "ok"));
+        Assert.Throws<InvalidDataException>(() => history.AppendOnce("id", "test", new string('x', 70_000), 0, 0, "ok"));
+        Assert.False(File.Exists(HistoryPath));
+    }
+
+    private sealed class RepeatingReader : TextReader
+    {
+        public int CharactersRead { get; private set; }
+        public override int Read(char[] buffer, int index, int count)
+        {
+            Array.Fill(buffer, 'x', index, count);
+            CharactersRead += count;
+            return count;
+        }
+    }
+
     public void Dispose() => Directory.Delete(_root, recursive: true);
 }

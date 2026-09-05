@@ -20,6 +20,8 @@ public sealed record HistoryEntry(
 /// <summary>操作历史：JSON Lines 只追加文件（%APPDATA%\Kleaner\history.jsonl），每次删除类操作后记录，可审计可回溯。</summary>
 public sealed class HistoryManager
 {
+    internal const int MaxLineChars = 65_536;
+    internal const int MaxRecentEntries = 1_000;
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -57,6 +59,7 @@ public sealed class HistoryManager
             Bytes: bytes,
             Result: result);
         var line = JsonSerializer.Serialize(entry, JsonOpts);
+        ValidateLineLength(line);
         lock (_lock)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
@@ -73,6 +76,8 @@ public sealed class HistoryManager
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         var entry = new HistoryEntry(id, DateTime.UtcNow, action, detail, fileCount, bytes, result);
+        var serialized = JsonSerializer.Serialize(entry, JsonOpts);
+        ValidateLineLength(serialized);
         lock (_lock)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
@@ -80,7 +85,7 @@ public sealed class HistoryManager
             var found = false;
             using (var reader = new StreamReader(stream, new UTF8Encoding(false, true), true, 4096, leaveOpen: true))
             {
-                while (reader.ReadLine() is { } line)
+                foreach (var line in ReadBoundedLines(reader, skipOversized: false))
                 {
                     if (string.IsNullOrWhiteSpace(line)) continue;
                     HistoryEntry existing;
@@ -114,35 +119,96 @@ public sealed class HistoryManager
             stream.Seek(0, SeekOrigin.End);
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), 4096, leaveOpen: true);
             if (needsNewLine) writer.WriteLine();
-            writer.WriteLine(JsonSerializer.Serialize(entry, JsonOpts));
+            writer.WriteLine(serialized);
             writer.Flush();
             stream.Flush(flushToDisk: true);
         }
     }
 
-    /// <summary>最近 limit 条（新的在前）。</summary>
+    private static void ValidateLineLength(string line)
+    {
+        if (line.Length > MaxLineChars)
+            throw new InvalidDataException("历史单行超过长度上限，拒绝继续审计");
+    }
+
+    // 展示可跳过坏行；审计必须立即拒绝，不能读完整个异常长行才发现超限。
+    internal static IEnumerable<string?> ReadBoundedLines(TextReader reader, bool skipOversized)
+    {
+        var buffer = new char[4096];
+        var line = new StringBuilder(4096);
+        var oversized = false;
+        var afterCr = false;
+        int read;
+        while ((read = reader.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            var offset = 0;
+            while (offset < read)
+            {
+                if (afterCr && buffer[offset] == '\n') { afterCr = false; offset++; continue; }
+                afterCr = false;
+                var cr = Array.IndexOf(buffer, '\r', offset, read - offset);
+                var lf = Array.IndexOf(buffer, '\n', offset, read - offset);
+                var end = cr < 0 ? lf : lf < 0 ? cr : Math.Min(cr, lf);
+                var count = (end < 0 ? read : end) - offset;
+                if (!oversized)
+                {
+                    if (line.Length + count > MaxLineChars)
+                    {
+                        if (!skipOversized)
+                            throw new InvalidDataException("历史单行超过长度上限，保留恢复意图");
+                        oversized = true;
+                        line.Clear();
+                    }
+                    else line.Append(buffer, offset, count);
+                }
+                if (end >= 0)
+                {
+                    yield return oversized ? null : line.ToString();
+                    line.Clear();
+                    oversized = false;
+                    afterCr = buffer[end] == '\r';
+                    offset = end + 1;
+                }
+                else offset = read;
+            }
+        }
+        if (oversized) yield return null;
+        else if (line.Length > 0) yield return line.ToString();
+    }
+
+    /// <summary>最近 limit 条（新的在前），最多 1000 条；展示跳过损坏或超长行。</summary>
     public IReadOnlyList<HistoryEntry> Recent(int limit = 200)
     {
         lock (_lock)
         {
-            if (!File.Exists(_path))
+            if (limit <= 0 || !File.Exists(_path))
                 return Array.Empty<HistoryEntry>();
-            var lines = File.ReadAllLines(_path);
-            var list = new List<HistoryEntry>(lines.Length);
-            foreach (var line in lines)
+            limit = Math.Min(limit, MaxRecentEntries);
+            using var reader = new StreamReader(_path);
+            var newest = new PriorityQueue<(HistoryEntry Entry, long Order), (long Utc, long Tie)>();
+            long order = 0;
+            foreach (var line in ReadBoundedLines(reader, skipOversized: true))
             {
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
                 try
                 {
-                    list.Add(JsonSerializer.Deserialize<HistoryEntry>(line, JsonOpts)!);
+                    var entry = JsonSerializer.Deserialize<HistoryEntry>(line, JsonOpts);
+                    if (entry is null) continue;
+                    var priority = (entry.Utc.Ticks, -order);
+                    if (newest.Count < limit) newest.Enqueue((entry, order), priority);
+                    else if (newest.TryPeek(out _, out var oldest) && priority.CompareTo(oldest) > 0)
+                        newest.EnqueueDequeue((entry, order), priority);
+                    order++;
                 }
                 catch
                 {
                     // 单行损坏不阻塞整体展示
                 }
             }
-            return list.OrderByDescending(e => e.Utc).Take(limit).ToList();
+            return newest.UnorderedItems.Select(item => item.Element)
+                .OrderByDescending(item => item.Entry.Utc).ThenBy(item => item.Order)
+                .Select(item => item.Entry).ToList();
         }
     }
 }
