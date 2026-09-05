@@ -1,11 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Security.Cryptography;
 using Kleaner.Core;
 
 namespace Kleaner.Executor;
 
-/// <summary>State 为 pending 或 moved；pending 是可恢复的移动意图，不能被当作可丢弃条目。</summary>
-public sealed record QuarantineEntry(string OriginalPath, string QuarantinedPath, long SizeBytes, string RuleId, string State = "pending");
+/// <summary>pending/moved 记录隔离状态；restoring 在移动前固定还原目标及内容摘要。</summary>
+public sealed record QuarantineEntry(string OriginalPath, string QuarantinedPath, long SizeBytes, string RuleId,
+    string State = "pending", string? RestoreTarget = null, string? RestoreSha256 = null);
 
 public sealed record QuarantineBatch(string BatchId, DateTime CreatedUtc, IReadOnlyList<QuarantineEntry> Entries)
 {
@@ -169,23 +171,62 @@ public sealed class QuarantineManager
         var restored = 0;
         foreach (var entry in batch.Entries)
         {
-            if (!File.Exists(entry.QuarantinedPath))
+            var currentEntry = entry;
+            var sourceExists = File.Exists(entry.QuarantinedPath);
+            if (!sourceExists && entry.State != "restoring")
             {
                 skipped.Add($"{entry.QuarantinedPath}（隔离文件不存在）");
                 continue;
             }
 
-            var target = File.Exists(entry.OriginalPath) ? $"{entry.OriginalPath}.restore-{batchId}" : entry.OriginalPath;
+            if (entry.State != "restoring")
+            {
+                try
+                {
+                    var chosenTarget = File.Exists(entry.OriginalPath) ? $"{entry.OriginalPath}.restore-{batchId}" : entry.OriginalPath;
+                    currentEntry = entry with
+                    {
+                        State = "restoring",
+                        RestoreTarget = chosenTarget,
+                        RestoreSha256 = ContentHash(entry.QuarantinedPath)
+                    };
+                }
+                catch (Exception ex)
+                {
+                    failed.Add($"{entry.QuarantinedPath}（{ex.GetType().Name}）");
+                    continue;
+                }
+                remaining[remaining.IndexOf(entry)] = currentEntry;
+                try
+                {
+                    WriteManifestAtomic(batchDir, batch with { Entries = remaining.ToArray() });
+                }
+                catch (Exception ex)
+                {
+                    failed.Add($"还原意图写入失败，已停止还原（{ex.GetType().Name}）");
+                    break;
+                }
+            }
+            var target = currentEntry.RestoreTarget!;
             try
             {
                 EnsureNoReparsePoints(entry.QuarantinedPath);
                 EnsureNoReparsePoints(target);
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                EnsureNoReparsePoints(entry.QuarantinedPath);
-                EnsureNoReparsePoints(target);
-                File.Move(entry.QuarantinedPath, target);
+                if (sourceExists)
+                {
+                    if (!MatchesRestoreContent(entry.QuarantinedPath, currentEntry))
+                        throw new InvalidDataException("隔离文件内容与还原意图不一致");
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    EnsureNoReparsePoints(entry.QuarantinedPath);
+                    EnsureNoReparsePoints(target);
+                    File.Move(entry.QuarantinedPath, target);
+                }
+                else if (!MatchesRestoreContent(target, currentEntry))
+                {
+                    throw new InvalidDataException("还原目标缺失或内容不匹配，保留清单待核对");
+                }
                 restored++;
-                remaining.Remove(entry);
+                remaining.Remove(currentEntry);
             }
             catch (Exception ex)
             {
@@ -279,13 +320,35 @@ public sealed class QuarantineManager
                 !string.Equals(source, expected, StringComparison.OrdinalIgnoreCase) ||
                 original.StartsWith(quarantinePrefix, StringComparison.OrdinalIgnoreCase) ||
                 !seen.Add(source) || entry.SizeBytes < 0 ||
-                entry.State is not ("pending" or "moved"))
+                entry.State is not ("pending" or "moved" or "restoring"))
                 throw new InvalidDataException("隔离区清单路径、映射或条目状态非法");
+            if (entry.State == "restoring")
+            {
+                if (entry.RestoreTarget is null || !Path.IsPathFullyQualified(entry.RestoreTarget) ||
+                    entry.RestoreSha256 is not { Length: 64 } || !entry.RestoreSha256.All(Uri.IsHexDigit))
+                    throw new InvalidDataException("还原意图缺少目标或内容摘要");
+                var restoreTarget = Path.GetFullPath(entry.RestoreTarget);
+                if (!string.Equals(restoreTarget, original, StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(restoreTarget, original + ".restore-" + batch.BatchId, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("还原意图目标不在允许范围");
+                EnsureNoReparsePoints(restoreTarget);
+            }
             EnsureNoReparsePoints(source);
             EnsureNoReparsePoints(original);
         }
         return batch;
     }
+
+    private static string ContentHash(string path)
+    {
+        EnsureNoReparsePoints(path);
+        using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return Convert.ToHexString(SHA256.HashData(stream));
+    }
+
+    private static bool MatchesRestoreContent(string path, QuarantineEntry entry) =>
+        File.Exists(path) && new FileInfo(path).Length == entry.SizeBytes &&
+        string.Equals(ContentHash(path), entry.RestoreSha256, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>按根到叶检查现有路径段。仅允许尚不存在的路径，其他读取错误向上抛出。</summary>
     private static void EnsureNoReparsePoints(string path)

@@ -59,9 +59,9 @@ public sealed class QuarantinePersistenceTests : IDisposable
         var plan = MakePlan(quarantine);
         var execution = new QuarantineManager(quarantine, history).Execute(plan);
         var injected = false;
-        var manager = new QuarantineManager(quarantine, history, _ =>
+        var manager = new QuarantineManager(quarantine, history, snapshot =>
         {
-            if (!injected)
+            if (!injected && snapshot.Entries.Count == 1)
             {
                 injected = true;
                 throw new IOException("模拟还原清单替换失败");
@@ -79,8 +79,9 @@ public sealed class QuarantinePersistenceTests : IDisposable
         Assert.Single(batch.Entries, entry => File.Exists(entry.QuarantinedPath));
         Assert.DoesNotContain(history.Recent(), entry => entry.Action == "restore" && entry.Result == "ok");
         var recovery = reopened.RestoreBatch(batch.BatchId);
-        Assert.Equal(1, recovery.RestoredCount);
-        Assert.Single(recovery.Skipped);
+        Assert.Equal(2, recovery.RestoredCount);
+        Assert.True(recovery.IsComplete);
+        Assert.Empty(reopened.ListBatches());
         Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
     }
 
@@ -95,6 +96,60 @@ public sealed class QuarantinePersistenceTests : IDisposable
             "仅使用测试临时目录的规则，验证清单故障时的文件保留行为。");
         var set = new RuleSet(1, null, 0, new[] { rule });
         return CleanupPlanBuilder.Create(set, new ScanEngine(quarantine).Scan(set), new[] { rule.Id }, quarantine);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void 重启核对固定目标与内容且不覆盖新文件(bool conflict, bool tamper)
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var plan = MakePlan(quarantine);
+        var normal = new QuarantineManager(quarantine, history);
+        var execution = normal.Execute(plan);
+        var first = Assert.Single(normal.ListBatches()).Entries[0];
+        if (conflict) File.WriteAllText(first.OriginalPath, "user-new-file");
+        var interrupted = new QuarantineManager(quarantine, history, snapshot =>
+        {
+            if (snapshot.Entries.Count == 1) throw new IOException("移动后的状态提交中断");
+        });
+        Assert.False(interrupted.RestoreBatch(execution.BatchId).IsComplete);
+        var persisted = Assert.Single(normal.ListBatches()).Entries[0];
+        Assert.Equal("restoring", persisted.State);
+        Assert.NotNull(persisted.RestoreTarget);
+        Assert.Equal("content", File.ReadAllText(persisted.RestoreTarget));
+        if (tamper) File.WriteAllText(persisted.RestoreTarget, "changed"); // 相同字节数仍需校验摘要。
+
+        var reopened = new QuarantineManager(quarantine, history);
+        var result = reopened.RestoreBatch(execution.BatchId);
+
+        Assert.Equal(!tamper, result.IsComplete);
+        Assert.Equal(tamper ? "changed" : "content", File.ReadAllText(persisted.RestoreTarget));
+        if (conflict) Assert.Equal("user-new-file", File.ReadAllText(first.OriginalPath));
+        if (tamper) Assert.Single(Assert.Single(reopened.ListBatches()).Entries);
+        else Assert.Empty(reopened.ListBatches());
+    }
+
+    [Fact]
+    public void 还原意图未落盘时不移动任何文件()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var plan = MakePlan(quarantine);
+        var normal = new QuarantineManager(quarantine, history);
+        var execution = normal.Execute(plan);
+        var faulty = new QuarantineManager(quarantine, history, _ => throw new IOException("意图写入失败"));
+
+        var report = faulty.RestoreBatch(execution.BatchId);
+
+        Assert.Equal(0, report.RestoredCount);
+        Assert.False(report.IsComplete);
+        Assert.All(plan.Items, item => Assert.False(File.Exists(item.File.FullPath)));
+        Assert.All(Assert.Single(normal.ListBatches()).Entries, item => Assert.Equal("moved", item.State));
+        Assert.True(normal.RestoreBatch(execution.BatchId).IsComplete);
     }
 
     [Fact]
