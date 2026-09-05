@@ -37,8 +37,9 @@ public sealed class QuarantineManager
     public QuarantineManager(string? root, HistoryManager history)
     {
         ArgumentNullException.ThrowIfNull(history);
-        _root = root ?? DefaultRoot();
+        _root = Path.GetFullPath(root ?? DefaultRoot());
         _history = history;
+        EnsureNoReparsePoints(_root);
         Directory.CreateDirectory(_root);
         _history.EnsureWritable();
     }
@@ -96,8 +97,12 @@ public sealed class QuarantineManager
             entries.Add(entry);
             try
             {
+                EnsureNoReparsePoints(file.FullPath);
+                EnsureNoReparsePoints(destination);
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
+                EnsureNoReparsePoints(file.FullPath);
+                EnsureNoReparsePoints(destination);
                 File.Move(file.FullPath, destination);
                 entries[^1] = entry with { State = "moved" };
                 bytes += file.SizeBytes;
@@ -129,6 +134,7 @@ public sealed class QuarantineManager
     public IReadOnlyList<QuarantineBatch> ListBatches()
     {
         var list = new List<QuarantineBatch>();
+        EnsureNoReparsePoints(_root);
         if (!Directory.Exists(_root))
             return list;
         foreach (var dir in Directory.GetDirectories(_root))
@@ -163,7 +169,11 @@ public sealed class QuarantineManager
             var target = File.Exists(entry.OriginalPath) ? $"{entry.OriginalPath}.restore-{batchId}" : entry.OriginalPath;
             try
             {
+                EnsureNoReparsePoints(entry.QuarantinedPath);
+                EnsureNoReparsePoints(target);
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                EnsureNoReparsePoints(entry.QuarantinedPath);
+                EnsureNoReparsePoints(target);
                 File.Move(entry.QuarantinedPath, target);
                 restored++;
                 remaining.Remove(entry);
@@ -219,6 +229,7 @@ public sealed class QuarantineManager
         var path = Path.GetFullPath(Path.Combine(_root, batchId));
         if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException("批次不在隔离区根目录中", nameof(batchId));
+        EnsureNoReparsePoints(path);
         return path;
     }
 
@@ -226,6 +237,7 @@ public sealed class QuarantineManager
 
     private QuarantineBatch ReadBatch(string batchDir)
     {
+        EnsureNoReparsePoints(Path.Combine(batchDir, "manifest.json"));
         var batch = JsonSerializer.Deserialize<QuarantineBatch>(File.ReadAllText(Path.Combine(batchDir, "manifest.json")), JsonOpts)
             ?? throw new InvalidDataException("隔离区清单为空或损坏");
         if (batch.BatchId != Path.GetFileName(batchDir) || batch.Entries is null)
@@ -251,13 +263,34 @@ public sealed class QuarantineManager
                 !seen.Add(source) || entry.SizeBytes < 0 ||
                 entry.State is not ("pending" or "moved"))
                 throw new InvalidDataException("隔离区清单路径、映射或条目状态非法");
+            EnsureNoReparsePoints(source);
+            EnsureNoReparsePoints(original);
         }
         return batch;
+    }
+
+    /// <summary>按根到叶检查现有路径段。仅允许尚不存在的路径，其他读取错误向上抛出。</summary>
+    private static void EnsureNoReparsePoints(string path)
+    {
+        var ancestors = new Stack<string>();
+        for (string? current = Path.GetFullPath(path); current is not null; current = Path.GetDirectoryName(current))
+            ancestors.Push(current);
+        foreach (var current in ancestors)
+        {
+            try
+            {
+                if (File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
+                    throw new InvalidDataException($"路径包含 reparse point，已拒绝操作：{current}");
+            }
+            catch (FileNotFoundException) { }
+            catch (DirectoryNotFoundException) { }
+        }
     }
 
     private static void WriteManifestAtomic(string batchDir, QuarantineBatch batch)
     {
         var manifest = Path.Combine(batchDir, "manifest.json");
+        EnsureNoReparsePoints(manifest);
         var temporary = Path.Combine(batchDir, $"manifest.{Guid.NewGuid():N}.tmp");
         try
         {
@@ -266,6 +299,7 @@ public sealed class QuarantineManager
                 JsonSerializer.Serialize(stream, batch, JsonOpts);
                 stream.Flush(flushToDisk: true);
             }
+            EnsureNoReparsePoints(manifest);
             File.Move(temporary, manifest, overwrite: true);
         }
         finally
@@ -282,6 +316,7 @@ public sealed class QuarantineManager
     {
         try
         {
+            EnsureNoReparsePoints(batchDir);
             var manifest = Path.Combine(batchDir, "manifest.json");
             var directories = new List<string> { batchDir };
             // 先证明只剩清单与空目录；未知文件和 reparse point 必须留给人工检查。
@@ -303,7 +338,11 @@ public sealed class QuarantineManager
             }
 
             for (var index = directories.Count - 1; index > 0; index--)
+            {
+                EnsureNoReparsePoints(directories[index]);
                 Directory.Delete(directories[index], recursive: false);
+            }
+            EnsureNoReparsePoints(manifest);
             File.Delete(manifest);
             Directory.Delete(batchDir, recursive: false);
         }
@@ -322,6 +361,7 @@ public sealed class QuarantineManager
             IEnumerable<string> entries;
             try
             {
+                EnsureNoReparsePoints(current);
                 if (File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
                     throw new IOException($"批次包含 reparse point：{current}");
                 entries = Directory.EnumerateFileSystemEntries(current, "*", SearchOption.TopDirectoryOnly).ToArray();
@@ -338,6 +378,7 @@ public sealed class QuarantineManager
                     continue;
                 try
                 {
+                    EnsureNoReparsePoints(entry);
                     var attributes = File.GetAttributes(entry);
                     if (attributes.HasFlag(FileAttributes.ReparsePoint))
                     {
