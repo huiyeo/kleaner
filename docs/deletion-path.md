@@ -42,11 +42,15 @@
 
 *坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；GUI 层与 CLI 调用方需自行处理异常。
 
+收尾仅移除空目录与本批次 `manifest.json`。发现未登记文件、reparse point 或目录处理异常时保留清单，禁止删除未知内容；最终 `restore` 历史在收尾之后记录，收尾失败也是 `partial`。
+
 ### 清空
 
 `PurgeOlderThan(TimeSpan)` 按 `CreatedUtc` 比对删除过期批次。**只由用户显式触发**——全仓唯一的真实调用点是 WPF 隔离区页的「清空 7 天前批次」按钮，没有定时器、没有启动自调用。
 
 `DeleteBatch` 落历史 `delete-batch`，`PurgeOlderThan` 落历史 `purge`。
+
+清空文件时保留批次根目录的 `manifest.json`，只有内容处理无失败、空目录收尾成功后才移除清单。锁定文件导致部分清空失败时，重建管理器仍可列出批次、还原尚存文件；清单中已被手动清空的条目在还原时报告缺失，不声称整批完整恢复。reparse point 跳过并计入失败。
 
 ## 操作历史
 
@@ -110,5 +114,7 @@
 - **启动项**：HKLM 下的启动项走 `reg.exe` + `runas` 提权（`StartupManager`），失败会回滚。
 
 ## 已知问题
+
+- 上述回归仅证明已覆盖的文件锁、未知文件和正常收尾场景。进程在移动与清单更新之间中断、并发修改批次路径、清单持久化或最终历史写入失败的恢复协议仍未完整验证，工单 10 保持打开。
 
 - `StartupManager` 无 xunit 覆盖，只有 CLI 的 `startup-test` 往返自检，而该自检会写真实注册表与启动文件夹，CI 上不可跑。

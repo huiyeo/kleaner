@@ -343,18 +343,75 @@ public sealed class EngineAndQuarantineTests : IDisposable
         Directory.CreateDirectory(source);
         var file = Path.Combine(source, "locked.txt");
         File.WriteAllText(file, "locked");
+        var removable = Path.Combine(source, "removable.txt");
+        File.WriteAllText(removable, "remove");
         var history = new HistoryManager(Path.Combine(_root, "delete-failure.history.jsonl"));
         var manager = new QuarantineManager(Path.Combine(_root, "delete-failure-quarantine"), history);
-        var execution = manager.Execute(CreatePlan(manager.Root, "delete", file));
-        var entry = Assert.Single(Assert.Single(manager.ListBatches()).Entries);
+        var execution = manager.Execute(CreatePlan(manager.Root, "delete", file, removable));
+        var entries = Assert.Single(manager.ListBatches()).Entries;
+        var entry = Assert.Single(entries, item => item.OriginalPath == file);
+        var removedEntry = Assert.Single(entries, item => item.OriginalPath == removable);
 
         using var handle = File.Open(entry.QuarantinedPath, FileMode.Open, FileAccess.Read, FileShare.None);
         var deletion = manager.DeleteBatch(execution.BatchId);
 
         Assert.False(deletion.Deleted);
         Assert.NotEmpty(deletion.Failed);
+        Assert.False(File.Exists(removedEntry.QuarantinedPath));
         Assert.True(Directory.Exists(execution.QuarantineDir));
         Assert.Contains(history.Recent(), item => item.Action == "delete-batch" && item.Result == "partial");
+        Assert.True(File.Exists(Path.Combine(execution.QuarantineDir, "manifest.json")));
+        var reopened = new QuarantineManager(manager.Root, history);
+        Assert.Equal(execution.BatchId, Assert.Single(reopened.ListBatches()).BatchId);
+        handle.Dispose();
+        var restore = reopened.RestoreBatch(execution.BatchId);
+        Assert.Equal(1, restore.RestoredCount);
+        Assert.Single(restore.Skipped);
+        Assert.Equal("locked", File.ReadAllText(file));
+    }
+
+    [Fact]
+    public void 隔离区_正常清空移除批次且审计成功()
+    {
+        var source = Path.Combine(_root, "delete-success.txt");
+        File.WriteAllText(source, "remove");
+        var history = new HistoryManager(Path.Combine(_root, "delete-success.history.jsonl"));
+        var manager = new QuarantineManager(Path.Combine(_root, "delete-success-quarantine"), history);
+        var execution = manager.Execute(CreatePlan(manager.Root, "delete-success", source));
+
+        var report = manager.DeleteBatch(execution.BatchId);
+
+        Assert.True(report.Deleted);
+        Assert.Empty(report.Failed);
+        Assert.False(Directory.Exists(execution.QuarantineDir));
+        Assert.Empty(manager.ListBatches());
+        Assert.Contains(history.Recent(), item => item.Action == "delete-batch" && item.Result == "ok");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void 隔离区_还原收尾保留未登记文件与清单并审计部分失败(bool nested)
+    {
+        var source = Path.Combine(_root, "untracked-source.txt");
+        File.WriteAllText(source, "original");
+        var history = new HistoryManager(Path.Combine(_root, "untracked.history.jsonl"));
+        var manager = new QuarantineManager(Path.Combine(_root, "untracked-quarantine"), history);
+        var execution = manager.Execute(CreatePlan(manager.Root, "untracked", source));
+        var unexpectedDirectory = nested ? Path.Combine(execution.QuarantineDir, "extra") : execution.QuarantineDir;
+        Directory.CreateDirectory(unexpectedDirectory);
+        var unexpected = Path.Combine(unexpectedDirectory, "do-not-delete.txt");
+        File.WriteAllText(unexpected, "untracked-data");
+
+        var restored = manager.RestoreBatch(execution.BatchId);
+
+        Assert.Equal("original", File.ReadAllText(source));
+        Assert.True(File.Exists(unexpected));
+        Assert.Equal("untracked-data", File.ReadAllText(unexpected));
+        Assert.False(restored.IsComplete);
+        Assert.NotEmpty(restored.Failed);
+        Assert.Equal(execution.BatchId, Assert.Single(manager.ListBatches()).BatchId);
+        Assert.Contains(history.Recent(), item => item.Action == "restore" && item.Result == "partial");
     }
 
     [Fact]

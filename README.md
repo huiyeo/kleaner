@@ -36,7 +36,7 @@
 - 启动项管理：启用/禁用/还原，HKLM 走 `reg.exe` 提权、失败回滚
 - 发布链路：自包含单文件（免装 .NET）+ Velopack 安装版/便携版/自动更新清单（`scripts/release.sh`）
 
-质量：`dotnet test Kleaner.slnx -c Release` 当前 79/79 通过，覆盖规则校验、扫描/年龄阈值/keepNewest 语义、重复文件选择策略、清理计划的伪造与执行前复验，以及隔离区审计、部分还原和清空失败等安全语义（`Kleaner.Core.Tests`，引用 Core/Executor/SpecialOps/Analysis/App）。
+质量：`dotnet test Kleaner.slnx -c Release` 当前 84/84 通过，覆盖规则校验、扫描/年龄阈值/keepNewest 语义、重复文件选择策略、清理计划的伪造与执行前复验，以及部分清空后的清单保留、剩余文件还原和未知文件保留（`Kleaner.Core.Tests`，引用 Core/Executor/SpecialOps/Analysis/App）。进程中断、持久化失败及并发路径变化的事务恢复仍待完成，测试数不代表 Phase 0 已达标。
 
 当前路线与发布闸门见 [docs/goals.md](docs/goals.md)：先完成清理授权、审计与事务性的 Phase 0，再考虑功能扩展。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
 

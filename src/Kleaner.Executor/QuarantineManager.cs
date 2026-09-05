@@ -176,13 +176,13 @@ public sealed class QuarantineManager
         }
 
         var report = new RestoreReport(restored, skipped, failed);
-        _history.Append("restore", $"批次 {batchId}", restored, 0, report.IsComplete && remaining.Count == 0 ? "ok" : "partial");
         if (report.IsComplete && remaining.Count == 0)
         {
             TryDeleteEmptyBatchDirectory(batchDir, failed);
             if (failed.Count > 0)
                 report = report with { Failed = failed };
         }
+        _history.Append("restore", $"批次 {batchId}", restored, 0, report.IsComplete && remaining.Count == 0 ? "ok" : "partial");
         return report;
     }
 
@@ -255,9 +255,29 @@ public sealed class QuarantineManager
     {
         try
         {
-            foreach (var file in Directory.GetFiles(batchDir, "*", SearchOption.TopDirectoryOnly)) File.Delete(file);
-            foreach (var directory in Directory.GetDirectories(batchDir, "*", SearchOption.AllDirectories).OrderByDescending(path => path.Length))
-                Directory.Delete(directory, recursive: false);
+            var manifest = Path.Combine(batchDir, "manifest.json");
+            var directories = new List<string> { batchDir };
+            // 先证明只剩清单与空目录；未知文件和 reparse point 必须留给人工检查。
+            for (var index = 0; index < directories.Count; index++)
+            {
+                var current = directories[index];
+                if (File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
+                    throw new IOException($"批次包含 reparse point：{current}");
+                foreach (var entry in Directory.EnumerateFileSystemEntries(current))
+                {
+                    var attributes = File.GetAttributes(entry);
+                    if (attributes.HasFlag(FileAttributes.ReparsePoint))
+                        throw new IOException($"批次包含 reparse point：{entry}");
+                    if (attributes.HasFlag(FileAttributes.Directory))
+                        directories.Add(entry);
+                    else if (!string.Equals(entry, manifest, StringComparison.OrdinalIgnoreCase))
+                        throw new IOException($"批次仍有未登记文件：{entry}");
+                }
+            }
+
+            for (var index = directories.Count - 1; index > 0; index--)
+                Directory.Delete(directories[index], recursive: false);
+            File.Delete(manifest);
             Directory.Delete(batchDir, recursive: false);
         }
         catch (Exception ex) { failed.Add($"{batchDir}（{ex.GetType().Name}）"); }
@@ -267,12 +287,18 @@ public sealed class QuarantineManager
     {
         var failed = new List<string>();
         if (!Directory.Exists(directory)) return failed;
+        var manifest = Path.Combine(directory, "manifest.json");
         var directories = new List<string> { directory };
         for (var index = 0; index < directories.Count; index++)
         {
             var current = directories[index];
             IEnumerable<string> entries;
-            try { entries = Directory.EnumerateFileSystemEntries(current, "*", SearchOption.TopDirectoryOnly).ToArray(); }
+            try
+            {
+                if (File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
+                    throw new IOException($"批次包含 reparse point：{current}");
+                entries = Directory.EnumerateFileSystemEntries(current, "*", SearchOption.TopDirectoryOnly).ToArray();
+            }
             catch (Exception ex)
             {
                 failed.Add($"{current}（{ex.GetType().Name}）");
@@ -280,13 +306,15 @@ public sealed class QuarantineManager
             }
             foreach (var entry in entries)
             {
+                // 清单必须存活到所有内容处理完成，否则失败批次将从列表消失。
+                if (string.Equals(entry, manifest, StringComparison.OrdinalIgnoreCase))
+                    continue;
                 try
                 {
                     var attributes = File.GetAttributes(entry);
                     if (attributes.HasFlag(FileAttributes.ReparsePoint))
                     {
-                        if (Directory.Exists(entry)) Directory.Delete(entry, recursive: false);
-                        else File.Delete(entry);
+                        failed.Add($"{entry}（reparse point 已跳过）");
                     }
                     else if (Directory.Exists(entry)) directories.Add(entry);
                     else File.Delete(entry);
@@ -294,12 +322,8 @@ public sealed class QuarantineManager
                 catch (Exception ex) { failed.Add($"{entry}（{ex.GetType().Name}）"); }
             }
         }
-        foreach (var subdirectory in directories.OrderByDescending(path => path.Length))
-            if (!string.Equals(subdirectory, directory, StringComparison.OrdinalIgnoreCase))
-                try { Directory.Delete(subdirectory, recursive: false); }
-                catch (Exception ex) { failed.Add($"{subdirectory}（{ex.GetType().Name}）"); }
-        try { Directory.Delete(directory, recursive: false); }
-        catch (Exception ex) { failed.Add($"{directory}（{ex.GetType().Name}）"); }
+        if (failed.Count == 0)
+            TryDeleteEmptyBatchDirectory(directory, failed);
         return failed;
     }
 }
