@@ -235,14 +235,15 @@ public sealed class QuarantineManager
             try
             {
                 // 先保存逐项证据，再移除恢复意图；审计失败不能继续移动下一项。
-                _history.Append("restore-file", JsonSerializer.Serialize(new
+                var auditId = "restore-file:" + Convert.ToHexString(SHA256.HashData(
+                    System.Text.Encoding.UTF8.GetBytes(batchId + "\0" + currentEntry.QuarantinedPath.ToUpperInvariant())));
+                _history.AppendOnce(auditId, "restore-file", JsonSerializer.Serialize(new
                 {
                     BatchId = batchId,
                     currentEntry.OriginalPath,
                     currentEntry.QuarantinedPath,
                     currentEntry.RestoreTarget,
-                    currentEntry.RestoreSha256,
-                    Reconciled = !sourceExists
+                    currentEntry.RestoreSha256
                 }, JsonOpts), 1, currentEntry.SizeBytes, "ok");
             }
             catch (Exception ex)

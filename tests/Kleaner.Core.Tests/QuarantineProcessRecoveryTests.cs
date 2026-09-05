@@ -66,6 +66,8 @@ public sealed class QuarantineProcessRecoveryTests : IDisposable
         Assert.NotEmpty(recovered.Failed);
         Assert.Equal(evidence, File.ReadAllBytes(temporary));
         Assert.Empty(Assert.Single(manager.ListBatches()).Entries);
+        Assert.Equal(phase == "clean-moved" ? 1 : 2,
+            history.Recent().Count(entry => entry.Action == "restore-file"));
         Assert.Contains(history.Recent(), entry => entry.Action == "restore" && entry.Result == "partial");
     }
 

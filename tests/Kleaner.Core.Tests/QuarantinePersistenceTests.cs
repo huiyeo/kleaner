@@ -82,6 +82,7 @@ public sealed class QuarantinePersistenceTests : IDisposable
         Assert.Equal(2, recovery.RestoredCount);
         Assert.True(recovery.IsComplete);
         Assert.Empty(reopened.ListBatches());
+        Assert.Equal(2, history.Recent().Count(entry => entry.Action == "restore-file"));
         Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
     }
 

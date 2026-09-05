@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text;
 
 namespace Kleaner.Executor;
 
@@ -62,6 +63,58 @@ public sealed class HistoryManager
             using var stream = new FileStream(_path, FileMode.Append, FileAccess.Write, FileShare.Read);
             using var writer = new StreamWriter(stream);
             writer.WriteLine(line);
+            writer.Flush();
+            stream.Flush(flushToDisk: true);
+        }
+    }
+
+    // 在同一排他写句柄内核对并追加，避免不同管理器同时通过“尚未记录”的检查。
+    internal void AppendOnce(string id, string action, string detail, int fileCount, long bytes, string result)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        var entry = new HistoryEntry(id, DateTime.UtcNow, action, detail, fileCount, bytes, result);
+        lock (_lock)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+            using var stream = new FileStream(_path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+            var found = false;
+            using (var reader = new StreamReader(stream, new UTF8Encoding(false, true), true, 4096, leaveOpen: true))
+            {
+                while (reader.ReadLine() is { } line)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    HistoryEntry existing;
+                    try
+                    {
+                        existing = JsonSerializer.Deserialize<HistoryEntry>(line, JsonOpts)
+                            ?? throw new InvalidDataException("历史记录为空，无法确认审计是否已写入");
+                    }
+                    catch (JsonException ex)
+                    {
+                        throw new InvalidDataException("历史记录损坏，保留恢复意图等待核对", ex);
+                    }
+                    if (existing.Id != id) continue;
+                    if (existing != entry with { Utc = existing.Utc })
+                        throw new InvalidDataException("同一审计标识对应不同内容，拒绝移除恢复意图");
+                    found = true;
+                }
+            }
+            if (found)
+            {
+                stream.Flush(flushToDisk: true);
+                return;
+            }
+            // 完整 JSON 行可能尚未写入换行；不要将新记录粘到上一行。
+            var needsNewLine = false;
+            if (stream.Length > 0)
+            {
+                stream.Seek(-1, SeekOrigin.End);
+                needsNewLine = stream.ReadByte() != '\n';
+            }
+            stream.Seek(0, SeekOrigin.End);
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 4096, leaveOpen: true);
+            if (needsNewLine) writer.WriteLine();
+            writer.WriteLine(JsonSerializer.Serialize(entry, JsonOpts));
             writer.Flush();
             stream.Flush(flushToDisk: true);
         }
