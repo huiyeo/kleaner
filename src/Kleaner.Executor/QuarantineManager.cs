@@ -224,9 +224,36 @@ public sealed class QuarantineManager
 
     private static string CreateBatchId() => $"{DateTime.UtcNow:yyyyMMdd-HHmmss-fff}-{Guid.NewGuid():N}";
 
-    private static QuarantineBatch ReadBatch(string batchDir) =>
-        JsonSerializer.Deserialize<QuarantineBatch>(File.ReadAllText(Path.Combine(batchDir, "manifest.json")), JsonOpts)
-        ?? throw new InvalidDataException("隔离区清单为空或损坏");
+    private QuarantineBatch ReadBatch(string batchDir)
+    {
+        var batch = JsonSerializer.Deserialize<QuarantineBatch>(File.ReadAllText(Path.Combine(batchDir, "manifest.json")), JsonOpts)
+            ?? throw new InvalidDataException("隔离区清单为空或损坏");
+        if (batch.BatchId != Path.GetFileName(batchDir) || batch.Entries is null)
+            throw new InvalidDataException("隔离区清单与批次不匹配");
+
+        var prefix = Path.GetFullPath(batchDir).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var quarantinePrefix = Path.GetFullPath(_root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // 先校验整个批次，避免处理完前几项后才发现后面的清单损坏。
+        foreach (var entry in batch.Entries)
+        {
+            if (entry is null || string.IsNullOrWhiteSpace(entry.OriginalPath) ||
+                string.IsNullOrWhiteSpace(entry.QuarantinedPath) ||
+                !Path.IsPathFullyQualified(entry.OriginalPath) || !Path.IsPathFullyQualified(entry.QuarantinedPath))
+                throw new InvalidDataException("隔离区清单必须使用绝对文件路径");
+
+            var original = Path.GetFullPath(entry.OriginalPath);
+            var source = Path.GetFullPath(entry.QuarantinedPath);
+            var expected = Path.GetFullPath(Path.Combine(batchDir, MapRelative(original)));
+            if (!source.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(source, expected, StringComparison.OrdinalIgnoreCase) ||
+                original.StartsWith(quarantinePrefix, StringComparison.OrdinalIgnoreCase) ||
+                !seen.Add(source) || entry.SizeBytes < 0 ||
+                entry.State is not ("pending" or "moved"))
+                throw new InvalidDataException("隔离区清单路径、映射或条目状态非法");
+        }
+        return batch;
+    }
 
     private static void WriteManifestAtomic(string batchDir, QuarantineBatch batch)
     {
