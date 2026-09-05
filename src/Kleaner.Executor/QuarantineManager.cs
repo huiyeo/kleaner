@@ -170,7 +170,10 @@ public sealed class QuarantineManager
         using var operation = AcquireOperation();
         var batchDir = GetBatchDirectory(batchId);
         var batch = ReadBatch(batchDir);
+        var receipt = new RestoreAuditReceipt(1, Guid.NewGuid().ToString("N"), batchId, 0, null);
+        WriteRestoreReceipt(receipt);
         _history.Append("restore-start", $"批次 {batchId}", batch.Entries.Count, 0, "started");
+        _restoreAuditStage?.Invoke("started");
 
         var remaining = batch.Entries.ToList();
         var skipped = new List<string>();
@@ -242,6 +245,7 @@ public sealed class QuarantineManager
             try
             {
                 // 先保存逐项证据，再移除恢复意图；审计失败不能继续移动下一项。
+                _restoreAuditStage?.Invoke("item");
                 var auditId = "restore-file:" + Convert.ToHexString(SHA256.HashData(
                     System.Text.Encoding.UTF8.GetBytes(batchId + "\0" + currentEntry.QuarantinedPath.ToUpperInvariant())));
                 _history.AppendOnce(auditId, "restore-file", JsonSerializer.Serialize(new
@@ -272,7 +276,7 @@ public sealed class QuarantineManager
 
         var report = new RestoreReport(restored, skipped, failed);
         // 凭据位于批次外；收尾删除批次后，最终历史失败仍有补记来源。
-        var receipt = new RestoreAuditReceipt(1, Guid.NewGuid().ToString("N"), batchId, restored, null);
+        receipt = receipt with { RestoredCount = restored };
         WriteRestoreReceipt(receipt);
         _restoreAuditStage?.Invoke("prepared");
         if (report.IsComplete && remaining.Count == 0)
@@ -406,7 +410,7 @@ public sealed class QuarantineManager
 
     private void CompleteRestoreAudit(RestoreAuditReceipt receipt)
     {
-        var detail = receipt.Result is null ? $"批次 {receipt.BatchId}（收尾中断，最终状态未确认）" : $"批次 {receipt.BatchId}";
+        var detail = receipt.Result is null ? $"批次 {receipt.BatchId}（还原中断，最终状态未确认；数量仅为已持久化下限）" : $"批次 {receipt.BatchId}";
         _history.AppendOnce("restore-summary:" + receipt.Id, "restore", detail,
             receipt.RestoredCount, 0, receipt.Result ?? "partial");
         _restoreAuditStage?.Invoke("appended");

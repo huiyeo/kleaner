@@ -95,6 +95,8 @@ public sealed class QuarantineProcessRecoveryTests : IDisposable
 
     [Theory]
     [InlineData("prepared")]
+    [InlineData("started")]
+    [InlineData("item")]
     [InlineData("finalized")]
     [InlineData("appended")]
     public async Task 还原收尾进程退出后补记汇总且不重复(string stage)
@@ -129,10 +131,18 @@ public sealed class QuarantineProcessRecoveryTests : IDisposable
         reopened.RecoverPendingAudit();
         reopened.RecoverPendingAudit();
         var summary = Assert.Single(history.Recent(), entry => entry.Action == "restore");
-        Assert.Equal(2, summary.FileCount);
-        Assert.Equal(stage == "prepared" ? "partial" : "ok", summary.Result);
+        var early = stage is "started" or "item";
+        Assert.Equal(early ? 0 : 2, summary.FileCount);
+        Assert.Equal(early || stage == "prepared" ? "partial" : "ok", summary.Result);
+        if (early) Assert.Contains("数量仅为已持久化下限", summary.Detail);
         Assert.Empty(Directory.GetFiles(receipts, "*.json"));
-        if (stage == "prepared") Assert.Single(reopened.ListBatches());
+        if (early)
+        {
+            Assert.Equal(stage == "started" ? 0 : 1, Directory.GetFiles(Path.Combine(_root, "source")).Length);
+            var batch = Assert.Single(reopened.ListBatches());
+            Assert.True(reopened.RestoreBatch(batch.BatchId).IsComplete);
+        }
+        else if (stage == "prepared") Assert.Single(reopened.ListBatches());
         else Assert.Empty(reopened.ListBatches());
         foreach (var file in new[] { "a.txt", "b.txt" })
             Assert.Equal(file + "-content", File.ReadAllText(Path.Combine(_root, "source", file)));

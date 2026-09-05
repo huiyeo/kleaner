@@ -3,7 +3,7 @@ using Kleaner.Executor;
 
 // 仅供测试：根目录必须是临时目录下新建的空夹具，不接受用户隔离区。
 if (args.Length != 2 || args[0] is not ("clean-moved" or "restore-moved" or "restore-held"
-    or "audit-prepared" or "audit-finalized" or "audit-appended")) return 2;
+    or "audit-started" or "audit-item" or "audit-prepared" or "audit-finalized" or "audit-appended")) return 2;
 var root = Path.GetFullPath(args[1]);
 var name = Path.GetFileName(root);
 if (!string.Equals(Path.GetDirectoryName(root), Path.TrimEndingDirectorySeparator(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase)
