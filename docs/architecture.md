@@ -52,6 +52,7 @@
 | `DuplicateFinder.cs` | 重复文件查找（内容指纹） |
 | `DiskUsageAnalyzer.cs` | 空间占用排行 |
 | `TreemapLayout.cs` | Squarified 矩形图布局（`TreemapLayout.Squarify`） |
+| `SyntheticDataset.cs` | 确定性合成数据集生成（性能基准用，同种子逐字节可复现） |
 
 不依赖 Core，也不依赖 Windows API 之外的任何东西，可独立复用与测试。
 
@@ -85,7 +86,7 @@
 
 ### Kleaner.ScanCli — 命令行
 
-单文件顶层语句 `Program.cs`。子命令：`scan`、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`。
+单文件顶层语句 `Program.cs`。子命令：`scan`、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`；性能基准另有 `gen-dataset` / `bench` / `bench-single`（`Benchmarks.cs`，见 `docs/performance-baseline.md`）。
 
 ## 入口点
 

@@ -1,0 +1,130 @@
+﻿{
+    "environment":  {
+                        "machine":  "HUIYEO_COMPUTER",
+                        "os":  "Microsoft Windows 11 专业版",
+                        "osBuild":  "26100",
+                        "cpu":  "12th Gen Intel(R) Core(TM) i5-12500H",
+                        "cores":  12,
+                        "memoryGb":  15.7,
+                        "dotnetSdk":  "10.0.400",
+                        "timestampUtc":  "2026-09-06T12:21:05.4894959Z"
+                    },
+    "dataset":  {
+                    "kind":  "kleaner-synthetic-dataset",
+                    "Seed":  20260906,
+                    "FileCount":  2000,
+                    "DirectoryDepth":  3,
+                    "Branching":  4,
+                    "DuplicateGroups":  20,
+                    "TotalBytes":  624572537,
+                    "DirectoryCount":  84,
+                    "generatedUtc":  "2026-09-06T12:20:31.57728Z"
+                },
+    "scenarios":  [
+                      {
+                          "name":  "rules-scan",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            3022.4712,
+                                            3035.3541,
+                                            3077.7353,
+                                            3134.5526,
+                                            3420.0958
+                                        ],
+                          "p50Ms":  3077.74,
+                          "p95Ms":  3420.1,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  63569920,
+                          "cpuTimeMs":  16046.9
+                      },
+                      {
+                          "name":  "usage",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            57.7661,
+                                            63.6592,
+                                            76.7124,
+                                            77.6154,
+                                            78.3047
+                                        ],
+                          "p50Ms":  76.71,
+                          "p95Ms":  78.3,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  34430976,
+                          "cpuTimeMs":  421.9
+                      },
+                      {
+                          "name":  "large-files",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            59.6656,
+                                            60.3263,
+                                            76.8519,
+                                            90.7639,
+                                            112.0476
+                                        ],
+                          "p50Ms":  76.85,
+                          "p95Ms":  112.05,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  37044224,
+                          "cpuTimeMs":  468.8
+                      },
+                      {
+                          "name":  "duplicates",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            95.639,
+                                            104.3457,
+                                            106.2769,
+                                            113.5375,
+                                            123.8425
+                                        ],
+                          "p50Ms":  106.28,
+                          "p95Ms":  123.84,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  50159616,
+                          "cpuTimeMs":  609.4
+                      },
+                      {
+                          "name":  "cancel",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            698.5862,
+                                            743.9971,
+                                            755.0255,
+                                            787.0027,
+                                            826.8018
+                                        ],
+                          "p50Ms":  755.03,
+                          "p95Ms":  826.8,
+                          "firstProgressMs":  [
+                                                  718.18,
+                                                  783.93,
+                                                  823.69,
+                                                  697.28,
+                                                  753.53
+                                              ],
+                          "cancelLatencyMs":  [
+                                                  2.62,
+                                                  0.5,
+                                                  0.49,
+                                                  0.47,
+                                                  0.56
+                                              ],
+                          "peakWorkingSetBytes":  68173824,
+                          "cpuTimeMs":  4046.9
+                      }
+                  ],
+    "coldStartMs":  [
+                        1776,
+                        927,
+                        948,
+                        990,
+                        996
+                    ],
+    "coldStartP95":  1776
+}

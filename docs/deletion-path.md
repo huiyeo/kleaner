@@ -123,7 +123,7 @@
 
 ## CLI 安全契约
 
-子命令：`scan`（默认）、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`。
+子命令：`scan`（默认）、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`。另有性能基准专用 `gen-dataset` / `bench` / `bench-single`：只写临时目录、不触及删除路径，口径见 `docs/performance-baseline.md`。
 通用参数：`--format text|json`（默认 text）、`--yes`、`--help`。
 
 ### `clean` 的三道闸

@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Kleaner.Analysis;
 using Kleaner.Core;
 using Kleaner.Executor;
+using Kleaner.ScanCli;
 using Microsoft.Win32;
 
 // Kleaner CLI（MangoDisk 式安全契约）：
@@ -157,6 +159,122 @@ try
                     Console.WriteLine($"{Fmt(i.SizeBytes),12}  {(i.IsDirectory ? "[目录]" : "[文件]")}  {i.Path}");
             return 0;
         }
+        case "gen-dataset":
+        {
+            var root = Opt("--root") ?? throw new ArgumentException("gen-dataset 需要 --root");
+            var options = new SyntheticDatasetOptions(
+                Seed: int.TryParse(Opt("--seed"), out var ds) ? ds : 20260906,
+                FileCount: int.TryParse(Opt("--files"), out var fc) ? fc : 2000,
+                DirectoryDepth: int.TryParse(Opt("--depth"), out var dp) ? dp : 3,
+                Branching: int.TryParse(Opt("--branching"), out var br) ? br : 4,
+                DuplicateGroups: int.TryParse(Opt("--dup-groups"), out var dg) ? dg : 20);
+            var report = SyntheticDataset.Generate(root, options);
+            var manifest = new
+            {
+                kind = "kleaner-synthetic-dataset",
+                options.Seed,
+                options.FileCount,
+                options.DirectoryDepth,
+                options.Branching,
+                options.DuplicateGroups,
+                report.TotalBytes,
+                report.DirectoryCount,
+                generatedUtc = DateTime.UtcNow,
+            };
+            File.WriteAllText(Path.Combine(root, "dataset.json"),
+                JsonSerializer.Serialize(manifest, JsonIndented()));
+            if (json)
+                Console.WriteLine(JsonSerializer.Serialize(manifest, JsonIndented()));
+            else
+                Console.WriteLine($"已生成 {report.FileCount} 个文件（{Fmt(report.TotalBytes)}），{report.DirectoryCount} 个目录，重复组 {report.DuplicateGroups.Count}。");
+            return 0;
+        }
+        case "bench":
+        {
+            var root = Opt("--root") ?? throw new ArgumentException("bench 需要 --root");
+            var iterations = int.TryParse(Opt("--iterations"), out var it) ? it : 5;
+            var scenarios = (Opt("--scenarios") ?? string.Join(",", Benchmarks.AllScenarios))
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var outPath = Opt("--out");
+            var self = Environment.ProcessPath ?? throw new InvalidOperationException("无法定位当前可执行文件");
+            var manifestPath = Path.Combine(root, "dataset.json");
+            var dataset = File.Exists(manifestPath)
+                ? JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(manifestPath))
+                : throw new ArgumentException("数据集缺少 dataset.json，请先用 gen-dataset 生成");
+            var scenariosOut = new List<object>();
+            foreach (var scenario in scenarios)
+            {
+                if (!Benchmarks.AllScenarios.Contains(scenario))
+                    return Fail(json, new[] { $"未知场景：{scenario}（可用：{string.Join(",", Benchmarks.AllScenarios)}）" });
+                var psi = new ProcessStartInfo(self, $"bench-single {scenario} --root \"{root}\" --iterations {iterations}")
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                };
+                using var child = Process.Start(psi) ?? throw new InvalidOperationException("子进程启动失败");
+                var stdout = child.StandardOutput.ReadToEnd();
+                child.StandardError.ReadToEnd();
+                child.WaitForExit();
+                if (child.ExitCode != 0)
+                    return Fail(json, new[] { $"场景 {scenario} 测量失败（退出码 {child.ExitCode}）{stdout}" });
+                var raw = JsonSerializer.Deserialize<JsonElement>(stdout, CamelCase());
+                var samples = raw.GetProperty("elapsedMs").EnumerateArray().Select(e => e.GetDouble()).OrderBy(x => x).ToList();
+                var usage = raw.GetProperty("usage");
+                scenariosOut.Add(new
+                {
+                    name = scenario,
+                    iterations,
+                    elapsedMs = samples,
+                    p50Ms = Math.Round(Benchmarks.Percentile(samples, 50), 2),
+                    p95Ms = Math.Round(Benchmarks.Percentile(samples, 95), 2),
+                    firstProgressMs = raw.TryGetProperty("firstProgressMs", out var fp) && fp.ValueKind == JsonValueKind.Array
+                        ? fp.EnumerateArray().Select(e => Math.Round(e.GetDouble(), 2)).ToList() : null,
+                    cancelLatencyMs = raw.TryGetProperty("cancelLatencyMs", out var cl) && cl.ValueKind == JsonValueKind.Array
+                        ? cl.EnumerateArray().Select(e => Math.Round(e.GetDouble(), 2)).ToList() : null,
+                    peakWorkingSetBytes = usage.GetProperty("peakWorkingSetBytes").GetInt64(),
+                    cpuTimeMs = usage.GetProperty("cpuTimeMs").GetDouble(),
+                });
+            }
+
+            var payload = new
+            {
+                environment = new
+                {
+                    machine = Environment.MachineName,
+                    os = Environment.OSVersion.VersionString,
+                    osBuild = Environment.OSVersion.Version.Build,
+                    processorCount = Environment.ProcessorCount,
+                    runtime = Environment.Version.ToString(),
+                    timestampUtc = DateTime.UtcNow,
+                },
+                dataset,
+                scenarios = scenariosOut,
+            };
+            var text = JsonSerializer.Serialize(payload, JsonIndented());
+            if (outPath is not null)
+                File.WriteAllText(outPath, text);
+            Console.WriteLine(text);
+            return 0;
+        }
+        case "bench-single":
+        {
+            var scenario = args.Length > 1 ? args[1] : throw new ArgumentException("bench-single 需要场景名");
+            var root = Opt("--root") ?? throw new ArgumentException("bench-single 需要 --root");
+            var iterations = int.TryParse(Opt("--iterations"), out var it2) ? it2 : 5;
+            var result = Benchmarks.Run(scenario, root, rulesOverride, iterations);
+            var usage = Benchmarks.SelfResourceUsage();
+            Console.WriteLine(JsonSerializer.Serialize(new
+            {
+                result.Scenario,
+                result.Iterations,
+                result.ElapsedMs,
+                result.FirstProgressMs,
+                result.CancelLatencyMs,
+                usage,
+            }, CamelCase()));
+            return 0;
+        }
         case "startup":
         {
             var manager = new StartupManager();
@@ -301,11 +419,23 @@ static void Usage()
     System.Console.WriteLine("  usage       --root R [--top 30]");
     System.Console.WriteLine("  startup                       只读列出启动项（含已禁用备份）");
     System.Console.WriteLine("  startup-test                  启动项禁用/还原往返自检（临时测试项，自动清理）");
+    System.Console.WriteLine("  gen-dataset --root R [--seed N] [--files N] [--depth N] [--branching N] [--dup-groups N]");
+    System.Console.WriteLine("                                生成可复现合成数据集（性能基准用，只写临时目录）");
+    System.Console.WriteLine("  bench --root R [--iterations 5] [--scenarios csv] [--out F]");
+    System.Console.WriteLine("                                规则扫描/空间分析/大文件/重复哈希/取消延迟 基准（JSON 输出）");
     System.Console.WriteLine("  通用：--format text|json   --yes");
     System.Console.WriteLine("  位置覆盖：--rules P（直接加载，绕过更新通道）  --quarantine-root R  --history-path F");
 }
 
 static JsonSerializerOptions JsonIndented() => new() { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+// bench 父子进程之间的结果契约统一 camelCase；与对外 --format json 的 PascalCase 输出互不影响。
+static JsonSerializerOptions CamelCase() => new()
+{
+    WriteIndented = true,
+    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+};
 
 static string Fmt(long bytes) =>
     bytes >= 1L << 30 ? $"{bytes / (double)(1L << 30):F2} GB"
