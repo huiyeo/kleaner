@@ -45,6 +45,7 @@ public sealed class QuarantineManager
     private readonly HistoryManager _history;
     private readonly Action<QuarantineBatch>? _beforeManifestReplace;
     private readonly Action<string>? _restoreAuditStage;
+    private readonly Action? _beforeLeafMove;
 
     private sealed record PendingAuditReceipt(int Version, string Id, string Action, string? BatchId,
         string Detail, int FileCount, long Bytes, string? Result);
@@ -59,10 +60,11 @@ public sealed class QuarantineManager
 
     // 仅测试程序集注入故障；生产调用仍固定走真实文件写入、刷新和原子替换。
     internal QuarantineManager(string? root, HistoryManager history, Action<QuarantineBatch>? beforeManifestReplace,
-        Action<string>? restoreAuditStage = null)
+        Action<string>? restoreAuditStage = null, Action? beforeLeafMove = null)
     {
         _beforeManifestReplace = beforeManifestReplace;
         _restoreAuditStage = restoreAuditStage;
+        _beforeLeafMove = beforeLeafMove;
         ArgumentNullException.ThrowIfNull(history);
         _root = Path.GetFullPath(root ?? DefaultRoot());
         _history = history;
@@ -105,6 +107,8 @@ public sealed class QuarantineManager
         var batchId = CreateBatchId();
         var batchDir = GetBatchDirectory(batchId);
         Directory.CreateDirectory(batchDir);
+        // 批次目录全程锚定：移动窗口之外也无法被改名删除，向其子树插入 junction 的删除前提随之失效。
+        using var batchAnchor = QuarantineAnchors.OpenAnchored(batchDir);
         var entries = new List<QuarantineEntry>();
         var createdUtc = DateTime.UtcNow;
         WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
@@ -130,17 +134,22 @@ public sealed class QuarantineManager
             WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
             try
             {
-                EnsureNoReparsePoints(file.FullPath);
-                EnsureNoReparsePoints(destination);
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                EnsureNoReparsePoints(file.FullPath);
-                EnsureNoReparsePoints(destination);
-                File.Move(file.FullPath, destination);
-                entries[^1] = entry with { State = "moved" };
-                bytes += file.SizeBytes;
-                receipt = receipt with { FileCount = entries.Count(e => e.State == "moved"), Bytes = bytes };
-                WritePendingAuditReceipt(receipt);
-                NotifyAuditStage("clean", "item");
+                // 先建目标链再全链锚定：锚定即复验，创建与锚定之间的替换会在锚定时被检出并拒绝。
+                var anchors = QuarantineAnchors.AnchorAncestors(file.FullPath);
+                anchors.AddRange(QuarantineAnchors.AnchorAncestors(destination));
+                try
+                {
+                    EnsureNoReparsePoints(file.FullPath);
+                    _beforeLeafMove?.Invoke();
+                    File.Move(file.FullPath, destination);
+                    entries[^1] = entry with { State = "moved" };
+                    bytes += file.SizeBytes;
+                    receipt = receipt with { FileCount = entries.Count(e => e.State == "moved"), Bytes = bytes };
+                    WritePendingAuditReceipt(receipt);
+                    NotifyAuditStage("clean", "item");
+                }
+                finally { QuarantineAnchors.DisposeAll(anchors); }
             }
             catch (Exception ex)
             {
@@ -202,11 +211,14 @@ public sealed class QuarantineManager
         WritePendingAuditReceipt(receipt);
         _history.Append("restore-start", $"批次 {batchId}", batch.Entries.Count, 0, "started");
         NotifyAuditStage("restore", "started");
-
+        // 批次锚定只覆盖移动循环；收尾要删除空批次目录，必须先释放自己的锚。
+        var batchAnchor = QuarantineAnchors.OpenAnchored(batchDir);
         var remaining = batch.Entries.ToList();
         var skipped = new List<string>();
         var failed = new List<string>();
         var restored = 0;
+        try
+        {
         foreach (var entry in batch.Entries)
         {
             var currentEntry = entry;
@@ -248,16 +260,21 @@ public sealed class QuarantineManager
             var target = currentEntry.RestoreTarget!;
             try
             {
-                EnsureNoReparsePoints(entry.QuarantinedPath);
-                EnsureNoReparsePoints(target);
                 if (sourceExists)
                 {
                     if (!MatchesRestoreContent(entry.QuarantinedPath, currentEntry))
                         throw new InvalidDataException("隔离文件内容与还原意图不一致");
                     Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                    EnsureNoReparsePoints(entry.QuarantinedPath);
-                    EnsureNoReparsePoints(target);
-                    File.Move(entry.QuarantinedPath, target);
+                    var anchors = QuarantineAnchors.AnchorAncestors(entry.QuarantinedPath);
+                    anchors.AddRange(QuarantineAnchors.AnchorAncestors(target));
+                    try
+                    {
+                        EnsureNoReparsePoints(entry.QuarantinedPath);
+                        EnsureNoReparsePoints(target);
+                        _beforeLeafMove?.Invoke();
+                        File.Move(entry.QuarantinedPath, target);
+                    }
+                    finally { QuarantineAnchors.DisposeAll(anchors); }
                 }
                 else if (!MatchesRestoreContent(target, currentEntry))
                 {
@@ -301,6 +318,8 @@ public sealed class QuarantineManager
                 break;
             }
         }
+        }
+        finally { batchAnchor.Dispose(); }
 
         var report = new RestoreReport(restored, skipped, failed);
         // 凭据位于批次外；收尾删除批次后，最终历史失败仍有补记来源。

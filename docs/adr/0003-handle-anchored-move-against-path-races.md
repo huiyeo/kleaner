@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # 关闭隔离区移动路径的检查-移动间隙：句柄锚定祖先 + 基于句柄复验

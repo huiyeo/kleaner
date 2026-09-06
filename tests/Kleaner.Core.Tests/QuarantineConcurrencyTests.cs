@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Kleaner.Core;
 using Kleaner.Executor;
 
@@ -51,6 +52,115 @@ public sealed class QuarantineConcurrencyTests : IDisposable
         Assert.DoesNotContain(history.Recent(), entry => entry.Action is "delete-batch-start" or "purge");
         Assert.Single(history.Recent(), entry => entry.Action == "restore-start");
         Assert.Equal(1, challenger.Execute(next).MovedCount); // 正常返回后持有权必须释放。
+    }
+
+    [Fact]
+    public void 移动窗口内来源祖先对改名免疫()
+    {
+        var quarantine = Path.Combine(_root, "q");
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var plan = MakePlan("first", quarantine);
+        var sourceDir = Path.Combine(_root, "first");
+        Exception? renameError = null;
+        var invoked = false;
+        // beforeLeafMove 在祖先锚定之后、移动之前触发，此处代表并行攻击者在检查与移动之间改名来源祖先。
+        var owner = new QuarantineManager(quarantine, history, null, null, () =>
+        {
+            if (invoked) return;
+            invoked = true;
+            renameError = Record.Exception(() => Directory.Move(sourceDir, sourceDir + "-stolen"));
+        });
+
+        var report = owner.Execute(plan);
+
+        Assert.True(invoked);
+        Assert.IsAssignableFrom<IOException>(renameError);
+        Assert.Equal(1, report.MovedCount);
+        Assert.True(Directory.Exists(sourceDir), "锚定期间来源目录必须保持原名");
+        Assert.False(File.Exists(Path.Combine(sourceDir, "a.txt")));
+        Assert.True(File.Exists(Assert.Single(Assert.Single(owner.ListBatches()).Entries).QuarantinedPath));
+        Assert.Single(history.Recent(), entry => entry.Action == "clean" && entry.Result == "ok");
+    }
+
+    [Fact]
+    public void 还原窗口内还原目标祖先对改名免疫()
+    {
+        var quarantine = Path.Combine(_root, "q");
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var plan = MakePlan("first", quarantine);
+        var batchId = new QuarantineManager(quarantine, history).Execute(plan).BatchId;
+        var targetDir = Path.Combine(_root, "first");
+        Exception? renameError = null;
+        var invoked = false;
+        var owner = new QuarantineManager(quarantine, history, null, null, () =>
+        {
+            if (invoked) return;
+            invoked = true;
+            renameError = Record.Exception(() => Directory.Move(targetDir, targetDir + "-stolen"));
+        });
+
+        var report = owner.RestoreBatch(batchId);
+
+        Assert.True(invoked);
+        Assert.IsAssignableFrom<IOException>(renameError);
+        Assert.True(report.IsComplete);
+        Assert.True(Directory.Exists(targetDir), "锚定期间还原目标目录必须保持原名");
+        Assert.Equal("content", File.ReadAllText(Path.Combine(targetDir, "a.txt")));
+        Assert.Empty(owner.ListBatches());
+    }
+
+    [Fact]
+    public void 并行进程在移动窗口内改写来源祖先被拒绝()
+    {
+        var quarantine = Path.Combine(_root, "q");
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var plan = MakePlan("first", quarantine);
+        var sourceDir = Path.Combine(_root, "first");
+        var goMarker = Path.Combine(_root, "go.txt");
+        var resultFile = Path.Combine(_root, "result.txt");
+        var script = Path.Combine(_root, "adversary.cmd");
+        File.WriteAllLines(script, new[]
+        {
+            "@echo off",
+            ":wait",
+            $"if exist \"{goMarker}\" goto go",
+            "ping -n 1 127.0.0.1 >nul",
+            "goto wait",
+            ":go",
+            $"ren \"{sourceDir}\" first-moved 2>nul",
+            $"echo %errorlevel%>\"{resultFile}\"",
+        });
+        using var adversary = Process.Start(new ProcessStartInfo("cmd.exe", $"/c \"{script}\"")
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false,
+        });
+        var moved = false;
+        var owner = new QuarantineManager(quarantine, history, null, null, () =>
+        {
+            if (moved) return;
+            moved = true;
+            // 钩子阻塞操作直至并行进程的改名尝试结束，保证尝试发生在锚定窗口之内。
+            File.WriteAllText(goMarker, "go");
+            for (var attempt = 0; attempt < 600 && !File.Exists(resultFile); attempt++)
+                Thread.Sleep(50);
+        });
+
+        try
+        {
+            var report = owner.Execute(plan);
+
+            Assert.True(moved);
+            Assert.True(File.Exists(resultFile), "并行进程必须在移动窗口内完成改名尝试");
+            Assert.NotEqual("0", File.ReadAllText(resultFile).Trim());
+            Assert.Equal(1, report.MovedCount);
+            Assert.True(Directory.Exists(sourceDir), "锚定期间来源目录必须保持原名");
+            Assert.Single(history.Recent(), entry => entry.Action == "clean" && entry.Result == "ok");
+        }
+        finally
+        {
+            if (adversary is not null && !adversary.HasExited) adversary.Kill();
+        }
     }
 
     private CleanupPlan MakePlan(string name, string quarantine)
