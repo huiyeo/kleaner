@@ -24,6 +24,14 @@ public sealed record RestoreReport(int RestoredCount, IReadOnlyList<string> Skip
 
 public sealed record BatchDeletionReport(string BatchId, bool Deleted, IReadOnlyList<string> Failed);
 
+/// <summary>待补记凭据的只读快照；无法解析的凭据会阻止新的写操作，必须原样保留并提示人工检查。</summary>
+public sealed record PendingAuditStatus(int ReceiptCount, int ParseableCount)
+{
+    public bool HasPending => ReceiptCount > 0;
+
+    public bool AllParseable => ReceiptCount == ParseableCount;
+}
+
 /// <summary>隔离区副作用入口：清理只能移入，审计与 manifest 初始化失败时拒绝改变文件状态。</summary>
 public sealed class QuarantineManager
 {
@@ -401,6 +409,24 @@ public sealed class QuarantineManager
         using var operation = AcquireOperation();
     }
 
+    /// <summary>只读检查待补记凭据；不加排他锁、不补记、不删除，供界面提示而非执行授权。</summary>
+    public PendingAuditStatus InspectPendingAudit()
+    {
+        var directory = Path.Combine(_root, ".pending-audit");
+        EnsureNoReparsePoints(directory);
+        if (File.Exists(directory)) return new PendingAuditStatus(1, 0); // 目录被文件占用会拒绝所有写操作，按一条无法解析的凭据提示。
+        if (!Directory.Exists(directory)) return new PendingAuditStatus(0, 0);
+        var receipts = 0;
+        var parseable = 0;
+        foreach (var path in Directory.EnumerateFiles(directory, "*.json"))
+        {
+            receipts++;
+            try { _ = ReadPendingAuditReceipt(path); parseable++; }
+            catch { }
+        }
+        return new PendingAuditStatus(receipts, parseable);
+    }
+
     private string PendingAuditReceiptPath(string id) => Path.Combine(_root, ".pending-audit", id + ".json");
 
     private void WritePendingAuditReceipt(PendingAuditReceipt receipt)
@@ -436,37 +462,40 @@ public sealed class QuarantineManager
         if (File.Exists(directory)) throw new InvalidDataException("待补记目录被文件占用，拒绝开始新操作");
         if (!Directory.Exists(directory)) return;
         foreach (var path in Directory.EnumerateFiles(directory, "*.json"))
+            CompletePendingAudit(ReadPendingAuditReceipt(path));
+    }
+
+    /// <summary>读取并校验单个凭据，不补记不删除；流随返回关闭，调用方此后才可替换或删除该文件。</summary>
+    private PendingAuditReceipt ReadPendingAuditReceipt(string path)
+    {
+        EnsureNoReparsePoints(path);
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (stream.Length > 65_536) throw new InvalidDataException("待补记凭据超限，拒绝开始新操作");
+        var receipt = JsonSerializer.Deserialize<PendingAuditReceipt>(stream, JsonOpts)
+            ?? throw new InvalidDataException("待补记凭据为空");
+        if (receipt.Action is null)
         {
-            EnsureNoReparsePoints(path);
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            if (stream.Length > 65_536) throw new InvalidDataException("待补记凭据超限，拒绝开始新操作");
-            var receipt = JsonSerializer.Deserialize<PendingAuditReceipt>(stream, JsonOpts)
+            stream.Position = 0;
+            var legacy = JsonSerializer.Deserialize<RestoreAuditReceipt>(stream, JsonOpts)
                 ?? throw new InvalidDataException("待补记凭据为空");
-            if (receipt.Action is null)
-            {
-                stream.Position = 0;
-                var legacy = JsonSerializer.Deserialize<RestoreAuditReceipt>(stream, JsonOpts)
-                    ?? throw new InvalidDataException("待补记凭据为空");
-                receipt = new PendingAuditReceipt(legacy.Version, legacy.Id, "restore", legacy.BatchId, $"批次 {legacy.BatchId}",
-                    legacy.RestoredCount, 0, legacy.Result);
-            }
-            if (receipt.Version != 1 || !Guid.TryParseExact(receipt.Id, "N", out _) ||
-                Path.GetFileNameWithoutExtension(path) != receipt.Id || string.IsNullOrWhiteSpace(receipt.Detail) ||
-                receipt.FileCount < 0 || receipt.Bytes < 0 || receipt.Action is not ("clean" or "restore" or "delete-batch" or "purge") ||
-                receipt.Result is not (null or "ok" or "partial"))
-                throw new InvalidDataException("待补记凭据格式非法，保留文件待核对");
-            if (receipt.Action == "purge")
-            {
-                if (receipt.BatchId is not null) throw new InvalidDataException("清空汇总凭据不应包含批次 id");
-            }
-            else if (receipt.BatchId is null)
-            {
-                throw new InvalidDataException("批次汇总凭据缺少批次 id");
-            }
-            else _ = GetBatchDirectory(receipt.BatchId);
-            stream.Dispose(); // 补记后才可删除该凭据；读取期间禁止替换。
-            CompletePendingAudit(receipt);
+            receipt = new PendingAuditReceipt(legacy.Version, legacy.Id, "restore", legacy.BatchId, $"批次 {legacy.BatchId}",
+                legacy.RestoredCount, 0, legacy.Result);
         }
+        if (receipt.Version != 1 || !Guid.TryParseExact(receipt.Id, "N", out _) ||
+            Path.GetFileNameWithoutExtension(path) != receipt.Id || string.IsNullOrWhiteSpace(receipt.Detail) ||
+            receipt.FileCount < 0 || receipt.Bytes < 0 || receipt.Action is not ("clean" or "restore" or "delete-batch" or "purge") ||
+            receipt.Result is not (null or "ok" or "partial"))
+            throw new InvalidDataException("待补记凭据格式非法，保留文件待核对");
+        if (receipt.Action == "purge")
+        {
+            if (receipt.BatchId is not null) throw new InvalidDataException("清空汇总凭据不应包含批次 id");
+        }
+        else if (receipt.BatchId is null)
+        {
+            throw new InvalidDataException("批次汇总凭据缺少批次 id");
+        }
+        else _ = GetBatchDirectory(receipt.BatchId);
+        return receipt;
     }
 
     private void CompletePendingAudit(PendingAuditReceipt receipt)

@@ -330,6 +330,91 @@ public sealed class QuarantinePersistenceTests : IDisposable
     }
 
     [Fact]
+    public void 只读检查存在待补记凭据时不消费凭据也不写历史()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var manager = new QuarantineManager(quarantine, history);
+        var receiptPath = WriteReceipt(quarantine, "clean", "batch-a", 2, 14, "null");
+
+        var status = manager.InspectPendingAudit();
+
+        Assert.Equal(1, status.ReceiptCount);
+        Assert.Equal(1, status.ParseableCount);
+        Assert.True(status.HasPending, "界面必须能从只读检查得知存在待补记凭据");
+        Assert.True(File.Exists(receiptPath), "只读检查不得消费凭据");
+        Assert.Empty(history.Recent());
+        manager.RecoverPendingAudit();
+        var summary = Assert.Single(history.Recent(), entry => entry.Action == "clean");
+        Assert.Equal(2, summary.FileCount);
+        Assert.False(File.Exists(receiptPath));
+    }
+
+    [Theory]
+    [InlineData("{broken")]
+    [InlineData("null")]
+    public void 只读检查将损坏凭据报告为无法解析且保留原样(string corrupt)
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var manager = new QuarantineManager(quarantine, history);
+        var directory = Path.Combine(quarantine, ".pending-audit");
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".json");
+        File.WriteAllText(path, corrupt);
+
+        var status = manager.InspectPendingAudit();
+
+        Assert.Equal(1, status.ReceiptCount);
+        Assert.Equal(0, status.ParseableCount);
+        Assert.False(status.AllParseable, "损坏凭据会阻止所有写操作，界面必须区分于可补记凭据");
+        Assert.Equal(corrupt, File.ReadAllText(path));
+        Assert.Empty(history.Recent());
+    }
+
+    [Fact]
+    public void 正常完成清理后只读检查报告无待处理()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var manager = new QuarantineManager(quarantine, history);
+        Assert.False(manager.InspectPendingAudit().HasPending);
+        manager.Execute(MakePlan(quarantine));
+
+        var status = manager.InspectPendingAudit();
+
+        Assert.False(status.HasPending, "正常完成的操作不得让界面误报待补记状态");
+        Assert.Equal(0, status.ReceiptCount);
+    }
+
+    [Fact]
+    public void 待补记目录被文件占用时只读检查按无法解析的凭据提示()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var manager = new QuarantineManager(quarantine, history);
+        File.WriteAllText(Path.Combine(quarantine, ".pending-audit"), "保留的冲突文件");
+
+        var status = manager.InspectPendingAudit();
+
+        Assert.Equal(1, status.ReceiptCount);
+        Assert.Equal(0, status.ParseableCount);
+        Assert.Equal("保留的冲突文件", File.ReadAllText(Path.Combine(quarantine, ".pending-audit")));
+        Assert.Empty(history.Recent());
+    }
+
+    internal static string WriteReceipt(string quarantine, string action, string batchId, int fileCount, long bytes, string result)
+    {
+        var id = Guid.NewGuid().ToString("N");
+        var directory = Path.Combine(quarantine, ".pending-audit");
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, id + ".json");
+        File.WriteAllText(path,
+            $$"""{"version":1,"id":"{{id}}","action":"{{action}}","batchId":"{{batchId}}","detail":"批次 {{batchId}}","fileCount":{{fileCount}},"bytes":{{bytes}},"result":{{result}}}""");
+        return path;
+    }
+
+    [Fact]
     public void 旧版还原待补记凭据仍可安全回放()
     {
         var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));

@@ -10,6 +10,12 @@
             <Button x:Name="PurgeButton" Click="OnPurge" Style="{StaticResource KleanerDangerButton}" Margin="8,0,0,0" />
         </StackPanel>
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16"><TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="22" FontWeight="SemiBold" /></StackPanel>
+        <Border x:Name="PendingAuditBanner" DockPanel.Dock="Top" Background="#FFF9EC" BorderBrush="#EFD9A8" BorderThickness="1" CornerRadius="10" Padding="14,8" Margin="0,0,0,12" Visibility="Collapsed">
+            <DockPanel>
+                <Button x:Name="RecoverAuditButton" Click="OnRecoverPendingAudit" DockPanel.Dock="Right" Style="{StaticResource KleanerSecondaryButton}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <TextBlock x:Name="PendingAuditText" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
         <Border Style="{StaticResource KleanerCard}"><DataGrid x:Name="BatchesGrid" AutoGenerateColumns="False" CanUserAddRows="False"
                   IsReadOnly="True" SelectionMode="Single" Style="{StaticResource KleanerDataGrid}">
             <DataGrid.Columns>

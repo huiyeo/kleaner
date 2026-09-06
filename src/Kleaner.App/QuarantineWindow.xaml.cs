@@ -15,6 +15,7 @@ public partial class QuarantineWindow : Window
         RestoreButton.Content = S.Get("BtnRestore");
         DeleteButton.Content = S.Get("BtnDeleteBatch");
         PurgeButton.Content = S.Get("BtnPurgeOld");
+        RecoverAuditButton.Content = S.Get("BtnRecoverAudit");
         var headers = new[] { S.Get("ColBatchId"), S.Get("ColCreated"), S.Get("ColEntryCount"), S.Get("ColBatchSize"), "" };
         for (var i = 0; i < headers.Length && i < BatchesGrid.Columns.Count; i++)
             BatchesGrid.Columns[i].Header = headers[i];
@@ -27,6 +28,36 @@ public partial class QuarantineWindow : Window
     {
         var batches = await Task.Run(_manager.ListBatches);
         BatchesGrid.ItemsSource = batches.Select(b => new BatchRow(b)).ToList();
+        await RefreshPendingAuditBanner();
+    }
+
+    private async Task RefreshPendingAuditBanner()
+    {
+        // 只读检查，不加操作锁：即使另一进程正在写入也允许刷新，补记由按钮显式触发。
+        var status = await Task.Run(_manager.InspectPendingAudit);
+        PendingAuditBanner.Visibility = status.HasPending ? Visibility.Visible : Visibility.Collapsed;
+        PendingAuditText.Text = status.AllParseable
+            ? S.Format("PendingAuditPending", status.ReceiptCount)
+            : S.Format("PendingAuditCorrupt", status.ReceiptCount, status.ReceiptCount - status.ParseableCount);
+    }
+
+    private async void OnRecoverPendingAudit(object sender, RoutedEventArgs e)
+    {
+        RecoverAuditButton.IsEnabled = false;
+        try
+        {
+            await Task.Run(_manager.RecoverPendingAudit);
+        }
+        catch (Exception ex)
+        {
+            // 锁竞争与凭据损坏的异常消息由执行器提供且面向用户，原样透出。
+            MessageBox.Show(S.Format("PendingAuditRecoverFailed", ex.Message), Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            RecoverAuditButton.IsEnabled = true;
+        }
+        await RefreshPendingAuditBanner();
     }
 
     private void OnRestore(object sender, RoutedEventArgs e)
