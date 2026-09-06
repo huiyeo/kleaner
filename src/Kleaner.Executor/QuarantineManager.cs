@@ -38,6 +38,10 @@ public sealed class QuarantineManager
     private readonly Action<QuarantineBatch>? _beforeManifestReplace;
     private readonly Action<string>? _restoreAuditStage;
 
+    private sealed record PendingAuditReceipt(int Version, string Id, string Action, string? BatchId,
+        string Detail, int FileCount, long Bytes, string? Result);
+
+    // 兼容已落盘的还原凭据；新凭据统一使用 PendingAuditReceipt。
     private sealed record RestoreAuditReceipt(int Version, string Id, string BatchId, int RestoredCount, string? Result);
 
     public QuarantineManager(string? root, HistoryManager history)
@@ -96,7 +100,10 @@ public sealed class QuarantineManager
         var entries = new List<QuarantineEntry>();
         var createdUtc = DateTime.UtcNow;
         WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
+        var receipt = new PendingAuditReceipt(1, Guid.NewGuid().ToString("N"), "clean", batchId, $"批次 {batchId}", 0, 0, null);
+        WritePendingAuditReceipt(receipt);
         _history.Append("clean-start", $"批次 {batchId}", revalidation.AuthorizedItems.Count, 0, "started");
+        NotifyAuditStage("clean", "started");
 
         long bytes = 0;
         foreach (var item in revalidation.AuthorizedItems)
@@ -123,6 +130,9 @@ public sealed class QuarantineManager
                 File.Move(file.FullPath, destination);
                 entries[^1] = entry with { State = "moved" };
                 bytes += file.SizeBytes;
+                receipt = receipt with { FileCount = entries.Count(e => e.State == "moved"), Bytes = bytes };
+                WritePendingAuditReceipt(receipt);
+                NotifyAuditStage("clean", "item");
             }
             catch (Exception ex)
             {
@@ -135,8 +145,18 @@ public sealed class QuarantineManager
 
         WriteManifestAtomic(batchDir, new QuarantineBatch(batchId, createdUtc, entries));
         var movedEntries = entries.Count(e => File.Exists(e.QuarantinedPath));
-        _history.Append("clean", $"批次 {batchId}（规则：{string.Join(",", entries.Select(e => e.RuleId).Distinct())}）",
-            movedEntries, bytes, skipped.Count == 0 ? "ok" : "partial");
+        receipt = receipt with
+        {
+            Detail = $"批次 {batchId}（规则：{string.Join(",", entries.Select(e => e.RuleId).Distinct())}）",
+            FileCount = movedEntries,
+            Bytes = bytes
+        };
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("clean", "prepared");
+        receipt = receipt with { Result = skipped.Count == 0 ? "ok" : "partial" };
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("clean", "finalized");
+        CompletePendingAudit(receipt);
         return new ExecutionReport(batchId, batchDir, movedEntries, bytes, skipped);
     }
 
@@ -170,10 +190,10 @@ public sealed class QuarantineManager
         using var operation = AcquireOperation();
         var batchDir = GetBatchDirectory(batchId);
         var batch = ReadBatch(batchDir);
-        var receipt = new RestoreAuditReceipt(1, Guid.NewGuid().ToString("N"), batchId, 0, null);
-        WriteRestoreReceipt(receipt);
+        var receipt = new PendingAuditReceipt(1, Guid.NewGuid().ToString("N"), "restore", batchId, $"批次 {batchId}", 0, 0, null);
+        WritePendingAuditReceipt(receipt);
         _history.Append("restore-start", $"批次 {batchId}", batch.Entries.Count, 0, "started");
-        _restoreAuditStage?.Invoke("started");
+        NotifyAuditStage("restore", "started");
 
         var remaining = batch.Entries.ToList();
         var skipped = new List<string>();
@@ -245,7 +265,7 @@ public sealed class QuarantineManager
             try
             {
                 // 先保存逐项证据，再移除恢复意图；审计失败不能继续移动下一项。
-                _restoreAuditStage?.Invoke("item");
+                NotifyAuditStage("restore", "item");
                 var auditId = "restore-file:" + Convert.ToHexString(SHA256.HashData(
                     System.Text.Encoding.UTF8.GetBytes(batchId + "\0" + currentEntry.QuarantinedPath.ToUpperInvariant())));
                 _history.AppendOnce(auditId, "restore-file", JsonSerializer.Serialize(new
@@ -276,9 +296,9 @@ public sealed class QuarantineManager
 
         var report = new RestoreReport(restored, skipped, failed);
         // 凭据位于批次外；收尾删除批次后，最终历史失败仍有补记来源。
-        receipt = receipt with { RestoredCount = restored };
-        WriteRestoreReceipt(receipt);
-        _restoreAuditStage?.Invoke("prepared");
+        receipt = receipt with { FileCount = restored };
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("restore", "prepared");
         if (report.IsComplete && remaining.Count == 0)
         {
             TryDeleteEmptyBatchDirectory(batchDir, failed);
@@ -286,9 +306,9 @@ public sealed class QuarantineManager
                 report = report with { Failed = failed };
         }
         receipt = receipt with { Result = report.IsComplete && remaining.Count == 0 ? "ok" : "partial" };
-        WriteRestoreReceipt(receipt);
-        _restoreAuditStage?.Invoke("finalized");
-        CompleteRestoreAudit(receipt);
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("restore", "finalized");
+        CompletePendingAudit(receipt);
         return report;
     }
 
@@ -301,10 +321,23 @@ public sealed class QuarantineManager
     private BatchDeletionReport DeleteBatchCore(string batchId)
     {
         var batchDir = GetBatchDirectory(batchId);
+        var receipt = new PendingAuditReceipt(1, Guid.NewGuid().ToString("N"), "delete-batch", batchId, $"批次 {batchId}", 0, 0, null);
+        WritePendingAuditReceipt(receipt);
         _history.Append("delete-batch-start", $"批次 {batchId}", 0, 0, "started");
-        var failed = DeleteDirectoryContents(batchDir);
+        NotifyAuditStage("delete", "started");
+        var failed = DeleteDirectoryContents(batchDir, deletedFileCount =>
+        {
+            receipt = receipt with { FileCount = deletedFileCount };
+            WritePendingAuditReceipt(receipt);
+            NotifyAuditStage("delete", "item");
+        });
         var deleted = failed.Count == 0 && !Directory.Exists(batchDir);
-        _history.Append("delete-batch", $"批次 {batchId}", 0, 0, deleted ? "ok" : "partial");
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("delete", "prepared");
+        receipt = receipt with { Result = deleted ? "ok" : "partial" };
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("delete", "finalized");
+        CompletePendingAudit(receipt);
         return new BatchDeletionReport(batchId, deleted, failed);
     }
 
@@ -314,13 +347,24 @@ public sealed class QuarantineManager
         var cutoff = DateTime.UtcNow - age;
         var successful = 0;
         var partial = false;
+        var receipt = new PendingAuditReceipt(1, Guid.NewGuid().ToString("N"), "purge", null, "清空过期批次", 0, 0, null);
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("purge", "started");
         foreach (var batch in ListBatches().Where(b => b.CreatedUtc < cutoff))
         {
             var report = DeleteBatchCore(batch.BatchId);
             if (report.Deleted) successful++;
             else partial = true;
+            receipt = receipt with { FileCount = successful };
+            WritePendingAuditReceipt(receipt);
+            NotifyAuditStage("purge", "item");
         }
-        _history.Append("purge", "清空过期批次", successful, 0, partial ? "partial" : "ok");
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("purge", "prepared");
+        receipt = receipt with { Result = partial ? "partial" : "ok" };
+        WritePendingAuditReceipt(receipt);
+        NotifyAuditStage("purge", "finalized");
+        CompletePendingAudit(receipt);
         return successful;
     }
 
@@ -341,7 +385,7 @@ public sealed class QuarantineManager
         }
         try
         {
-            ReplayRestoreAudits();
+            ReplayPendingAudits();
             return handle;
         }
         catch
@@ -351,17 +395,17 @@ public sealed class QuarantineManager
         }
     }
 
-    /// <summary>只补记已持久化的还原结果；不移动或清空用户文件。其他写操作开始前也会执行。</summary>
+    /// <summary>只补记已持久化的汇总结果；不移动或清空用户文件。其他写操作开始前也会执行。</summary>
     public void RecoverPendingAudit()
     {
         using var operation = AcquireOperation();
     }
 
-    private string RestoreReceiptPath(string id) => Path.Combine(_root, ".pending-audit", id + ".json");
+    private string PendingAuditReceiptPath(string id) => Path.Combine(_root, ".pending-audit", id + ".json");
 
-    private void WriteRestoreReceipt(RestoreAuditReceipt receipt)
+    private void WritePendingAuditReceipt(PendingAuditReceipt receipt)
     {
-        var path = RestoreReceiptPath(receipt.Id);
+        var path = PendingAuditReceiptPath(receipt.Id);
         EnsureNoReparsePoints(path);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
@@ -385,7 +429,7 @@ public sealed class QuarantineManager
         }
     }
 
-    private void ReplayRestoreAudits()
+    private void ReplayPendingAudits()
     {
         var directory = Path.Combine(_root, ".pending-audit");
         EnsureNoReparsePoints(directory);
@@ -396,28 +440,59 @@ public sealed class QuarantineManager
             EnsureNoReparsePoints(path);
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             if (stream.Length > 65_536) throw new InvalidDataException("待补记凭据超限，拒绝开始新操作");
-            var receipt = JsonSerializer.Deserialize<RestoreAuditReceipt>(stream, JsonOpts)
+            var receipt = JsonSerializer.Deserialize<PendingAuditReceipt>(stream, JsonOpts)
                 ?? throw new InvalidDataException("待补记凭据为空");
+            if (receipt.Action is null)
+            {
+                stream.Position = 0;
+                var legacy = JsonSerializer.Deserialize<RestoreAuditReceipt>(stream, JsonOpts)
+                    ?? throw new InvalidDataException("待补记凭据为空");
+                receipt = new PendingAuditReceipt(legacy.Version, legacy.Id, "restore", legacy.BatchId, $"批次 {legacy.BatchId}",
+                    legacy.RestoredCount, 0, legacy.Result);
+            }
             if (receipt.Version != 1 || !Guid.TryParseExact(receipt.Id, "N", out _) ||
-                Path.GetFileNameWithoutExtension(path) != receipt.Id || receipt.RestoredCount < 0 ||
+                Path.GetFileNameWithoutExtension(path) != receipt.Id || string.IsNullOrWhiteSpace(receipt.Detail) ||
+                receipt.FileCount < 0 || receipt.Bytes < 0 || receipt.Action is not ("clean" or "restore" or "delete-batch" or "purge") ||
                 receipt.Result is not (null or "ok" or "partial"))
                 throw new InvalidDataException("待补记凭据格式非法，保留文件待核对");
-            _ = GetBatchDirectory(receipt.BatchId);
+            if (receipt.Action == "purge")
+            {
+                if (receipt.BatchId is not null) throw new InvalidDataException("清空汇总凭据不应包含批次 id");
+            }
+            else if (receipt.BatchId is null)
+            {
+                throw new InvalidDataException("批次汇总凭据缺少批次 id");
+            }
+            else _ = GetBatchDirectory(receipt.BatchId);
             stream.Dispose(); // 补记后才可删除该凭据；读取期间禁止替换。
-            CompleteRestoreAudit(receipt);
+            CompletePendingAudit(receipt);
         }
     }
 
-    private void CompleteRestoreAudit(RestoreAuditReceipt receipt)
+    private void CompletePendingAudit(PendingAuditReceipt receipt)
     {
-        var detail = receipt.Result is null ? $"批次 {receipt.BatchId}（还原中断，最终状态未确认；数量仅为已持久化下限）" : $"批次 {receipt.BatchId}";
-        _history.AppendOnce("restore-summary:" + receipt.Id, "restore", detail,
-            receipt.RestoredCount, 0, receipt.Result ?? "partial");
-        _restoreAuditStage?.Invoke("appended");
-        var path = RestoreReceiptPath(receipt.Id);
+        var detail = receipt.Result is null
+            ? $"{receipt.Detail}（{AuditDisplayName(receipt.Action)}中断，最终状态未确认；数量仅为已持久化下限）"
+            : receipt.Detail;
+        _history.AppendOnce(receipt.Action + "-summary:" + receipt.Id, receipt.Action, detail,
+            receipt.FileCount, receipt.Bytes, receipt.Result ?? "partial");
+        NotifyAuditStage(receipt.Action == "delete-batch" ? "delete" : receipt.Action, "appended");
+        var path = PendingAuditReceiptPath(receipt.Id);
         EnsureNoReparsePoints(path);
         File.Delete(path);
     }
+
+    private void NotifyAuditStage(string operation, string stage) =>
+        _restoreAuditStage?.Invoke(operation == "restore" ? stage : operation + "-" + stage);
+
+    private static string AuditDisplayName(string action) => action switch
+    {
+        "clean" => "清理",
+        "restore" => "还原",
+        "delete-batch" => "永久清空批次",
+        "purge" => "清空过期批次",
+        _ => "操作"
+    };
 
     private string GetBatchDirectory(string batchId)
     {
@@ -570,9 +645,10 @@ public sealed class QuarantineManager
         catch (Exception ex) { failed.Add($"{batchDir}（{ex.GetType().Name}）"); }
     }
 
-    private static List<string> DeleteDirectoryContents(string directory)
+    private static List<string> DeleteDirectoryContents(string directory, Action<int> onFileDeleted)
     {
         var failed = new List<string>();
+        var deletedFileCount = 0;
         if (!Directory.Exists(directory)) return failed;
         var manifest = Path.Combine(directory, "manifest.json");
         var directories = new List<string> { directory };
@@ -597,6 +673,7 @@ public sealed class QuarantineManager
                 // 清单必须存活到所有内容处理完成，否则失败批次将从列表消失。
                 if (string.Equals(entry, manifest, StringComparison.OrdinalIgnoreCase))
                     continue;
+                var deleted = false;
                 try
                 {
                     EnsureNoReparsePoints(entry);
@@ -606,9 +683,15 @@ public sealed class QuarantineManager
                         failed.Add($"{entry}（reparse point 已跳过）");
                     }
                     else if (Directory.Exists(entry)) directories.Add(entry);
-                    else File.Delete(entry);
+                    else
+                    {
+                        File.Delete(entry);
+                        deleted = true;
+                    }
                 }
                 catch (Exception ex) { failed.Add($"{entry}（{ex.GetType().Name}）"); }
+                // 凭据刷新失败必须中止清空，不能由逐项失败分支吞掉后继续永久删除。
+                if (deleted) onFileDeleted(++deletedFileCount);
             }
         }
         if (failed.Count == 0)

@@ -148,5 +148,67 @@ public sealed class QuarantineProcessRecoveryTests : IDisposable
             Assert.Equal(file + "-content", File.ReadAllText(Path.Combine(_root, "source", file)));
     }
 
+    [Theory]
+    [InlineData("clean", "started")]
+    [InlineData("clean", "item")]
+    [InlineData("clean", "prepared")]
+    [InlineData("clean", "finalized")]
+    [InlineData("clean", "appended")]
+    [InlineData("delete", "started")]
+    [InlineData("delete", "item")]
+    [InlineData("delete", "prepared")]
+    [InlineData("delete", "finalized")]
+    [InlineData("delete", "appended")]
+    [InlineData("purge", "started")]
+    [InlineData("purge", "item")]
+    [InlineData("purge", "prepared")]
+    [InlineData("purge", "finalized")]
+    [InlineData("purge", "appended")]
+    public async Task 清理与清空汇总进程退出后补记且不重复(string operation, string stage)
+    {
+        var dotnet = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH")
+            ?? Path.GetFullPath(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", "dotnet.exe"));
+        var start = new ProcessStartInfo(dotnet)
+        {
+            UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardOutput = true, RedirectStandardError = true
+        };
+        foreach (var arg in new[] { Path.Combine(AppContext.BaseDirectory, "crash-worker", "Kleaner.CrashWorker.dll"), $"audit-{operation}-{stage}", _root })
+            start.ArgumentList.Add(arg);
+        using var process = Process.Start(start)!;
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        try { await process.WaitForExitAsync(timeout.Token); }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync();
+            Assert.Fail("测试子进程未及时到达汇总中断点");
+        }
+        Assert.True(process.ExitCode == 73, $"退出码 {process.ExitCode}；{await stdout}；{await stderr}");
+
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var receipts = Path.Combine(quarantine, ".pending-audit");
+        Assert.Single(Directory.GetFiles(receipts, "*.json"));
+        var action = operation == "delete" ? "delete-batch" : operation;
+        Assert.Equal(stage == "appended" ? 1 : 0, history.Recent().Count(entry => entry.Action == action));
+
+        var reopened = new QuarantineManager(quarantine, history);
+        reopened.RecoverPendingAudit();
+        reopened.RecoverPendingAudit();
+
+        var summary = Assert.Single(history.Recent(), entry => entry.Action == action);
+        var early = stage is "started" or "item";
+        Assert.Equal(early || stage == "prepared" ? "partial" : "ok", summary.Result);
+        if (early)
+        {
+            Assert.Equal(stage == "item" ? 1 : 0, summary.FileCount);
+            Assert.Contains("数量仅为已持久化下限", summary.Detail);
+        }
+        Assert.Empty(Directory.GetFiles(receipts, "*.json"));
+    }
+
     public void Dispose() => Directory.Delete(_root, recursive: true);
 }

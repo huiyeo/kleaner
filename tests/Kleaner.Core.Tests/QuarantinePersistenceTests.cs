@@ -268,6 +268,7 @@ public sealed class QuarantinePersistenceTests : IDisposable
         var plan = MakePlan(quarantine);
         var manager = new QuarantineManager(quarantine, history);
         var execution = manager.Execute(plan);
+        Directory.Delete(Path.Combine(quarantine, ".pending-audit"), recursive: false);
         File.WriteAllText(Path.Combine(quarantine, ".pending-audit"), "保留的冲突文件");
         Assert.Throws<InvalidDataException>(() => manager.RestoreBatch(execution.BatchId));
         Assert.True(File.Exists(Path.Combine(execution.QuarantineDir, "manifest.json")));
@@ -326,6 +327,29 @@ public sealed class QuarantinePersistenceTests : IDisposable
         });
         Assert.True(manager.RestoreBatch(execution.BatchId).IsComplete);
         Assert.True(observed, "逐项还原不能先于补记凭据初始化");
+    }
+
+    [Fact]
+    public void 旧版还原待补记凭据仍可安全回放()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "history.jsonl"));
+        var quarantine = Path.Combine(_root, "q");
+        var manager = new QuarantineManager(quarantine, history);
+        var batchId = "legacy-batch";
+        Directory.CreateDirectory(Path.Combine(quarantine, batchId));
+        var id = Guid.NewGuid().ToString("N");
+        var receipts = Path.Combine(quarantine, ".pending-audit");
+        Directory.CreateDirectory(receipts);
+        File.WriteAllText(Path.Combine(receipts, id + ".json"),
+            $$"""{"version":1,"id":"{{id}}","batchId":"{{batchId}}","restoredCount":1,"result":"partial"}""");
+
+        manager.RecoverPendingAudit();
+
+        var summary = Assert.Single(history.Recent());
+        Assert.Equal("restore", summary.Action);
+        Assert.Equal(1, summary.FileCount);
+        Assert.Equal("partial", summary.Result);
+        Assert.False(File.Exists(Path.Combine(receipts, id + ".json")));
     }
 
     public void Dispose() => Directory.Delete(_root, recursive: true);

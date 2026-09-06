@@ -3,7 +3,10 @@ using Kleaner.Executor;
 
 // 仅供测试：根目录必须是临时目录下新建的空夹具，不接受用户隔离区。
 if (args.Length != 2 || args[0] is not ("clean-moved" or "restore-moved" or "restore-held"
-    or "audit-started" or "audit-item" or "audit-prepared" or "audit-finalized" or "audit-appended")) return 2;
+    or "audit-started" or "audit-item" or "audit-prepared" or "audit-finalized" or "audit-appended"
+    or "audit-clean-started" or "audit-clean-item" or "audit-clean-prepared" or "audit-clean-finalized" or "audit-clean-appended"
+    or "audit-delete-started" or "audit-delete-item" or "audit-delete-prepared" or "audit-delete-finalized" or "audit-delete-appended"
+    or "audit-purge-started" or "audit-purge-item" or "audit-purge-prepared" or "audit-purge-finalized" or "audit-purge-appended")) return 2;
 var root = Path.GetFullPath(args[1]);
 var name = Path.GetFileName(root);
 if (!string.Equals(Path.GetDirectoryName(root), Path.TrimEndingDirectorySeparator(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase)
@@ -46,7 +49,17 @@ var crashing = new QuarantineManager(quarantine, history, snapshot =>
 {
     if (args[0] == "audit-" + stage) Environment.Exit(73);
 });
-if (args[0] == "clean-moved") crashing.Execute(plan);
+if (args[0] is "clean-moved" or "audit-clean-started" or "audit-clean-item" or "audit-clean-prepared" or "audit-clean-finalized" or "audit-clean-appended") crashing.Execute(plan);
+else if (args[0] is "audit-delete-started" or "audit-delete-item" or "audit-delete-prepared" or "audit-delete-finalized" or "audit-delete-appended")
+{
+    var execution = new QuarantineManager(quarantine, history).Execute(plan);
+    crashing.DeleteBatch(execution.BatchId);
+}
+else if (args[0] is "audit-purge-started" or "audit-purge-item" or "audit-purge-prepared" or "audit-purge-finalized" or "audit-purge-appended")
+{
+    new QuarantineManager(quarantine, history).Execute(plan);
+    crashing.PurgeOlderThan(TimeSpan.Zero);
+}
 else
 {
     var execution = new QuarantineManager(quarantine, history).Execute(plan);
