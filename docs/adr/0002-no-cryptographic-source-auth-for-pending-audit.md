@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # 待补记凭据不做加密来源认证，以边界声明与历史篡改可发现性替代
