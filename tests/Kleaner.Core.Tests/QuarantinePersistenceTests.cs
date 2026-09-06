@@ -253,7 +253,7 @@ public sealed class QuarantinePersistenceTests : IDisposable
         var path = Path.Combine(directory, Guid.NewGuid().ToString("N") + ".json");
         File.WriteAllText(path, corrupt);
 
-        Assert.NotNull(Record.Exception(() => manager.Execute(plan)));
+        Assert.Throws<InvalidDataException>(() => manager.Execute(plan));
         Assert.Equal(corrupt, File.ReadAllText(path));
         Assert.All(plan.Items, item => Assert.Equal("content", File.ReadAllText(item.File.FullPath)));
         Assert.Empty(history.Recent());

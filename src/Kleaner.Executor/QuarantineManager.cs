@@ -490,8 +490,17 @@ public sealed class QuarantineManager
         EnsureNoReparsePoints(path);
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         if (stream.Length > 65_536) throw new InvalidDataException("待补记凭据超限，拒绝开始新操作");
-        var receipt = JsonSerializer.Deserialize<PendingAuditReceipt>(stream, JsonOpts)
-            ?? throw new InvalidDataException("待补记凭据为空");
+        // 损坏 JSON 的原始反序列化异常是英文技术细节，对外统一归一为凭据契约消息。
+        PendingAuditReceipt receipt;
+        try
+        {
+            receipt = JsonSerializer.Deserialize<PendingAuditReceipt>(stream, JsonOpts)
+                ?? throw new InvalidDataException("待补记凭据为空");
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidDataException("待补记凭据格式非法，保留文件待核对", ex);
+        }
         if (receipt.Action is null)
         {
             stream.Position = 0;
