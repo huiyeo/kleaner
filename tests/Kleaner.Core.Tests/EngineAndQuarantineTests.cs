@@ -371,6 +371,28 @@ public sealed class EngineAndQuarantineTests : IDisposable
     }
 
     [Fact]
+    public void 审计文件不可被清理规则扫入隔离区()
+    {
+        // 规则模式覆盖整个测试目录，历史文件与其检查点就躺在其中——审计自身必须免于清理。
+        var source = Path.Combine(_root, "sweep-target.txt");
+        File.WriteAllText(source, "sweep");
+        var historyPath = Path.Combine(_root, "swept.history.jsonl");
+        var history = new HistoryManager(historyPath);
+        var manager = new QuarantineManager(Path.Combine(_root, "sweep-quarantine"), history);
+        history.Append("clean-start", "前置记录", 0, 0, "started");
+
+        var report = manager.Execute(CreatePlan(manager.Root, "sweep", source));
+
+        Assert.True(File.Exists(historyPath), "历史文件不得被移入隔离区");
+        Assert.True(File.Exists(historyPath + ".head"), "链检查点不得被移入隔离区");
+        Assert.Contains(report.Skipped, item => item.Contains("审计文件"));
+        Assert.False(File.Exists(source), "非审计的目标文件应正常移入隔离区");
+        Assert.Single(Assert.Single(manager.ListBatches()).Entries, entry => entry.OriginalPath == source);
+        history.Append("clean", "历史仍可写", 1, 1, "ok");
+        Assert.Contains(history.Recent(), entry => entry.Detail == "历史仍可写");
+    }
+
+    [Fact]
     public void 隔离区_正常清空移除批次且审计成功()
     {
         var source = Path.Combine(_root, "delete-success.txt");

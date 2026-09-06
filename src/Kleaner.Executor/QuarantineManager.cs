@@ -128,6 +128,13 @@ public sealed class QuarantineManager
                 continue;
             }
 
+            // 审计文件自身的不可触碰性：规则模式再宽，也不能把历史与链检查点扫进隔离区。
+            if (IsAuditPath(file.FullPath))
+            {
+                skipped.Add($"{file.FullPath}（审计文件不可移入隔离区）");
+                continue;
+            }
+
             var entry = new QuarantineEntry(file.FullPath, destination, file.SizeBytes, item.RuleId);
             entries.Add(entry);
             // 恢复记录写入失败属于事务故障，不能由逐文件跳过逻辑吞掉。
@@ -184,6 +191,11 @@ public sealed class QuarantineManager
         var drive = root.TrimEnd(':', '\\');
         return Path.Combine(drive, full.Substring(root.Length));
     }
+
+    // 历史文件与其链检查点属于审计本体，任何规则都不得将其移入隔离区。
+    private bool IsAuditPath(string path) =>
+        string.Equals(Path.GetFullPath(path), _history.FilePath, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(Path.GetFullPath(path), _history.FilePath + ".head", StringComparison.OrdinalIgnoreCase);
 
     public IReadOnlyList<QuarantineBatch> ListBatches()
     {

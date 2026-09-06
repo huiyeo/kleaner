@@ -9,6 +9,9 @@
             <TextBlock x:Name="PathText" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#666" />
         </StackPanel>
         <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16"><TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="22" FontWeight="SemiBold" /></StackPanel>
+        <Border x:Name="IntegrityBanner" DockPanel.Dock="Top" Background="#FFF9EC" BorderBrush="#EFD9A8" BorderThickness="1" CornerRadius="10" Padding="14,8" Margin="0,0,0,12" Visibility="Collapsed">
+            <TextBlock x:Name="IntegrityText" TextWrapping="Wrap" />
+        </Border>
         <Border Style="{StaticResource KleanerCard}"><DataGrid x:Name="HistoryGrid" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" Style="{StaticResource KleanerDataGrid}">
             <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding TimeDisplay}" Width="175" />
