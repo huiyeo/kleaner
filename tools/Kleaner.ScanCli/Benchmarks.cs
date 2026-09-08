@@ -30,7 +30,8 @@ public static class Benchmarks
         return new ScenarioResult(scenario, iterations, elapsed, firstProgress, cancelLatency);
     }
 
-    /// <summary>进程峰值资源自报：退出后跨进程查询不可用，由 bench-single 在退出前采集。</summary>
+    /// <summary>进程峰值资源自报：退出后跨进程查询不可用，由 bench-single 在退出前采集。
+    /// 磁盘读写字节来自进程 IO 计数器（含子进程继承的文件 IO），是 SLO 冻结条件中的磁盘读取量口径。</summary>
     public static object SelfResourceUsage()
     {
         var self = Process.GetCurrentProcess();
@@ -38,8 +39,30 @@ public static class Benchmarks
         {
             peakWorkingSetBytes = self.PeakWorkingSet64,
             cpuTimeMs = Math.Round(self.TotalProcessorTime.TotalMilliseconds, 1),
+            diskReadBytes = QueryDiskReadBytes(),
+            diskWriteBytes = QueryDiskWriteBytes(),
         };
     }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetProcessIoCounters(IntPtr processHandle, out IoCounters counters);
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct IoCounters
+    {
+        public ulong ReadOperationCount;
+        public ulong WriteOperationCount;
+        public ulong OtherOperationCount;
+        public ulong ReadTransferCount;
+        public ulong WriteTransferCount;
+        public ulong OtherTransferCount;
+    }
+
+    private static ulong QueryDiskReadBytes() =>
+        GetProcessIoCounters(Process.GetCurrentProcess().Handle, out var counters) ? counters.ReadTransferCount : 0;
+
+    private static ulong QueryDiskWriteBytes() =>
+        GetProcessIoCounters(Process.GetCurrentProcess().Handle, out var counters) ? counters.WriteTransferCount : 0;
 
     private static void RunOnce(string scenario, string root, string? rulesPath,
         List<double> elapsed, List<double>? firstProgress, List<double>? cancelLatency)

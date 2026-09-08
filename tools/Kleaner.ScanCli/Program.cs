@@ -234,6 +234,8 @@ try
                         ? cl.EnumerateArray().Select(e => Math.Round(e.GetDouble(), 2)).ToList() : null,
                     peakWorkingSetBytes = usage.GetProperty("peakWorkingSetBytes").GetInt64(),
                     cpuTimeMs = usage.GetProperty("cpuTimeMs").GetDouble(),
+                    diskReadBytes = usage.TryGetProperty("diskReadBytes", out var drb) ? drb.GetInt64() : 0,
+                    diskWriteBytes = usage.TryGetProperty("diskWriteBytes", out var dwb) ? dwb.GetInt64() : 0,
                 });
             }
 
