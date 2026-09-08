@@ -7,8 +7,9 @@ namespace Kleaner.App;
 public sealed class AppSettings
 {
     public string? QuarantineRoot { get; set; }
-    public string? RuleUpdateUrl { get; set; }
-    public string? RuleUpdateSha512 { get; set; }
+
+    // 规则更新的 URL 与摘要不再属于设置：官方源与公钥内嵌于 RuleTrust（工单 12）。
+    // 旧 settings.json 里的 RuleUpdateUrl/RuleUpdateSha512 字段在加载时被静默忽略。
 
     public string EffectiveQuarantineRoot =>
         string.IsNullOrWhiteSpace(QuarantineRoot) ? QuarantineManager.DefaultRoot() : QuarantineRoot;

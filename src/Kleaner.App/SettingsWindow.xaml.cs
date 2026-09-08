@@ -11,16 +11,16 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         Title = S.Get("SettingsTitle");
         QuarantinePathLabel.Text = S.Get("QuarantinePathLabel");
-        RuleUpdateLabel.Text = S.Get("RuleUpdateLabel");
-        RuleUpdateShaLabel.Text = S.Get("RuleUpdateShaLabel");
+        RuleUpdateLabel.Text = S.Get("RuleUpdateOfficialLabel");
         BrowseButton.Content = S.Get("BtnBrowse");
         CheckUpdateButton.Content = S.Get("BtnCheckUpdate");
         SaveButton.Content = S.Get("BtnSave");
 
         var settings = AppSettings.Load();
         QuarantinePathBox.Text = settings.QuarantineRoot ?? string.Empty;
-        RuleUpdateUrlBox.Text = settings.RuleUpdateUrl ?? string.Empty;
-        RuleUpdateShaBox.Text = settings.RuleUpdateSha512 ?? string.Empty;
+        // 官方源是内嵌常量，用户不可输入 URL 或摘要——那是工单 12 移除的不可信更新途径。
+        RuleUpdateSourceText.Text = RuleTrust.OfficialManifestUrl;
+        RuleUpdateStateText.Text = RuleUpdateService.DescribeLocalState();
     }
 
     private void OnBrowse(object sender, RoutedEventArgs e)
@@ -35,19 +35,14 @@ public partial class SettingsWindow : Window
 
     private async void OnCheckUpdate(object sender, RoutedEventArgs e)
     {
-        var url = RuleUpdateUrlBox.Text.Trim();
-        var sha = RuleUpdateShaBox.Text.Trim();
-        if (url.Length == 0 || sha.Length == 0)
-        {
-            MessageBox.Show(S.Get("RuleUpdateLabel") + " / " + S.Get("RuleUpdateShaLabel"), Title);
-            return;
-        }
-
         CheckUpdateButton.IsEnabled = false;
         try
         {
-            var error = await RuleUpdateService.CheckAndUpdateAsync(url, sha);
+            var currentVersion = typeof(SettingsWindow).Assembly.GetName().Version;
+            var appVersion = currentVersion is null ? null : $"{currentVersion.Major}.{currentVersion.Minor}.{currentVersion.Build}";
+            var error = await RuleUpdateService.UpdateFromOfficialAsync(appVersion);
             MessageBox.Show(error ?? S.Get("RuleUpdateOk"), Title);
+            RuleUpdateStateText.Text = RuleUpdateService.DescribeLocalState();
         }
         finally
         {
@@ -59,8 +54,6 @@ public partial class SettingsWindow : Window
     {
         var settings = AppSettings.Load();
         settings.QuarantineRoot = string.IsNullOrWhiteSpace(QuarantinePathBox.Text) ? null : QuarantinePathBox.Text.Trim();
-        settings.RuleUpdateUrl = string.IsNullOrWhiteSpace(RuleUpdateUrlBox.Text) ? null : RuleUpdateUrlBox.Text.Trim();
-        settings.RuleUpdateSha512 = string.IsNullOrWhiteSpace(RuleUpdateShaBox.Text) ? null : RuleUpdateShaBox.Text.Trim();
         settings.Save();
         MessageBox.Show(S.Get("Saved"), Title);
         Close();

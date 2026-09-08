@@ -9,21 +9,20 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="0,0,0,18"><TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,16" /><TextBlock x:Name="QuarantinePathLabel" Margin="0,0,0,4" FontWeight="SemiBold" /></StackPanel>
-        <DockPanel Grid.Row="1" Margin="0,0,0,10">
+        <DockPanel Grid.Row="1" Margin="0,0,0,16">
             <Button x:Name="BrowseButton" Click="OnBrowse" DockPanel.Dock="Right" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" />
             <TextBox x:Name="QuarantinePathBox" Height="34" VerticalContentAlignment="Center" />
         </DockPanel>
-        <TextBlock x:Name="RuleUpdateLabel" Grid.Row="2" Margin="0,0,0,4" />
-        <TextBox x:Name="RuleUpdateUrlBox" Grid.Row="3" Height="34" VerticalContentAlignment="Center" Margin="0,0,0,10" />
-        <TextBlock x:Name="RuleUpdateShaLabel" Grid.Row="4" Margin="0,0,0,4" />
-        <TextBox x:Name="RuleUpdateShaBox" Grid.Row="5" VerticalContentAlignment="Top" TextWrapping="Wrap"
-                 AcceptsReturn="True" Height="70" VerticalAlignment="Top" />
-        <StackPanel Orientation="Horizontal" Grid.Row="6" Margin="0,12,0,0" HorizontalAlignment="Right">
+        <TextBlock x:Name="RuleUpdateLabel" Grid.Row="2" Margin="0,0,0,4" FontWeight="SemiBold" />
+        <StackPanel Grid.Row="3" Margin="0,0,0,10">
+            <TextBlock x:Name="RuleUpdateSourceText" Foreground="#666" TextTrimming="CharacterEllipsis" Margin="0,0,0,6" />
+            <TextBlock x:Name="RuleUpdateStateText" Foreground="#666" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="5" Margin="0,12,0,0" HorizontalAlignment="Right">
             <Button x:Name="CheckUpdateButton" Click="OnCheckUpdate" Style="{StaticResource KleanerSecondaryButton}" Margin="0,0,8,0" />
             <Button x:Name="SaveButton" Click="OnSave" Style="{StaticResource KleanerPrimaryButton}" />
         </StackPanel>
