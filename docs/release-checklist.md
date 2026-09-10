@@ -28,10 +28,10 @@
 | 全新安装 | 运行 Setup.exe（静默 `--silent`）→ 启动 | 开始菜单入口可用；应用正常扫描；current 267 文件 | ✅ 2026-09-10（0.3.1，本机） |
 | 覆盖升级 | 在旧版本（0.2.6）上静默装 0.3.1 | 应用可启动；history/startup-backup 保留可读 | ✅ 2026-09-10（本机，真实 0.2.6→0.3.1） |
 | 升级中断 | 安装中途强制结束安装器（800ms kill） | 已装应用仍可启动；history 完好 | ✅ 2026-09-10（近似：同版本重装中断） |
-| 回退 | 重装旧版 Setup | 应用可启动；新版写入的数据旧版可读 | ⚠️ 缺 0.2.6 Setup 产物未真机执行；数据向后兼容已论证（旧版 STJ 忽略 `prev` 字段，14 条新记录可读；旧版不校验哈希链） |
+| 回退 | 重装旧版 Setup（0.3.1） | 应用可启动；1.0.0 写入的数据（哈希链 head/rules/历史）完整保留且可读 | ✅ 2026-09-10（v1.0.0↔0.3.1 双向真机验证） |
 | 卸载 | `Update.exe --uninstall` | AppData\Local\Kleaner 完全移除、快捷方式移除；Roaming 用户数据保留 | ✅ 2026-09-10（0.3.1，本机） |
 
-**矩阵执行发现并修复的缺陷（2026-09-10）**：`PublishSingleFile=true` 单文件发布经 Velopack 安装后 current 缺失 WPF 本机依赖（wpfgfx/D3DCompiler/PenImc/vcruntime140），应用启动即死。已将 `release.sh` 改回散文件 + `--self-contained`（0.2.6 已验证形态）并重打包验证。**后续发布严禁启用 PublishSingleFile。**
+**矩阵执行发现并修复的缺陷（2026-09-10）**：`PublishSingleFile=true` 单文件发布经 Velopack 安装后 current 缺失 WPF 本机依赖（wpfgfx/D3DCompiler/PenImc/vcruntime140），应用启动即死。已将 `release.sh` 改回散文件 + `--self-contained`（0.2.6 已验证形态）并重打包验证。**后续发布严禁启用 PublishSingleFile。** 五行矩阵于 v1.0.0 发布时全部真机验证通过（回退行以 v1.0.0↔0.3.1 双向覆盖）。
 
 **已知门禁缺口（发布说明必须如实声明，不得粉饰）：**
 

@@ -128,6 +128,8 @@ Phase 0 发布阻断指标：**零未授权清理、零未审计文件状态变�
 
 ## 进度记录
 
+- 2026-09-10：**Phase 1 收口——v1.0.0 发布**（用户确认后执行）：GitHub Release https://github.com/huiyeo/kleaner/releases/tag/v1.0.0（Setup/Portable/RELEASES/nupkg 四件，SHA512 已入发布说明）；**回退矩阵行补验通过**（v1.0.0↔0.3.1 双向真机：重装 0.3.1 启动正常，1.0.0 数据——哈希链 head/rules/历史——完整保留可读）。发布说明含 SmartScreen 指引、自动更新未接线、断电置信论证与 ADR 边界声明。机器已重装 1.0.0 为生产版本。Phase 1 四条完成定义全部满足，goals.md 的 Phase 1 可信 v1 核心收口。
+
 - 2026-09-10：Phase 1 工单 02/05 收口。工单 05 安装矩阵真机执行 4/5 通过（覆盖升级 0.2.6→0.3.1 真实用户场景、升级中断、卸载、全新安装；回退行缺旧 Setup 产物移交工单 06）；**当场抓取并修复重大发布缺陷：PublishSingleFile 经 Velopack 安装后 WPF 本机库缺失致应用启动即死，release.sh 改回散文件+自包含**。工单 02 断电评估收口（置信论证级）：全部关键写入已有 WriteThrough+原子替换，逐窗口掉电后果论证通过，VM 硬断电实测如实记录为能力局限。Phase 1 剩余：UI 无障碍三项人工验收（DPI/高对比度/Narrator，步骤已附）与 v1.0.0 发布执行（需确认版本与时机）。
 
 - 2026-09-10：工单 01 CLI 隔离验收准备完成：Release 构建 0 warnings/0 errors，完整测试 189/189；workspace GUID 夹具上的 scan、dry-run、`clean --apply --yes`、隔离、显式注入 Executor 恢复、SHA-256 对照及恢复后 scan 均取得退出码和摘要证据，独立单文件夹具的历史链读回为 `IsValid=true`。CLI 当前没有 restore 子命令，Core/Executor 恢复不能替代 CLI 完整主链。GUI 仅观察到真实规则只读扫描后的取消状态和单条 safetyNotes 展示，未执行清理、保存设置、规则更新或隔离区操作；由于 GUI 尚无 settings/history/rules 的完整隔离入口，工单 01 保持 `blocked`。详见 `.scratch/v1-core/evidence/01-cli-preflight.md`。
