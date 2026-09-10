@@ -11,6 +11,7 @@ public partial class QuarantineWindow : Window
     public QuarantineWindow()
     {
         InitializeComponent();
+        WindowKeyboard.EnableEscClose(this);
         Title = S.Get("QuarantineTitle");
         RestoreButton.Content = S.Get("BtnRestore");
         DeleteButton.Content = S.Get("BtnDeleteBatch");

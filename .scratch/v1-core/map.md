@@ -19,6 +19,7 @@ Phase 1 的完成定义（goals.md 原文，四条）：
 - 2026-09-10：工单 01 收口。GUI 隔离用「settings.json 重定向隔离区 + rules 本地覆盖单条夹具规则」达成（history 不隔离，真实审计按宪法保留并如实记录）；GUI 主链七站走查通过（扫描/解释/守卫/确认/清理/隔离区+还原/历史），官方规则更新站真实网络验证通过（Ed25519 签名清单下载安装）。与另一会话的 CLI 隔离证据（evidence/01-cli-preflight.md）合并为完整验收。
 - 2026-09-08：拆票为 6 张（01–06），严格按序；04（高级能力转正）拆成"逐能力独立验收或显式排除"，不预设全部转正。
 - 2026-09-08：端到端走查用电脑操作执行（Phase 0 已验证此路径可行），真机安装矩阵用 release-checklist 的手工步骤。
+- 2026-09-10：工单 03 部分收口：键盘可达性（Tab 链覆盖/回车激活）、状态冗余、当前缩放文字完整性经电脑操作验证通过；当场修复 Esc 不关闭工具窗口缺陷（WindowKeyboard.EnableEscClose，6 窗口启用并回归）。DPI 125/150、高对比度、Narrator 转人工（自动化无法安全模拟），票转 ready-for-human 并附人工验收步骤。
 - 2026-09-10：工单 01 的 CLI 隔离前置完成：Release 189/189、GUID 夹具 scan/dry-run/apply、manifest、SHA-256 恢复和独立审计链读回均有证据；CLI 没有 restore 子命令。GUI 只完成真实规则只读扫描、取消和单条 safetyNotes 观察，因 settings/history/rules 缺少完整隔离入口，工单 01 标记为 `blocked`。
 
 ## Fog（不确定区）
@@ -33,7 +34,7 @@ Phase 1 的完成定义（goals.md 原文，四条）：
 |---|---|---|
 | 01 | 主流程端到端验收 | complete（settings.json+规则覆盖实现 GUI 隔离，走查通过） |
 | 02 | 断电场景验收评估 | blocked（需 01 结论）|
-| 03 | UI 可读性与无障碍验收 | ready-for-agent |
+| 03 | UI 可读性与无障碍验收 | ready-for-human（键盘/焦点/Esc 已自动化验收+当场修复 Esc 缺陷；DPI/高对比度/Narrator 待人工） |
 | 04 | 高级能力 v1 转正/排除决定 | ready-for-agent |
 | 05 | 安装/升级/回退/卸载真机矩阵 | ready-for-agent |
 | 06 | v1.0.0 发布执行 | blocked（需 01–05 全部收口）|

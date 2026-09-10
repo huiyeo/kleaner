@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Security.Principal;
+using System.Windows;
+using System.Windows.Input;
 
 namespace Kleaner.App;
 
@@ -39,5 +41,17 @@ public static class Helpers
         if (requiresAdmin)
             psi.Verb = "runas";
         Process.Start(psi);
+    }
+} 
+
+/// <summary>工具窗口的键盘支持：Esc 关闭窗口（主窗口不适用）。</summary>
+public static class WindowKeyboard
+{
+    public static void EnableEscClose(Window window)
+    {
+        window.PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape) window.Close();
+        };
     }
 }

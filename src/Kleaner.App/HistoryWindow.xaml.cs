@@ -12,6 +12,7 @@ public partial class HistoryWindow : Window
     public HistoryWindow()
     {
         InitializeComponent();
+        WindowKeyboard.EnableEscClose(this);
         Title = S.Get("HistoryTitle");
         OpenFileButton.Content = S.Get("BtnOpenFile");
         var headers = new[]

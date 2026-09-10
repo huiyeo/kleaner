@@ -77,6 +77,7 @@ public partial class StartupWindow : Window
         Func<bool> isElevated)
     {
         InitializeComponent();
+        WindowKeyboard.EnableEscClose(this);
         LoadStrings();
         StartupGrid.ItemsSource = _rows;
         _coordinator = new StartupWindowCoordinator(manager, dialog, isElevated);

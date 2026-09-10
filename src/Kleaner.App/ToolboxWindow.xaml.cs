@@ -17,6 +17,7 @@ public partial class ToolboxWindow : Window
     public ToolboxWindow()
     {
         InitializeComponent();
+        WindowKeyboard.EnableEscClose(this);
         Title = S.Get("ToolboxTitle");
         UsageTab.Header = S.Get("TabUsage");
         LargeTab.Header = S.Get("TabLarge");

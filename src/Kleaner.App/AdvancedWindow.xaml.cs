@@ -9,6 +9,7 @@ public partial class AdvancedWindow : Window
     public AdvancedWindow()
     {
         InitializeComponent();
+        WindowKeyboard.EnableEscClose(this);
         Title = S.Get("AdvancedTitle");
         WslTab.Header = S.Get("TabWsl");
         BigItemsTab.Header = S.Get("TabBigItems");

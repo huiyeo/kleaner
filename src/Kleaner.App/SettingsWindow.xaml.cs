@@ -9,6 +9,7 @@ public partial class SettingsWindow : Window
     public SettingsWindow()
     {
         InitializeComponent();
+        WindowKeyboard.EnableEscClose(this);
         Title = S.Get("SettingsTitle");
         QuarantinePathLabel.Text = S.Get("QuarantinePathLabel");
         RuleUpdateLabel.Text = S.Get("RuleUpdateOfficialLabel");
