@@ -35,7 +35,13 @@ public sealed partial class RuleRow : ObservableObject
 
     public string SizeDisplay => Helpers.FormatBytes(Result?.TotalBytes ?? 0);
 
-    public string Note => Result?.Note ?? (MachineVerified ? string.Empty : S.Get("UnverifiedNote"));
+    public string Note =>
+        Result?.Note
+        ?? (Rule.Deprecated
+            ? string.IsNullOrEmpty(Rule.DeprecationReason)
+                ? S.Get("DeprecatedNote")
+                : $"{S.Get("DeprecatedNote")}：{Rule.DeprecationReason}"
+            : MachineVerified ? string.Empty : S.Get("UnverifiedNote"));
 
     [ObservableProperty]
     private bool isSelected;

@@ -55,7 +55,9 @@ public static class RuleSetLoader
             Enabled: !e.TryGetProperty("enabled", out var enabled) || enabled.GetBoolean(),
             SafetyNotes: e.GetProperty("safetyNotes").GetString()!,
             SafetyDoc: e.TryGetProperty("safetyDoc", out var sd) ? sd.GetString() : null,
-            Verified: e.TryGetProperty("verified", out var vf) ? vf.GetString() : null);
+            Verified: e.TryGetProperty("verified", out var vf) ? vf.GetString() : null,
+            Deprecated: e.TryGetProperty("deprecated", out var dep) && dep.ValueKind == JsonValueKind.True,
+            DeprecationReason: e.TryGetProperty("deprecationReason", out var dr) ? dr.GetString() : null);
     }
 
     private static int? TryGetNullableInt(JsonElement e, string name) =>

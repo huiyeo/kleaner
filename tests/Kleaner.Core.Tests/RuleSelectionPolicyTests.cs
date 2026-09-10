@@ -32,4 +32,12 @@ public sealed class RuleSelectionPolicyTests
     {
         Assert.Equal(expected, RuleSelectionPolicy.IsDefaultSelectable(MakeRule(verified)));
     }
+
+    [Fact]
+    public void IsDefaultSelectable_已撤回规则强制不勾选()
+    {
+        // 撤回（deprecated）是比 verified 更强的否决：即使本机实测过，撤回后也永不默认勾选。
+        var rule = MakeRule("本机实测") with { Deprecated = true, DeprecationReason = "发现误伤案例" };
+        Assert.False(RuleSelectionPolicy.IsDefaultSelectable(rule));
+    }
 }

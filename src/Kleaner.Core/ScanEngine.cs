@@ -30,7 +30,8 @@ public sealed class ScanEngine
         var results = new List<RuleScanResult>();
         var errors = new List<string>();
 
-        foreach (var rule in set.Rules.Where(r => r.Enabled))
+        // 撤回（Deprecated）的规则永不执行——即使被误设 Enabled；这是撤回机制的最深防线。
+        foreach (var rule in set.Rules.Where(r => r.Enabled && !r.Deprecated))
         {
             token.ThrowIfCancellationRequested();
             var fileCount = 0;

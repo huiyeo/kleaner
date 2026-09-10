@@ -393,6 +393,42 @@ public sealed class EngineAndQuarantineTests : IDisposable
     }
 
     [Fact]
+    public void 撤回的规则即使Enabled为真也不被扫描()
+    {
+        // 撤回（deprecated）是最深防线：发布者误设 enabled=true 也永不执行。
+        var dir = Path.Combine(_root, "deprecated-scan");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "hit.txt"), new string('a', 100));
+        File.SetLastWriteTimeUtc(Path.Combine(dir, "hit.txt"), DateTime.UtcNow.AddDays(-30));
+
+        var json = $$"""
+        {
+          "schemaVersion": 1,
+          "rules": [{
+            "id": "retired-rule",
+            "name": "已撤回规则",
+            "category": "application",
+            "risk": "low",
+            "paths": ["{{JsonEscape(dir)}}\\\\**"],
+            "ageDays": 0,
+            "enabled": true,
+            "deprecated": true,
+            "deprecationReason": "2026-09 发现误伤，全网撤回",
+            "requiresElevation": false,
+            "safetyNotes": "已撤回的规则用于验证撤回防线的测试，仅命中临时夹具目录。"
+          }]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+        Assert.True(set.Rules[0].Deprecated, "撤回标记必须加载");
+        Assert.Equal("2026-09 发现误伤，全网撤回", set.Rules[0].DeprecationReason);
+
+        var report = new ScanEngine().Scan(set);
+
+        Assert.Empty(report.Results); // 撤回规则被扫描防线跳过，不产生任何结果
+    }
+
+    [Fact]
     public void 隔离区_正常清空移除批次且审计成功()
     {
         var source = Path.Combine(_root, "delete-success.txt");

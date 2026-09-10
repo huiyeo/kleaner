@@ -59,4 +59,46 @@ public class RuleSetTests
         var set = new RuleSet(1, null, null, new[] { rule });
         Assert.Contains(RuleSetLoader.Validate(set), e => e.Contains("bad-rule"));
     }
+
+    [Fact]
+    public void 撤回字段往返加载且缺省时为未撤回()
+    {
+        const string json = """
+        {
+          "schemaVersion": 1,
+          "rules": [
+            {
+              "id": "retired",
+              "name": "已撤回规则",
+              "category": "temp",
+              "risk": "low",
+              "paths": ["%TEMP%\\x/**"],
+              "ageDays": 7,
+              "requiresElevation": false,
+              "safetyNotes": "撤回字段往返加载的测试规则，说明长度超过二十个字。",
+              "deprecated": true,
+              "deprecationReason": "2026-09 发现误伤案例，全网撤回待复核"
+            },
+            {
+              "id": "normal",
+              "name": "普通规则",
+              "category": "temp",
+              "risk": "low",
+              "paths": ["%TEMP%\\y/**"],
+              "ageDays": 7,
+              "requiresElevation": false,
+              "safetyNotes": "未撤回的普通规则说明，长度同样超过二十个字的限制要求。"
+            }
+          ]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+
+        var retired = Assert.Single(set.Rules, r => r.Id == "retired");
+        Assert.True(retired.Deprecated);
+        Assert.Equal("2026-09 发现误伤案例，全网撤回待复核", retired.DeprecationReason);
+        var normal = Assert.Single(set.Rules, r => r.Id == "normal");
+        Assert.False(normal.Deprecated);
+        Assert.Null(normal.DeprecationReason);
+    }
 }
