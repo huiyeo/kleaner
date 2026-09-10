@@ -1,10 +1,17 @@
 using Kleaner.Core;
+using Kleaner.Executor;
 
 namespace Kleaner.Core.Tests;
 
 /// <summary>规则治理指标（Phase 2）：纯规则数据可计算，不依赖遥测或扫描。</summary>
-public sealed class RuleGovernanceTests
+public sealed class RuleGovernanceTests : IDisposable
 {
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "kleaner-gov-" + Guid.NewGuid().ToString("N"));
+
+    public RuleGovernanceTests() => Directory.CreateDirectory(_root);
+
+    public void Dispose() => Directory.Delete(_root, recursive: true);
+
     private static Rule MakeRule(
         string id,
         string notes = "治理指标测试规则的安全说明，长度超过二十个字以满足校验。",
@@ -111,5 +118,61 @@ public sealed class RuleGovernanceTests
         var report = RuleGovernance.Report(set);
 
         Assert.Equal(0, report.EvidenceCoveredRules);
+    }
+
+    [Fact]
+    public void 还原批次计为误伤信号且部分还原按文件数计明细()
+    {
+        var now = DateTime.UtcNow;
+        var history = new HistoryManager(Path.Combine(_root, "signal-history.jsonl"));
+        history.Append("restore", "批次 A（全部还原）", 2, 10, "ok");
+        history.Append("clean", "非还原动作不计入", 1, 1, "ok");
+        history.Append("restore", "批次 B（部分还原）", 1, 5, "ok");
+
+        var entries = history.Recent(100)
+            .Select(e => new RestoreSignalEntry(e.Action, e.FileCount))
+            .ToList();
+        var signal = RuleGovernance.RestoreSignal(entries);
+
+        Assert.Equal(2, signal.RestoreEvents);
+        Assert.Equal(3, signal.RestoredFiles);
+    }
+
+    [Fact]
+    public void 空历史误伤信号为零()
+    {
+        var history = new HistoryManager(Path.Combine(_root, "empty-history.jsonl"));
+
+        var signal = RuleGovernance.RestoreSignal(history.Recent(100)
+            .Select(e => new RestoreSignalEntry(e.Action, e.FileCount)).ToList());
+
+        Assert.Equal(0, signal.RestoreEvents);
+        Assert.Equal(0, signal.RestoredFiles);
+    }
+
+    [Fact]
+    public void 阈值检查_达标与不达标()
+    {
+        var target = new GovernanceTarget(EvidenceCoverage: 1.0, VerifiedCoverage: 0.25, CategoriesCovered: 6);
+        var met = new RuleGovernanceReport(10, 10, 1.0, 3, 0.3, 3, 6, 6, 5);
+        var (ok, warnings) = RuleGovernance.CheckTargets(met, target);
+        Assert.True(ok);
+        Assert.Empty(warnings);
+
+        var below = new RuleGovernanceReport(10, 10, 1.0, 2, 0.2, 3, 5, 6, 5);
+        var (ok2, warnings2) = RuleGovernance.CheckTargets(below, target);
+        Assert.False(ok2);
+        Assert.Contains(warnings2, w => w.Contains("验证覆盖率"));
+        Assert.Contains(warnings2, w => w.Contains("分类覆盖"));
+    }
+
+    [Fact]
+    public void 证据覆盖率跌出100立即警告()
+    {
+        var target = new GovernanceTarget(1.0, 0.25, 6);
+        var report = new RuleGovernanceReport(10, 9, 0.9, 2, 0.2, 3, 5, 6, 5);
+        var (ok, warnings) = RuleGovernance.CheckTargets(report, target);
+        Assert.False(ok);
+        Assert.Contains(warnings, w => w.Contains("证据覆盖率"));
     }
 }

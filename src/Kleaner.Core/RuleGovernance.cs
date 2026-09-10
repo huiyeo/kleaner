@@ -21,7 +21,7 @@ public sealed record RuleGovernanceReport(
 /// verified 以「本机实测」开头的规则占比（与 RuleSelectionPolicy 默认勾选同源）；软件覆盖率 =
 /// 已覆盖分类数（共 6 类）与唯一目标根数（paths 的环境变量名或盘符，去重，不展开实际路径——保证指标确定性）。
 /// </summary>
-public static class RuleGovernance
+public static partial class RuleGovernance
 {
     public const int TotalCategoryCount = 6;
 
@@ -77,5 +77,54 @@ public static class RuleGovernance
         var colon = trimmed.IndexOf(':');
         if (colon is 1) return trimmed[..2]; // 盘符
         return trimmed;
+    }
+}
+
+/// <summary>误伤事件信号（口径经用户确认 2026-09-10）：还原批次即计一次「潜在误伤事件」
+/// （信号级非结论——还原也可能是「改主意」）；部分还原按还原文件数计明细。供人工复核与趋势观察。</summary>
+public sealed record RestoreSignalReport(int RestoreEvents, int RestoredFiles);
+
+/// <summary>误伤信号的输入行（调用方从 HistoryEntry 投影；Core 零依赖不做类型引用）。</summary>
+public sealed record RestoreSignalEntry(string Action, int FileCount);
+
+/// <summary>治理指标目标值（用户确认 2026-09-10：基线锚定分阶段收紧）。阈值仅警告不阻塞构建——治理指标非安全不变量。</summary>
+public sealed record GovernanceTarget(
+    double EvidenceCoverage,
+    double VerifiedCoverage,
+    int CategoriesCovered)
+{
+    /// <summary>用户确认的首期目标（基线锚定）：证据 100% 保持、验证覆盖率阶段一 ≥25%。</summary>
+    public static GovernanceTarget Phase2Initial { get; } = new(1.0, 0.25, 6);
+}
+
+public static partial class RuleGovernance
+{
+    /// <summary>从操作历史提取误伤信号：restore 汇总条目计事件，FileCount 累计还原文件明细。</summary>
+    public static RestoreSignalReport RestoreSignal(IReadOnlyList<RestoreSignalEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        var events = 0;
+        var files = 0;
+        foreach (var e in entries)
+        {
+            if (e.Action != "restore") continue;
+            events++;
+            files += Math.Max(0, e.FileCount);
+        }
+        return new RestoreSignalReport(events, files);
+    }
+
+    /// <summary>对照目标值核销指标；未达标项返回可读警告（警告不阻塞构建——治理指标非安全不变量）。</summary>
+    public static (bool Met, IReadOnlyList<string> Warnings) CheckTargets(
+        RuleGovernanceReport report, GovernanceTarget target)
+    {
+        var warnings = new List<string>();
+        if (report.EvidenceCoverage < target.EvidenceCoverage)
+            warnings.Add($"证据覆盖率 {report.EvidenceCoverage:P1} 低于目标 {target.EvidenceCoverage:P1}（要求保持 100%）");
+        if (report.VerifiedCoverage < target.VerifiedCoverage)
+            warnings.Add($"验证覆盖率 {report.VerifiedCoverage:P1} 低于阶段目标 {target.VerifiedCoverage:P1}（提升途径：真机实测转正）");
+        if (report.CategoriesCovered < target.CategoriesCovered)
+            warnings.Add($"分类覆盖 {report.CategoriesCovered}/{target.CategoriesCovered} 低于目标");
+        return (warnings.Count == 0, warnings);
     }
 }

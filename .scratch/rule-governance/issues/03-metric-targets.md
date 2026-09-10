@@ -6,12 +6,14 @@
 
 **Blocked by:** 01（需要基线数据做决策锚点）。
 
-**Status:** blocked
+**Status:** complete
 
-- [ ] 用户确认五项指标目标值与分阶段阈值
-- [ ] 目标值写入 `docs/rule-governance.md` 与 goals.md Phase 2 勾选
-- [ ] CI/验收脚本加入阈值断言（低于阈值时警告，不阻塞构建——治理指标非安全不变量）
+- [x] 用户确认五项指标目标值与分阶段阈值（2026-09-10：基线锚定分阶段收紧选项）
+- [x] 目标值写入 `docs/rule-governance.md` 与 goals.md Phase 2 勾选
+- [x] `RuleGovernance.CheckTargets` 阈值判定（低于阈值警告不阻塞构建——治理指标非安全不变量）+ xunit
 
 **边界：** 阈值不是安全不变量，不进 AGENTS.md 红线。
 
 ## Comments
+
+完成记录（2026-09-10，用户确认「基线锚定分阶段收紧（推荐）」）：目标值 `GovernanceTarget.Phase2Initial` = 证据覆盖率 1.0（保持）+ 验证覆盖率 0.25（阶段一；阶段二 ≥0.4 预留）+ 分类覆盖 6/6。`CheckTargets` 纯函数判定 + governance-report 输出警告行（当前真实警告示例：验证覆盖率 23.8% < 25%——提升途径是真机实测转正，非放松口径）。阈值警告不阻塞构建。

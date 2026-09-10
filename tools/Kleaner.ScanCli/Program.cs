@@ -286,8 +286,21 @@ try
             if (errors.Count > 0)
                 return Fail(json, errors);
             var report = RuleGovernance.Report(set);
+            // 误伤信号（口径经用户确认）：还原批次即计信号，还原≠确认误伤；history 可用 --history-path 沙箱化。
+            var historyEntries = history.Recent(1000)
+                .Select(e => new RestoreSignalEntry(e.Action, e.FileCount)).ToList();
+            var signal = RuleGovernance.RestoreSignal(historyEntries);
+            // 目标值（用户确认 2026-09-10：基线锚定分阶段收紧）；低于阈值仅警告不阻塞。
+            var target = GovernanceTarget.Phase2Initial;
+            var (met, warnings) = RuleGovernance.CheckTargets(report, target);
             if (json)
-                Console.WriteLine(JsonSerializer.Serialize(report, JsonIndented()));
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    metrics = report,
+                    falsePositiveSignal = signal,
+                    target,
+                    warnings,
+                }, JsonIndented()));
             else
             {
                 Console.WriteLine($"规则总数            {report.TotalRules,6}");
@@ -296,6 +309,10 @@ try
                 Console.WriteLine($"默认勾选规则数      {report.DefaultSelectableRules,6}");
                 Console.WriteLine($"分类覆盖            {report.CategoriesCovered,3} / {report.TotalCategories}");
                 Console.WriteLine($"唯一目标根          {report.UniqueTargetRoots,6}");
+                Console.WriteLine($"误伤信号（还原≠确认误伤）  {signal.RestoreEvents,3} 事件 / {signal.RestoredFiles,3} 文件");
+                if (!met)
+                    foreach (var w in warnings)
+                        Console.WriteLine("警告：" + w);
             }
             return 0;
         }

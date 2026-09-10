@@ -9,12 +9,16 @@
 
 **Blocked by:** 02a（上述口径需用户确认后才实现统计逻辑）。
 
-**Status:** blocked
+**Status:** complete
 
-- [ ] 口径确认后：还原事件标注管道（history 已有 restore 记录，补批次级还原率计算）
-- [ ] 报告输出并入治理报告（01 票接口）
-- [ ] xunit 覆盖
+- [x] 口径确认后：还原事件信号管道（history restore 记录 → RestoreSignalReport：事件数+还原文件数）
+- [x] 报告输出并入治理报告（governance-report 输出误伤信号段）
+- [x] xunit 覆盖（全部还原/部分还原按文件数计/非还原不计/空历史零值）
+
+**口径（用户确认 2026-09-10）**：还原批次即计信号（推荐选项）——信号级非结论，报告标注「还原≠确认误伤（可能是改主意）」，供人工复核与趋势观察；部分还原按还原文件数计明细。
 
 **边界：** 不改还原功能本身；只做测量。
 
 ## Comments
+
+完成记录（2026-09-10，口径经用户确认）：`RestoreSignalEntry`（Action/FileCount 投影记录，Core 零依赖不引用 Executor）+ `RuleGovernance.RestoreSignal` 纯函数；`governance-report` 输出误伤信号段并显式标注「还原≠确认误伤」。真实数据活示例：本机历史 2 事件/4 文件（正是工单 01 E2E 的两次还原）。xunit 4 项先失败后通过。
