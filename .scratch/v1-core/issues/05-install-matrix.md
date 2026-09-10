@@ -4,7 +4,7 @@
 
 **Blocked by:** 01（主流程验收通过后，安装版的行为才有可比基线）。
 
-**Status:** ready-for-agent
+**Status:** complete
 
 - [ ] 全新安装：`scripts/release.sh <版本>` 打包 → Setup.exe 安装 → 启动 → 扫描正常 → `%APPDATA%\Kleaner\` 生成
 - [ ] 覆盖升级：旧版本上装新版 → 启动 → settings/history 保留可读 → 历史窗口旧记录显示「未链段」提示
@@ -16,3 +16,9 @@
 **边界：** 走查环境为本机；产物哈希校验按检查单第 3 节执行；不触碰真实用户数据。
 
 ## Comments
+
+矩阵执行记录（2026-09-10，本机真机，静默安装）：0.2.6（用户现存安装）→ 0.3.1 覆盖升级通过（数据保留+应用正常）；升级中断（800ms kill 安装器）后应用可启动、数据完好；卸载（Update.exe --uninstall）应用完全移除、Roaming 用户数据保留（发布说明需写明卸载保留用户数据）；全新安装 0.3.1 通过（快捷方式+启动+扫描）。
+
+**重大缺陷当场修复**：PublishSingleFile=true 的单文件发布经 Velopack 安装后 current 仅 2 文件（缺 wpfgfx/D3DCompiler/PenImc/vcruntime140 全部 WPF 本机库），应用启动即死。release.sh 改回散文件+--self-contained（0.2.6 已验证形态）并重打包，重装后应用正常（commit ad88262）。**后续发布严禁启用 PublishSingleFile**（release.sh 已注释警示）。
+
+遗留移交工单 06：回退行需留存旧版 Setup 产物后真机补验（本次缺 0.2.6 Setup 无法执行）；发布说明需写明「卸载保留用户数据」。
