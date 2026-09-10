@@ -10,14 +10,16 @@
 
 **Blocked by:** None。
 
-**Status:** ready-for-agent
+**Status:** complete
 
-- [ ] 五项指标的可测量定义写入 `docs/rule-governance.md`（含口径、数据源、不可测部分的声明）
-- [ ] `Kleaner.Core` 新增指标计算（纯函数，附 xunit：全量/空库/边界）
-- [ ] CLI 子命令（如 `governance-report`）输出 JSON + 文本
-- [ ] 对 101 条规则库跑出首份基线报告
-- [ ] Release/变更不改变任何清理行为（纯只读测量）
+- [x] 五项指标的可测量定义写入 `docs/rule-governance.md`（含口径、数据源、不可测部分的声明）
+- [x] `Kleaner.Core` 新增指标计算（纯函数，附 xunit：全量/空库/边界）
+- [x] CLI 子命令（如 `governance-report`）输出 JSON + 文本
+- [x] 对 101 条规则库跑出首份基线报告
+- [x] Release/变更不改变任何清理行为（纯只读测量）
 
 **边界：** 不修改 rules.v1.json；「准确率」精确定义与「误伤」归 02/03 票。
 
 ## Comments
+
+完成记录（2026-09-10）：`RuleGovernance.Report(RuleSet)` 纯函数 + 6 项 xunit（全达标/部分覆盖/目标根去重/分类计数/空库/短说明）先失败后通过；CLI `governance-report` 子命令（JSON+文本）。**首份基线**：101 条规则证据覆盖率 100%（工单 11 成果）、验证覆盖率 23.8%（24 条本机实测=默认勾选集，保守策略体现非缺陷）、分类 6/6、唯一目标根 5。「推荐准确率」如实标注待定义（隐私边界禁止默认遥测）；「误伤事件数」归 02 票。全程无清理行为改动。

@@ -277,6 +277,28 @@ try
             }, CamelCase()));
             return 0;
         }
+        case "governance-report":
+        {
+            // Phase 2 治理指标：纯规则库只读测量，不扫描文件系统、不写任何状态。
+            var rulesPath = rulesOverride ?? BundledRulesPath();
+            var set = RuleSetLoader.LoadFromFile(rulesPath);
+            var errors = RuleSetLoader.Validate(set);
+            if (errors.Count > 0)
+                return Fail(json, errors);
+            var report = RuleGovernance.Report(set);
+            if (json)
+                Console.WriteLine(JsonSerializer.Serialize(report, JsonIndented()));
+            else
+            {
+                Console.WriteLine($"规则总数            {report.TotalRules,6}");
+                Console.WriteLine($"证据覆盖率          {report.EvidenceCoverage,8:P1}  （{report.EvidenceCoveredRules}/{report.TotalRules}）");
+                Console.WriteLine($"验证覆盖率          {report.VerifiedCoverage,8:P1}  （{report.VerifiedRules}/{report.TotalRules}）");
+                Console.WriteLine($"默认勾选规则数      {report.DefaultSelectableRules,6}");
+                Console.WriteLine($"分类覆盖            {report.CategoriesCovered,3} / {report.TotalCategories}");
+                Console.WriteLine($"唯一目标根          {report.UniqueTargetRoots,6}");
+            }
+            return 0;
+        }
         case "startup":
         {
             var manager = new StartupManager();
@@ -425,6 +447,7 @@ static void Usage()
     System.Console.WriteLine("                                生成可复现合成数据集（性能基准用，只写临时目录）");
     System.Console.WriteLine("  bench --root R [--iterations 5] [--scenarios csv] [--out F]");
     System.Console.WriteLine("                                规则扫描/空间分析/大文件/重复哈希/取消延迟 基准（JSON 输出）");
+    System.Console.WriteLine("  governance-report [--rules P] 治理指标只读测量（证据/验证覆盖率、目标根等）");
     System.Console.WriteLine("  通用：--format text|json   --yes");
     System.Console.WriteLine("  位置覆盖：--rules P（直接加载，绕过更新通道）  --quarantine-root R  --history-path F");
 }
