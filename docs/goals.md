@@ -128,6 +128,8 @@ Phase 0 发布阻断指标：**零未授权清理、零未审计文件状态变�
 
 ## 进度记录
 
+- 2026-09-10：工单 01 CLI 隔离验收准备完成：Release 构建 0 warnings/0 errors，完整测试 189/189；workspace GUID 夹具上的 scan、dry-run、`clean --apply --yes`、隔离、显式注入 Executor 恢复、SHA-256 对照及恢复后 scan 均取得退出码和摘要证据，独立单文件夹具的历史链读回为 `IsValid=true`。CLI 当前没有 restore 子命令，Core/Executor 恢复不能替代 CLI 完整主链。GUI 仅观察到真实规则只读扫描后的取消状态和单条 safetyNotes 展示，未执行清理、保存设置、规则更新或隔离区操作；由于 GUI 尚无 settings/history/rules 的完整隔离入口，工单 01 保持 `blocked`。详见 `.scratch/v1-core/evidence/01-cli-preflight.md`。
+
 - 2026-09-08：Phase 0 第 4 项「再冻结 SLO」完成：bench 增加进程 IO 计数器自报磁盘读写字节（冻结条件 1 补齐）；同参数跨日复跑（09-06 与 09-08，2000 文件/5 轮/5 次冷启动）p50 偏差 −24%～+2% 无正向漂移（条件 2 补齐）。SLO 在测量机+合成数据集范围内冻结（冷启动热缓存 p95 <2s、取消 ≤2s、首进度 ≤1s、规则扫描 p95 <15s、usage/large-files p95 <1s、duplicates p95 <5s、峰值内存 <200MB）；非开发机复测与真实用户目录分布确认以范围限定+后续发布验收替代并显式声明。完整测试 189/189、Release 零警告零错误。
 
 - 2026-09-08：**Phase 0 全部五项完成**。工单 12（规则更新签名信任）收口：用户提供了 GitHub raw 直链、Ed25519 公钥与语义版本格式；`RuleTrust` 内嵌信任根，`Ed25519Verify` 自带 RFC 8032 仅验证实现（零外部依赖，BCL 无 Ed25519），`RuleManifestVerifier` 校验摘要→签名→降级→应用版本→发布时钟，`RuleUpdateService.UpdateFromOfficialAsync` 原子替换+回退链，设置页移除任意 URL/SHA 通道。首个签名清单 v1.0.0 已推送 `rules-channel` 分支。完整测试 189/189、Release 零警告零错误。Phase 0 发布阻断指标成立：零未授权清理、零未审计文件状态变化、部分失败零数据丢失。遗留：CDN 缓存刷新后设置页端到端验证；性能 SLO 冻结需跨日复跑；发布矩阵真机验证绑定到下次发布。
