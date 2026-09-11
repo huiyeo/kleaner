@@ -22,7 +22,9 @@
    "requiresElevation": false,
    "safetyNotes": "Windows 与各应用写入的用户级临时目录，删除后按需自动重建。仅清理 14 天未修改的文件，跳过被占用文件（如安装未完成的临时文件）。",
    "safetyDoc": "docs/safety-notes.md#user-temp",
-   "verified": "本机实测 2026-08-29（扫描命中 14 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 14 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "chrome-http-cache",
@@ -52,7 +54,9 @@
    "requiresElevation": false,
    "safetyNotes": "Chrome 官方 HTTP 缓存与编译代码缓存目录，删除后自动重建，仅影响网页首次加载速度。不含 Cookie、登录态、历史记录与扩展数据，Chrome 运行中被锁定的文件自动跳过。",
    "safetyDoc": "docs/safety-notes.md#chrome-http-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 1968 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1968 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "edge-http-cache",
@@ -82,7 +86,9 @@
    "requiresElevation": false,
    "safetyNotes": "Edge 官方 HTTP 缓存与编译代码缓存目录，删除后自动重建，仅影响网页首次加载速度。不含 Cookie、登录态、收藏与历史记录，Edge 运行中被锁定的文件自动跳过。",
    "safetyDoc": "docs/safety-notes.md#edge-http-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 49 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 49 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "npm-cache",
@@ -96,7 +102,9 @@
    "requiresElevation": false,
    "safetyNotes": "npm 下载的包缓存（npm 官方命令 npm cache clean --force 即清除此目录），删除后下次 install 重新从 registry 下载，不影响已安装项目与全局包。",
    "safetyDoc": "docs/safety-notes.md#npm-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 5697 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 5697 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "pip-cache",
@@ -109,7 +117,9 @@
    "requiresElevation": false,
    "safetyNotes": "pip 下载的 wheel/sdist 缓存（pip 官方命令 pip cache purge 即清除此目录），删除后下次安装重新下载，不影响已安装的 Python 环境。",
    "safetyDoc": "docs/safety-notes.md#pip-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 1022 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1022 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "kimi-desktop-updater",
@@ -124,7 +134,9 @@
    "requiresElevation": false,
    "safetyNotes": "Electron 应用 Kimi 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含配置、会话与用户数据。按版本规则保留最新 1 份用于回滚，其余清除。仅匹配安装包扩展名，更新器配置文件不受影响。",
    "safetyDoc": "docs/safety-notes.md#kimi-desktop-updater",
-   "verified": "本机实测 2026-08-29（扫描命中 1 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "workbuddy-desktop-updater",
@@ -139,7 +151,9 @@
    "requiresElevation": false,
    "safetyNotes": "WorkBuddy 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含应用本体、配置与用户数据。保留最新 1 份用于回滚，其余清除。",
    "safetyDoc": "docs/safety-notes.md#workbuddy-desktop-updater",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "qoder-updater",
@@ -154,7 +168,9 @@
    "requiresElevation": false,
    "safetyNotes": "Qoder 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含应用本体、配置与用户数据。保留最新 1 份用于回滚，其余清除。",
    "safetyDoc": "docs/safety-notes.md#qoder-updater",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "zcode-desktop-updater",
@@ -169,7 +185,9 @@
    "requiresElevation": false,
    "safetyNotes": "ZCode 桌面版自动更新器下载的历史安装包（.exe/.nupkg），不含应用本体、配置与用户数据。保留最新 1 份用于回滚，其余清除。",
    "safetyDoc": "docs/safety-notes.md#zcode-desktop-updater",
-   "verified": "本机实测 2026-08-29（扫描命中 1 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "quark-updater",
@@ -184,7 +202,9 @@
    "requiresElevation": false,
    "safetyNotes": "夸克网盘自动更新器下载的历史安装包（.exe/.nupkg）。注意：同级的 QuarkCloudDriveMini 目录是应用数据，刻意不纳入任何规则。保留最新 1 份安装包，其余清除。",
    "safetyDoc": "docs/safety-notes.md#quark-updater",
-   "verified": "本机实测 2026-08-29（扫描命中 1 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "windows-temp",
@@ -197,7 +217,9 @@
    "requiresElevation": true,
    "safetyNotes": "Windows 系统级临时目录，官方磁盘清理/存储感知同样清理此位置。仅清理 14 天未修改的文件；需要管理员权限，未提权时不扫描。",
    "safetyDoc": "docs/safety-notes.md#windows-temp",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "windows-update-download",
@@ -210,7 +232,9 @@
    "requiresElevation": true,
    "safetyNotes": "Windows Update 已下载的安装文件缓存，官方磁盘清理的「Windows 更新清理」同类对象。清理后需要时自动重新下载；仅清理 14 天未修改的文件，需要管理员权限。",
    "safetyDoc": "docs/safety-notes.md#windows-update-download",
-   "verified": "本机实测 2026-08-29（扫描命中 1 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "uv-cache",
@@ -223,7 +247,9 @@
    "requiresElevation": false,
    "safetyNotes": "uv（Python 包管理器）的下载与构建缓存，官方命令 uv cache clean 即清除此目录。删除后下次安装重新下载，不影响已创建的虚拟环境。",
    "safetyDoc": "docs/safety-notes.md#uv-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 13088 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 13088 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "playwright-browsers",
@@ -241,7 +267,9 @@
    "requiresElevation": false,
    "safetyNotes": "Playwright 自动下载的测试浏览器二进制（Chromium/Firefox/WebKit）。删除后运行 npx playwright install 重新下载即可，不影响任何项目代码。30 天阈值避免清掉正在使用的版本。",
    "safetyDoc": "docs/safety-notes.md#playwright-browsers",
-   "verified": "本机实测 2026-08-29（扫描命中 310 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 310 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "cargo-registry",
@@ -256,7 +284,9 @@
    "requiresElevation": false,
    "safetyNotes": "Rust Cargo 下载的 crate 缓存（registry/cache 与解压副本 registry/src）。删除后下次构建重新下载，不影响已编译产物与 cargo 本体。",
    "safetyDoc": "docs/safety-notes.md#cargo-registry",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "go-build-cache",
@@ -269,7 +299,9 @@
    "requiresElevation": false,
    "safetyNotes": "Go 工具链的构建缓存（默认 GOCACHE 位置）。官方命令 go clean -cache 即清除此目录，删除后首次构建稍慢，不影响任何源码与安装产物。",
    "safetyDoc": "docs/safety-notes.md#go-build-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "gradle-caches",
@@ -285,7 +317,9 @@
    "requiresElevation": false,
    "safetyNotes": "Gradle 的依赖与构建缓存。删除后下次构建重新下载依赖并重建缓存，项目源码与 gradle 本体（.gradle/wrapper 之外的部分）不受影响。",
    "safetyDoc": "docs/safety-notes.md#gradle-caches",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "maven-repository",
@@ -298,7 +332,9 @@
    "requiresElevation": false,
    "safetyNotes": "Maven 下载的依赖仓库缓存。删除后下次构建重新下载，settings.xml 与本地配置不在本规则路径内。",
    "safetyDoc": "docs/safety-notes.md#maven-repository",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "crash-dumps",
@@ -312,7 +348,9 @@
    "requiresElevation": false,
    "safetyNotes": "Windows 错误报告为应用崩溃生成的用户级 minidump（默认 LocalDumps 位置）。仅供崩溃排查使用，14 天前的旧转储无保留价值，删除不影响系统。",
    "safetyDoc": "docs/safety-notes.md#crash-dumps",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "wer-reports",
@@ -330,7 +368,9 @@
    "requiresElevation": true,
    "safetyNotes": "Windows 错误报告（WER）待上报与已归档的报告队列，微软官方磁盘清理的「系统错误内存转储文件/报告」同类对象。删除不影响系统运行，仅丢失向微软反馈历史问题的材料。",
    "safetyDoc": "docs/safety-notes.md#wer-reports",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "ai-huggingface-xet-cache",
@@ -346,7 +386,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#ai-huggingface-xet-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-adobe-media-cache",
@@ -361,7 +403,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://helpx.adobe.com/premiere/desktop/troubleshooting/media-issues/manage-media-cache.html仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-adobe-media-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-battlenet-cache",
@@ -385,7 +429,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://us.support.blizzard.com/en/article/34721、https://eu.support.blizzard.com/en/article/24123、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-battlenet-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-chatgpt-cache",
@@ -426,7 +472,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://openai.com/index/introducing-the-codex-app/、https://help.openai.com/en/articles/20001276-moving-to-the-new-chatgpt-desktop-app、https://help.openai.com/en/articles/20001277-using-the-built-in-browser-in-the-chatgpt-desktop-app仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-chatgpt-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 549 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 549 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-discord-cache",
@@ -450,7 +498,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://support.discord.com/hc/en-us/articles/115004307527--Windows-Corrupt-Installation、https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-discord-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-douyin-live-updater-cache",
@@ -466,7 +516,9 @@
    "keepNewest": 1,
    "safetyNotes": "应用内置更新器的安装包残留，按「保留最新 1 份」策略清理。被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-douyin-live-updater-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-dropbox-rendering-cache",
@@ -496,7 +548,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://help.dropbox.com/installs/desktop-application-overview、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-dropbox-rendering-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-ea-rendering-cache",
@@ -519,7 +573,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://help.ea.com/en/articles/technical-issues/clear-cache/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-ea-rendering-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-cache-slack",
@@ -554,7 +610,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-slack",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-cache-microsoft-teams",
@@ -589,7 +647,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-microsoft-teams",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-cache-figma",
@@ -624,7 +684,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-figma",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-cache-obsidian",
@@ -659,7 +721,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-obsidian",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-cache-insomnia",
@@ -694,7 +758,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-insomnia",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-cache-claude",
@@ -729,7 +795,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-claude",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-cache-github-desktop",
@@ -764,7 +832,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-github-desktop",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-electron-updater-cache",
@@ -784,7 +854,9 @@
    "keepNewest": 1,
    "safetyNotes": "应用内置更新器的安装包残留，按「保留最新 1 份」策略清理。被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-electron-updater-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-flashvoice-cache",
@@ -815,7 +887,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/user-data-folder、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-flashvoice-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-game-launcher-cache",
@@ -834,7 +908,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.epicgames.com/help/c-1/a202300000013316仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-game-launcher-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-gitmind-rendering-cache",
@@ -870,7 +946,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://gitmind.com/download、https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/user-data-folder、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-gitmind-rendering-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-netease-cloud-music-cache",
@@ -894,7 +972,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://music.163.com/#/download、https://github.com/microsoft/winget-pkgs/tree/master/manifests/n/NetEase/CloudMusic/3.1.37.205354、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-netease-cloud-music-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 64 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 64 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-notion-cache",
@@ -927,7 +1007,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.notion.com/help/reset-notion、https://www.notion.com/help/use-pages-offline、https://www.electronjs.org/docs/latest/api/app#appgetpathname仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-notion-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-obs-diagnostic-cache",
@@ -947,7 +1029,9 @@
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。仅命中 OBS 的日志/性能分析/崩溃目录。仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-obs-diagnostic-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
-   "ageDays": 14
+   "ageDays": 14,
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-postman-cache",
@@ -979,7 +1063,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://learning.postman.com/latest-v-12/docs/getting-started/troubleshooting-inapp、https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-postman-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-qq-rendering-cache",
@@ -1012,7 +1098,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://im.qq.com/index/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-qq-rendering-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 106 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 106 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-signal-cache",
@@ -1036,7 +1124,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://github.com/signalapp/Signal-Desktop/tree/v8.22.0、https://www.electronjs.org/docs/latest/api/app#appgetpathname、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-signal-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-sogou-input-cache",
@@ -1051,7 +1141,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://shurufa.sogou.com/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-sogou-input-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-spotify-rendering-cache",
@@ -1079,7 +1171,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://support.spotify.com/us/article/storage-information/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-spotify-rendering-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-steam-rendering-cache",
@@ -1101,7 +1195,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://store.steampowered.com/news/101607/、https://store.steampowered.com/news/4186/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-steam-rendering-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 1375 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1375 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-teams-msix-cache",
@@ -1126,7 +1222,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://learn.microsoft.com/en-us/troubleshoot/microsoftteams/teams-administration/clear-teams-cache仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-teams-msix-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-telegram-temporary-cache",
@@ -1149,7 +1247,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。仅限 tdata 下的 temp 与 dumps 目录，不触碰会话数据。参考：https://github.com/telegramdesktop/tdesktop/tree/v7.0.9仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-telegram-temporary-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-tencent-meeting-cache",
@@ -1177,7 +1277,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://meeting.tencent.com/download/、https://github.com/microsoft/winget-pkgs/tree/master/manifests/t/Tencent/TencentMeeting/3.44.10.457、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-tencent-meeting-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-vlc-cache",
@@ -1208,7 +1310,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://github.com/videolan/vlc/tree/3.0.23仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-vlc-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-wechat-diagnostic-cache",
@@ -1229,7 +1333,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-wechat-diagnostic-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 13 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 13 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-wechat-rendering-cache",
@@ -1262,7 +1368,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。仅命中小程序编译缓存与网页缓存，不触碰聊天记录与用户数据。参考：https://weixin.qq.com/cgi-bin/readtemplate?lang=zh_CN&t=download/windows、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-wechat-rendering-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 676 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 676 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-wecom-diagnostic-cache",
@@ -1276,7 +1384,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://work.weixin.qq.com/仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-wecom-diagnostic-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-whatsapp-rendering-cache",
@@ -1306,7 +1416,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://apps.microsoft.com/detail/9nksqgp7f2nh、https://www.whatsapp.com/download、https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/user-data-folder仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-whatsapp-rendering-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-wps-cache",
@@ -1320,7 +1432,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.wps.cn/product/wpswin仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-wps-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-wps-diagnostic-cache",
@@ -1335,7 +1449,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.wps.cn/product/wpswin仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-wps-diagnostic-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-wps-rendering-cache",
@@ -1350,7 +1466,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://www.wps.cn/product/wpswin、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-wps-rendering-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-zenaion-cache",
@@ -1378,7 +1496,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://zenai.bot/guide/core-features/view-all、https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/user-data-folder仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-zenaion-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "app-zoom-diagnostic-cache",
@@ -1393,7 +1513,9 @@
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。仅限 Zoom 日志目录，14 天阈值。参考：https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0066286仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#app-zoom-diagnostic-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
-   "ageDays": 14
+   "ageDays": 14,
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-2345-cache",
@@ -1415,7 +1537,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://www.2345.com/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-2345-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-360-safe-cache",
@@ -1436,7 +1560,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://browser.360.cn/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-360-safe-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-360-speed-cache",
@@ -1457,7 +1583,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://browser.360.cn/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-360-speed-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-arc-cache",
@@ -1483,7 +1611,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-arc-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-brave-cache",
@@ -1512,7 +1642,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://support.brave.com/hc/en-us/articles/360017903152-How-Do-I-Clear-Cookies-And-Site-Data-In-Brave仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-brave-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-chromium-cache",
@@ -1541,7 +1673,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-chromium-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-duckduckgo-cache",
@@ -1572,7 +1706,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-duckduckgo-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 158 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 158 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-firefox-cache",
@@ -1588,7 +1724,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://support.mozilla.org/en-US/kb/how-clear-firefox-cache、https://support.mozilla.org/en-US/kb/profiles-where-firefox-stores-user-data仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-firefox-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-gecko-family-cache",
@@ -1613,7 +1751,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-gecko-family-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-opera-cache",
@@ -1644,7 +1784,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://help.opera.com/en/latest/web-preferences/#clearBrowsingData仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-opera-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-sogou-cache",
@@ -1664,7 +1806,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://ie.sogou.com/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-sogou-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-uc-cache",
@@ -1690,7 +1834,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://www.uc.cn/zh-cn/browser/pc.html、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-uc-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "browser-vivaldi-cache",
@@ -1719,7 +1865,9 @@
    "enabled": true,
    "safetyNotes": "浏览器的网页缓存与着色器缓存，删除后按需重新下载，不涉及书签、密码、历史记录等用户数据。参考：https://help.vivaldi.com/desktop/tools/delete-browsing-data/仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#browser-vivaldi-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "container-docker-desktop-rendering-cache",
@@ -1741,7 +1889,9 @@
    "enabled": true,
    "safetyNotes": "应用运行产生的网页缓存、着色器缓存、日志或崩溃报告，均为可再生数据，不涉及聊天记录、账号与用户配置。参考：https://docs.docker.com/desktop/settings-and-maintenance/settings/、https://docs.docker.com/desktop/settings-and-maintenance/backup-and-restore/、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#container-docker-desktop-rendering-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-android-cache",
@@ -1757,7 +1907,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://developer.android.com/tools/sdkmanager仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-android-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-android-user-cache",
@@ -1772,7 +1924,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://developer.android.com/studio/command-line/variables仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-android-user-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-build-accelerator-cache",
@@ -1787,7 +1941,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/mozilla/sccache/blob/main/docs/Configuration.md、https://developer.hashicorp.com/terraform/cli/config/config-file#provider-plugin-cache仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-build-accelerator-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-ccache-cache",
@@ -1804,7 +1960,9 @@
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "exclude": [
     "%APPDATA%\\ccache\\ccache.conf"
-   ]
+   ],
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-copilot-cli-cache",
@@ -1818,7 +1976,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-config-dir-reference#changing-the-location-of-the-configuration-directory仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-copilot-cli-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-dart-analysis-cache",
@@ -1832,7 +1992,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/flutter/flutter/blob/master/dev/devicelab/lib/tasks/analysis.dart、https://github.com/flutter/flutter/blob/master/dev/snippets/test/filesystem_resource_provider.dart仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-dart-analysis-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-editor-cache-code",
@@ -1859,7 +2021,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/microsoft/vscode/tree/1.132.0、https://code.visualstudio.com/docs/configure/command-line#_advanced-cli-options、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-code",
-   "verified": "本机实测 2026-08-29（扫描命中 167 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 167 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-editor-cache-cursor",
@@ -1886,7 +2050,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/microsoft/vscode/tree/1.132.0、https://code.visualstudio.com/docs/configure/command-line#_advanced-cli-options、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-cursor",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-editor-cache-windsurf",
@@ -1913,7 +2079,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/microsoft/vscode/tree/1.132.0、https://code.visualstudio.com/docs/configure/command-line#_advanced-cli-options、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-windsurf",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-editor-cache-vscodium",
@@ -1940,7 +2108,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/microsoft/vscode/tree/1.132.0、https://code.visualstudio.com/docs/configure/command-line#_advanced-cli-options、https://chromium.googlesource.com/chromium/src/+/main/docs/user_data_dir.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-vscodium",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-go-module-cache",
@@ -1954,7 +2124,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://go.dev/ref/mod#module-cache仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-go-module-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-hex-cache",
@@ -1968,7 +2140,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://hex.hexdocs.pm/Mix.Tasks.Hex.Config.html仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-hex-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-jetbrains-cache",
@@ -1991,7 +2165,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://www.jetbrains.com/help/idea/tuning-the-ide.html#system-directory、https://www.jetbrains.com/help/idea/invalidate-caches.html仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-jetbrains-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-jvm-tooling-cache",
@@ -2007,7 +2183,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://www.scala-sbt.org/1.x/docs/Launcher-Getting-Started.html、https://ant.apache.org/ivy/history/latest-milestone/settings/caches.html仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-jvm-tooling-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-node-tooling-cache",
@@ -2023,7 +2201,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/nodejs/corepack#environment-variables、https://github.com/nodejs/node-gyp#command-options、https://github.com/electron/get#how-it-works仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-node-tooling-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 1945 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1945 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-nuget-cache",
@@ -2040,7 +2220,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。包含全局包目录 ~/.nuget/packages，删除后首次还原构建会重新下载。参考：https://learn.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders、https://learn.microsoft.com/en-us/nuget/reference/cli-reference/cli-ref-locals仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-nuget-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 1077 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 1077 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-package-manager-cache",
@@ -2056,7 +2238,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://getcomposer.org/doc/06-config.md#cache-dir、https://docs.deno.com/runtime/getting_started/installation/#cache-location、https://learn.microsoft.com/en-us/vcpkg/users/binarycaching#default-binary-cache仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-package-manager-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-pnpm-cache",
@@ -2070,7 +2254,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://pnpm.io/cli/store仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-pnpm-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-python-tooling-cache",
@@ -2086,7 +2272,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://python-poetry.org/docs/configuration/#cache-dir、https://github.com/pyenv-win/pyenv-win仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-python-tooling-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-sccache-cache",
@@ -2100,7 +2288,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://github.com/mozilla/sccache/blob/main/docs/Configuration.md仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-sccache-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-user-tool-cache",
@@ -2122,7 +2312,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://bun.sh/docs/pm/global-cache、https://github.com/nodejs/corepack#environment-variables、https://github.com/nodejs/node-gyp#command-options仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-user-tool-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 309 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 309 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-visual-studio-cache",
@@ -2140,7 +2332,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://learn.microsoft.com/en-us/visualstudio/extensibility/managed-extensibility-framework-in-the-editor仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-visual-studio-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "dev-yarn-cache",
@@ -2155,7 +2349,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://classic.yarnpkg.com/lang/en/docs/cli/cache/仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-yarn-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选"
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "system-directx-shader-cache",
@@ -2178,7 +2374,9 @@
    "enabled": true,
    "safetyNotes": "Windows 系统组件缓存，由系统按需重建。删除后首次启动游戏/3D 应用会重新编译着色器，可能短暂变慢。仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#system-directx-shader-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 75 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 75 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "system-stale-partial-downloads",
@@ -2208,7 +2406,9 @@
    "safetyNotes": "Windows 系统组件缓存，由系统按需重建。仅命中浏览器下载产生的 .crdownload/.part 等分块临时文件，不触碰正常命名的下载文件，深度限制在下载目录 3 层以内。仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#system-stale-partial-downloads",
    "verified": "官方文档来源，本机未验证，默认不勾选",
-   "ageDays": 7
+   "ageDays": 7,
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   },
   {
    "id": "system-thumbnail-cache",
@@ -2223,7 +2423,9 @@
    "enabled": true,
    "safetyNotes": "Windows 系统组件缓存，由系统按需重建。参考：https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/nn-thumbcache-ithumbnailcache仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#system-thumbnail-cache",
-   "verified": "本机实测 2026-08-29（扫描命中 13 项）"
+   "verified": "本机实测 2026-08-29（扫描命中 13 项）",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-11"
   }
  ]
 }

@@ -101,4 +101,71 @@ public class RuleSetTests
         Assert.False(normal.Deprecated);
         Assert.Null(normal.DeprecationReason);
     }
+
+    [Fact]
+    public void 维护字段往返加载且缺省时为空()
+    {
+        const string json = """
+        {
+          "schemaVersion": 1,
+          "rules": [
+            {
+              "id": "maintained",
+              "name": "已标注维护规则",
+              "category": "temp",
+              "risk": "low",
+              "paths": ["%TEMP%\\m/**"],
+              "ageDays": 7,
+              "requiresElevation": false,
+              "safetyNotes": "维护字段往返加载的测试规则，说明长度超过二十个字。",
+              "maintainer": "huiyeo",
+              "lastEvidenceCheck": "2026-09-11"
+            },
+            {
+              "id": "legacy",
+              "name": "旧版规则",
+              "category": "temp",
+              "risk": "low",
+              "paths": ["%TEMP%\\l/**"],
+              "ageDays": 7,
+              "requiresElevation": false,
+              "safetyNotes": "无维护字段的旧版规则，说明长度同样超过二十个字限制。"
+            }
+          ]
+        }
+        """;
+        var set = RuleSetLoader.LoadFromJson(json);
+
+        var maintained = Assert.Single(set.Rules, r => r.Id == "maintained");
+        Assert.Equal("huiyeo", maintained.Maintainer);
+        Assert.Equal(new DateOnly(2026, 9, 11), maintained.LastEvidenceCheck);
+        var legacy = Assert.Single(set.Rules, r => r.Id == "legacy");
+        Assert.Null(legacy.Maintainer);
+        Assert.Null(legacy.LastEvidenceCheck);
+    }
+
+    [Fact]
+    public void 维护证据检查日非法时报格式错误()
+    {
+        const string json = """
+        {
+          "schemaVersion": 1,
+          "rules": [
+            {
+              "id": "bad-date",
+              "name": "日期非法规则",
+              "category": "temp",
+              "risk": "low",
+              "paths": ["%TEMP%\\b/**"],
+              "ageDays": 7,
+              "requiresElevation": false,
+              "safetyNotes": "证据检查日格式非法的测试规则，说明长度超过二十个字。",
+              "lastEvidenceCheck": "2026/13/40"
+            }
+          ]
+        }
+        """;
+
+        Assert.Throws<FormatException>(() => RuleSetLoader.LoadFromJson(json));
+    }
 }

@@ -57,7 +57,18 @@ public static class RuleSetLoader
             SafetyDoc: e.TryGetProperty("safetyDoc", out var sd) ? sd.GetString() : null,
             Verified: e.TryGetProperty("verified", out var vf) ? vf.GetString() : null,
             Deprecated: e.TryGetProperty("deprecated", out var dep) && dep.ValueKind == JsonValueKind.True,
-            DeprecationReason: e.TryGetProperty("deprecationReason", out var dr) ? dr.GetString() : null);
+            DeprecationReason: e.TryGetProperty("deprecationReason", out var dr) ? dr.GetString() : null,
+            Maintainer: e.TryGetProperty("maintainer", out var mt) ? mt.GetString() : null,
+            LastEvidenceCheck: ParseEvidenceCheck(e, id));
+    }
+
+    /// <summary>证据检查日：缺失为 null（未标注）；存在但非法为格式错误（严格解析，fail-closed）。</summary>
+    private static DateOnly? ParseEvidenceCheck(JsonElement e, string id)
+    {
+        if (!e.TryGetProperty("lastEvidenceCheck", out var v)) return null;
+        if (v.ValueKind == JsonValueKind.String && DateOnly.TryParse(v.GetString(), out var check))
+            return check;
+        throw new FormatException($"规则 {id} 的 lastEvidenceCheck 非法：应为 YYYY-MM-DD 日期");
     }
 
     private static int? TryGetNullableInt(JsonElement e, string name) =>

@@ -18,10 +18,13 @@ public sealed class RuleGovernanceTests : IDisposable
         string? doc = "docs/safety-notes.md#x",
         string? verified = "本机实测",
         IReadOnlyList<string>? paths = null,
-        RuleCategory category = RuleCategory.Temp) =>
+        RuleCategory category = RuleCategory.Temp,
+        string? maintainer = null,
+        DateOnly? lastEvidenceCheck = null) =>
         new(id, id, category, RiskLevel.Low,
             paths ?? ["%TEMP%\\kleaner-gov/**"],
-            Array.Empty<string>(), 0, null, false, true, notes, doc, verified);
+            Array.Empty<string>(), 0, null, false, true, notes, doc, verified,
+            Maintainer: maintainer, LastEvidenceCheck: lastEvidenceCheck);
 
     [Fact]
     public void 全达标规则库各覆盖率为百分之百()
@@ -154,12 +157,12 @@ public sealed class RuleGovernanceTests : IDisposable
     public void 阈值检查_达标与不达标()
     {
         var target = new GovernanceTarget(EvidenceCoverage: 1.0, VerifiedCoverage: 0.25, CategoriesCovered: 6);
-        var met = new RuleGovernanceReport(10, 10, 1.0, 3, 0.3, 3, 6, 6, 5);
+        var met = new RuleGovernanceReport(10, 10, 1.0, 3, 0.3, 3, 6, 6, 5, MaintainedRules: 10);
         var (ok, warnings) = RuleGovernance.CheckTargets(met, target);
         Assert.True(ok);
         Assert.Empty(warnings);
 
-        var below = new RuleGovernanceReport(10, 10, 1.0, 2, 0.2, 3, 5, 6, 5);
+        var below = new RuleGovernanceReport(10, 10, 1.0, 2, 0.2, 3, 5, 6, 5, MaintainedRules: 10);
         var (ok2, warnings2) = RuleGovernance.CheckTargets(below, target);
         Assert.False(ok2);
         Assert.Contains(warnings2, w => w.Contains("验证覆盖率"));
@@ -174,5 +177,78 @@ public sealed class RuleGovernanceTests : IDisposable
         var (ok, warnings) = RuleGovernance.CheckTargets(report, target);
         Assert.False(ok);
         Assert.Contains(warnings, w => w.Contains("证据覆盖率"));
+    }
+
+
+    [Fact]
+    public void 维护字段齐备计入维护_缺任一字段不计()
+    {
+        var set = new RuleSet(1, null, 0, new[]
+        {
+            MakeRule("a", maintainer: "huiyeo", lastEvidenceCheck: new DateOnly(2026, 9, 11)),
+            MakeRule("b", maintainer: "huiyeo"),
+            MakeRule("c", lastEvidenceCheck: new DateOnly(2026, 9, 11)),
+        });
+
+        var report = RuleGovernance.Report(set);
+
+        Assert.Equal(3, report.TotalRules);
+        Assert.Equal(1, report.MaintainedRules);
+        Assert.Equal(0, report.StaleEvidenceRules);
+    }
+
+    [Fact]
+    public void 证据检查超龄计入超龄_阈值一百八十天()
+    {
+        var asOf = new DateOnly(2026, 9, 11);
+        var set = new RuleSet(1, null, 0, new[]
+        {
+            MakeRule("fresh", maintainer: "huiyeo", lastEvidenceCheck: new DateOnly(2026, 6, 1)),
+            MakeRule("stale", maintainer: "huiyeo", lastEvidenceCheck: new DateOnly(2026, 2, 1)),
+        });
+
+        var report = RuleGovernance.Report(set, asOf);
+
+        Assert.Equal(2, report.MaintainedRules);
+        Assert.Equal(1, report.StaleEvidenceRules);
+    }
+
+    [Fact]
+    public void 维护缺失触发警告_全标注且未超龄无维护警告()
+    {
+        var asOf = new DateOnly(2026, 9, 11);
+        var target = GovernanceTarget.Phase2Initial;
+        var fullyMaintained = new RuleSet(1, null, 0, new[]
+        {
+            MakeRule("a", maintainer: "huiyeo", lastEvidenceCheck: asOf, category: RuleCategory.Temp),
+            MakeRule("b", maintainer: "huiyeo", lastEvidenceCheck: asOf, category: RuleCategory.BrowserCache),
+            MakeRule("c", maintainer: "huiyeo", lastEvidenceCheck: asOf, category: RuleCategory.DevCache),
+            MakeRule("d", maintainer: "huiyeo", lastEvidenceCheck: asOf, category: RuleCategory.Updater),
+            MakeRule("e", maintainer: "huiyeo", lastEvidenceCheck: asOf, category: RuleCategory.System),
+            MakeRule("f", maintainer: "huiyeo", lastEvidenceCheck: asOf, category: RuleCategory.Application),
+        });
+        var (met, warnings) = RuleGovernance.CheckTargets(RuleGovernance.Report(fullyMaintained, asOf), target);
+        Assert.True(met);
+        Assert.DoesNotContain(warnings, w => w.Contains("维护责任"));
+        Assert.DoesNotContain(warnings, w => w.Contains("超龄"));
+
+        var unmaintained = new RuleSet(1, null, 0, new[] { MakeRule("a") });
+        var (met2, warnings2) = RuleGovernance.CheckTargets(RuleGovernance.Report(unmaintained, asOf), target);
+        Assert.False(met2);
+        Assert.Contains(warnings2, w => w.Contains("维护责任"));
+    }
+
+    [Fact]
+    public void 证据超龄触发警告()
+    {
+        var asOf = new DateOnly(2026, 9, 11);
+        var staleSet = new RuleSet(1, null, 0, new[]
+        {
+            MakeRule("a", maintainer: "huiyeo", lastEvidenceCheck: new DateOnly(2025, 1, 1)),
+        });
+
+        var (_, warnings) = RuleGovernance.CheckTargets(RuleGovernance.Report(staleSet, asOf), GovernanceTarget.Phase2Initial);
+
+        Assert.Contains(warnings, w => w.Contains("超龄"));
     }
 }

@@ -13,7 +13,9 @@ public sealed record RuleGovernanceReport(
     int DefaultSelectableRules,
     int CategoriesCovered,
     int TotalCategories,
-    int UniqueTargetRoots);
+    int UniqueTargetRoots,
+    int MaintainedRules = 0,
+    int StaleEvidenceRules = 0);
 
 /// <summary>
 /// Phase 2 治理指标计算（goals.md：覆盖率/证据覆盖率/验证覆盖率/推荐准确率/误伤事件数）。
@@ -25,7 +27,10 @@ public static partial class RuleGovernance
 {
     public const int TotalCategoryCount = 6;
 
-    public static RuleGovernanceReport Report(RuleSet set)
+    /// <summary>证据检查超龄阈值（天）：lastEvidenceCheck 距参考日超过该值计为超龄，触发治理警告。</summary>
+    public const int EvidenceStaleDays = 180;
+
+    public static RuleGovernanceReport Report(RuleSet set, DateOnly? asOf = null)
     {
         ArgumentNullException.ThrowIfNull(set);
         var total = set.Rules.Count;
@@ -35,8 +40,12 @@ public static partial class RuleGovernance
         var evidenceCovered = 0;
         var verified = 0;
         var defaultSelectable = 0;
+        var maintained = 0;
+        var staleEvidence = 0;
         var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var categories = new HashSet<RuleCategory>();
+        var reference = asOf ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var staleCutoff = reference.AddDays(-EvidenceStaleDays);
 
         foreach (var rule in set.Rules)
         {
@@ -46,6 +55,13 @@ public static partial class RuleGovernance
             {
                 verified++;
                 defaultSelectable++;
+            }
+            // 维护责任：maintainer 与 lastEvidenceCheck 齐备才算已标注；检查日早于超龄线计入超龄。
+            if (!string.IsNullOrWhiteSpace(rule.Maintainer) && rule.LastEvidenceCheck is not null)
+            {
+                maintained++;
+                if (rule.LastEvidenceCheck < staleCutoff)
+                    staleEvidence++;
             }
             categories.Add(rule.Category);
             foreach (var path in rule.Paths)
@@ -62,7 +78,9 @@ public static partial class RuleGovernance
             DefaultSelectableRules: defaultSelectable,
             CategoriesCovered: categories.Count,
             TotalCategories: TotalCategoryCount,
-            UniqueTargetRoots: roots.Count);
+            UniqueTargetRoots: roots.Count,
+            MaintainedRules: maintained,
+            StaleEvidenceRules: staleEvidence);
     }
 
     // 目标根：路径开头的 %环境变量%（含百分号）或盘符（如 D:）。不展开实际值——指标跨机器稳定可复现。
@@ -125,6 +143,11 @@ public static partial class RuleGovernance
             warnings.Add($"验证覆盖率 {report.VerifiedCoverage:P1} 低于阶段目标 {target.VerifiedCoverage:P1}（提升途径：真机实测转正）");
         if (report.CategoriesCovered < target.CategoriesCovered)
             warnings.Add($"分类覆盖 {report.CategoriesCovered}/{target.CategoriesCovered} 低于目标");
+        var unmaintained = report.TotalRules - report.MaintainedRules;
+        if (unmaintained > 0)
+            warnings.Add($"{unmaintained} 条规则缺少维护责任标注（maintainer/lastEvidenceCheck）");
+        if (report.StaleEvidenceRules > 0)
+            warnings.Add($"{report.StaleEvidenceRules} 条规则证据检查已超龄（>{EvidenceStaleDays} 天），应复核 safetyNotes 与路径");
         return (warnings.Count == 0, warnings);
     }
 }

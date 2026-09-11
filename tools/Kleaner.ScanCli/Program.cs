@@ -309,6 +309,7 @@ try
                 Console.WriteLine($"默认勾选规则数      {report.DefaultSelectableRules,6}");
                 Console.WriteLine($"分类覆盖            {report.CategoriesCovered,3} / {report.TotalCategories}");
                 Console.WriteLine($"唯一目标根          {report.UniqueTargetRoots,6}");
+                Console.WriteLine($"维护责任标注        {report.MaintainedRules,6}  （缺失 {report.TotalRules - report.MaintainedRules}，证据超龄 {report.StaleEvidenceRules}）");
                 Console.WriteLine($"误伤信号（还原≠确认误伤）  {signal.RestoreEvents,3} 事件 / {signal.RestoredFiles,3} 文件");
                 if (!met)
                     foreach (var w in warnings)

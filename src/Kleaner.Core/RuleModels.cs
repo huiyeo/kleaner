@@ -25,4 +25,6 @@ public sealed record Rule(
     string? SafetyDoc = null,
     string? Verified = null,
     bool Deprecated = false,
-    string? DeprecationReason = null);
+    string? DeprecationReason = null,
+    string? Maintainer = null,
+    DateOnly? LastEvidenceCheck = null);
