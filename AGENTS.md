@@ -18,13 +18,16 @@
 - reparse point 一律排除；被占用文件跳过并在报告中提示，绝不强制删除。
 - 规则的新增与修改必须过三关，见 `docs/rules.md`。
 - 任何"可能含用户数据"的目录不予合并；拿不准的一律排除。
+- AI 解释输出是纯展示文本，**永不进清理链路、永不改规则库、永不调用工具**；AI 面板默认关闭，用户在设置显式启用。边界详见 `docs/adr/0004-local-ai-assistant-preview.md` 与 goals.md「AI 长期边界」。
 - 提交信息、注释语言、UI 文案通道遵循 `docs/conventions.md`。
 
 ## 按需查阅
 
 | 触发条件 | 读 |
 |---|---|
-| 增删规则、改 schema、动 `safetyNotes` / `verified` / `keepNewest` | `docs/rules.md` |
+| 增删规则、改 schema、动 `safetyNotes` / `verified` / `maintainer` / `lastEvidenceCheck` / `keepNewest` | `docs/rules.md` |
+| 动治理指标口径、目标值、误伤信号、维护统计 | `docs/rule-governance.md` |
+| 评估新功能候选（先证明与"安全释放空间"直接相关） | `docs/phase4-tool-assessment.md` + goals.md 宪法第 8 条 |
 | 动隔离区、还原、manifest、history、CLI 安全契约、提权 | `docs/deletion-path.md` |
 | 找某个类在哪、判断新代码该放哪个工程、改 csproj 依赖 | `docs/architecture.md` |
 | 术语拿不准、同一个词在不同处含义冲突 | `docs/context.md` |
@@ -34,6 +37,8 @@
 
 - 构建、测试、运行命令以 `README.md`「开发」节为准，此处不复述。
 - .NET 装在非默认位置时，框架依赖启动需设 `DOTNET_ROOT` 指向运行时目录。启动报"找不到运行时"先查这个。
+- `Kleaner.App.exe` 运行中会锁构建产物（MSB3027）——重建前先通过 UI 关闭运行中的实例。
+- 真机走查/验收产生的临时环境（settings.json 改写、假服务端口、规则库 override）用完必须完整还原并核验真实数据未受影响；走查取证用 UIA 无障碍树（该应用像素捕获不可靠）。
 
 ## 与上层 AGENTS.md 的关系
 

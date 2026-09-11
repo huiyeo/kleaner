@@ -80,13 +80,13 @@
 
 窗口：`MainWindow`（主界面）、`ToolboxWindow`（工具箱）、`AdvancedWindow`（高级模式）、`QuarantineWindow`（隔离区）、`HistoryWindow`（操作历史）、`SettingsWindow`、`StartupWindow`（启动项）。
 
-支撑：`App.xaml.cs`、`Program.cs`（`StartupObject`）、`AppSettings.cs`、`RuleRow.cs`（规则行的展示与默认勾选策略）、`Helpers.cs`（`IsElevated` / `RestartElevated`）、`S.cs`（本地化）。
+支撑：`App.xaml.cs`、`Program.cs`（`StartupObject`）、`AppSettings.cs`、`RuleRow.cs`（规则行的展示与默认勾选策略）、`Helpers.cs`（`IsElevated` / `RestartElevated`）、`S.cs`（本地化）、`Services/AiExplainService.cs`（AI 解释适配器——回环-only OpenAI 兼容，故障全降级；输出仅展示，永不进清理链路，见 `docs/adr/0004`）。
 
 本地化文案集中在 `Resources/Strings.zh-CN.json`，**不硬编码在 XAML 里**（`StartupWindow` 有局部例外，见文末已知问题）。
 
 ### Kleaner.ScanCli — 命令行
 
-单文件顶层语句 `Program.cs`。子命令：`scan`、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`；性能基准另有 `gen-dataset` / `bench` / `bench-single`（`Benchmarks.cs`，见 `docs/performance-baseline.md`）。
+单文件顶层语句 `Program.cs`。子命令：`scan`、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`、`governance-report`（治理指标只读测量，见 `docs/rule-governance.md`）；性能基准另有 `gen-dataset` / `bench` / `bench-single`（`Benchmarks.cs`，见 `docs/performance-baseline.md`）。
 
 ## 入口点
 

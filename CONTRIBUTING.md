@@ -10,7 +10,7 @@
 
 ## PR 清单
 
-- `rules/rules.v1.json` 新增规则：`id`（稳定 kebab-case）、`category`、`risk`（low 起步）、`paths`（环境变量开头 + 通配）、`safetyNotes`（≥20 字）、`safetyDoc`（锚点）、`verified`（验证状态）
+- `rules/rules.v1.json` 新增规则：`id`（稳定 kebab-case）、`category`、`risk`（low 起步）、`paths`（环境变量开头 + 通配）、`safetyNotes`（≥20 字）、`safetyDoc`（锚点）、`verified`（验证状态）；PR 合并时由维护者补 `maintainer` 与 `lastEvidenceCheck`（治理标注，见 `docs/rules.md`）
 - `rules/docs/safety-notes.md` 对应条目：目录用途 / 删除影响 / 验证方式
 - schema 校验通过：CI 会执行 `dotnet test`（含随库规则校验用例）
 

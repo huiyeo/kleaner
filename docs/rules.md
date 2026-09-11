@@ -49,6 +49,8 @@
 | `verified` | string | 无 | 验证状态声明；缺失或空白时运行时按未验证处理，绝不默认勾选 |
 | `deprecated` | boolean | `false` | **撤回标记**：为 true 的规则永不执行、永不默认勾选（优先级高于 verified），界面标注「已撤回」。旧版本应用忽略此字段不影响加载 |
 | `deprecationReason` | string | 无 | 撤回原因（自由文本，建议含发现时间与影响面），随签名清单全网分发 |
+| `maintainer` | string | 无 | **维护责任标注**（工单 rule-governance 06）：负责该规则证据复核的责任人。仅治理可见性，不参与扫描/清理决策 |
+| `lastEvidenceCheck` | string (YYYY-MM-DD) | 无 | **证据最近复核日**：治理报告按距今 >180 天计「证据超龄」并触发警告（不阻塞）。缺失为未标注；存在但日期非法抛 `FormatException`（严格解析，fail-closed）。仅治理可见性 |
 | `lockedFilePolicy` | enum `["skip"]` | `"skip"` | *代码从不读取*，行为硬编码在隔离区移动逻辑 |
 
 ## 加载与校验

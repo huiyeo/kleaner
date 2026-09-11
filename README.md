@@ -17,28 +17,23 @@
 
 ## 范围
 
-- **v1**：用户级缓存 + 无争议系统级；高级模式（WSL vhdx 压缩引导、大件跳转系统工具、注册表只扫描不删除）。
-- **明确不做（v1）**：自动定期清理、注册表删除、休眠/页面文件等系统大件的直接操作、多用户 profile。
+- **v1**：用户级缓存 + 无争议系统级；高级模式（WSL vhdx 压缩引导、休眠/还原点/WinSxS 引导调起系统工具、注册表只扫描不删除）。
+- **明确不做**：自动定期清理、注册表删除、休眠/页面文件等系统大件的直接操作、多用户 profile、云端 LLM。
 
 ## 状态
 
-**v0.2.4（当前）**：GUI 回归 WPF——`Kleaner.App`（WPF + Material Design，MVVM）是唯一 GUI 入口，过渡期的 `Kleaner.WebHost` Web 前端（含 PWA 壳）已整体移除。引擎层、CLI 安全契约与四道保险均未改动；GUI 与 CLI 是平级入口，共享 Core / Executor / Analysis，设置同写一份 `%APPDATA%\Kleaner\settings.json`。
+**v1.0.0（当前，已发布** [GitHub Release](https://github.com/huiyeo/kleaner/releases/tag/v1.0.0)**）**：四道保险完整主链（扫描→解释→预览→确认→隔离→还原→审计）经 GUI+CLI 端到端走查；安装/升级/回退/卸载矩阵真机 5/5（含 v1.0.0↔0.3.1 双向回退补验）；UI 无障碍（DPI 100/125/150、高对比度、Narrator 基础）实测通过；发布链路为散文件自包含 + Velopack 四件套（应用内自动更新未接线，升级路径=手动安装，见 `docs/publish.md`）。
 
-**v0.2 能力基线**：在 v0.1 基础上参照 [MangoDisk](https://github.com/harry0703/MangoDisk) 的安全方法论升级——
-
-- 规则引擎：`%ENV%` + `*`/`**` 通配扫描、年龄阈值、keepNewest 版本保留、exclude、reparse point 一律排除、被占用文件跳过
-- 隔离区：删除即移入（默认剩余空间最大的非系统盘），manifest 记录原路径，整批还原（冲突不覆盖）、7 天保留手动清空
-- **操作历史**：删除类操作全部自动落 `history.jsonl` 审计，界面可查；记录间哈希链使删改可被发现（检测非预防）
-- **CLI 安全契约**：`scan`/`clean --apply`/`--yes`/`large-files`/`duplicates`/`usage`/`startup`/`startup-test`，非交互无 `--yes` 拒绝删除（退出码 2），支持 `--format json`；性能基准另有 `gen-dataset`/`bench`
-- **工具箱**：大文件、重复文件（内容指纹三级预筛，每组保一）与空间分析（列表下钻）——全部只读扫描，不进入清理、隔离区或历史路径
-- 规则库：101 条规则，每条附安全性说明与验证状态标注；只有明确「本机实测」的规则默认勾选，缺失、空白或仅有文档依据时一律默认不勾选
-- 高级模式：WSL vhdx 检测与压缩指引、休眠/还原点/WinSxS 引导（调起系统工具）、注册表卸载残留**只读**扫描
+- 规则库：101 条规则（temp/browser-cache/dev-cache/updater/system/application 六类别），每条附安全性说明、验证状态与维护责任标注（`maintainer`/`lastEvidenceCheck`，证据超龄 >180 天触发治理警告）；只有明确「本机实测」的规则默认勾选
+- 规则治理：证据覆盖率 100%、验证覆盖率 23.8%（保守策略的体现）、误伤信号（还原批次计事件）——`governance-report` 只读测量，口径见 [docs/rule-governance.md](docs/rule-governance.md)；支持规则撤回（`deprecated` 三层防线：策略否决/扫描跳过/呈现标注）
+- 规则更新：官方 Ed25519 签名清单（`rules-channel` 分支），摘要→签名→降级→应用版本→发布时钟全链校验，原子替换 + last-good 回退；不接受用户任意 URL
+- **AI 解释（预览，默认关闭）**：仅连接本机回环 OpenAI 兼容服务（如 Ollama），只发送分类/文件数/字节脱敏聚合，输出仅展示、永不进清理链路；六类故障全部降级为无 AI 模式（ADR 0004 威胁模型与故障矩阵）
+- 工具箱（只读）：大文件、重复文件（内容指纹三级预筛，每组保一）、空间分析（列表+矩形图下钻）
 - 启动项管理：启用/禁用/还原，HKLM 走 `reg.exe` 提权、失败回滚
-- 发布链路：自包含单文件（免装 .NET）+ Velopack 安装版/便携版/自动更新清单（`scripts/release.sh`）
 
-质量：`dotnet test Kleaner.slnx -c Release` 当前 189/189 通过，覆盖规则校验、扫描/年龄阈值/keepNewest 语义、重复文件选择策略、清理计划入口与执行前复验、部分清空后的清单保留、路径校验、持久化故障、历史哈希链、规则更新签名信任链（Ed25519 RFC 8032 验证），以及清理/还原/清空汇总审计在独立进程中断后的补记。中断遗留临时清单会保留并报告 partial；移动路径的检查-移动间隙由句柄锚定关闭（ADR 0003）；凭据来源认证在同权限攻击者模型下不可达成，按 ADR 0002 明确为已知边界。性能基线与 SLO 候选见 `docs/performance-baseline.md`（无一冻结）；规则更新走官方 Ed25519 签名清单（`rules-channel` 分支），不再接受用户任意 URL。
+质量：`dotnet test Kleaner.slnx -c Release` 当前 **218/218** 通过，覆盖规则校验（含撤回/维护字段与非法日期 fail-closed）、扫描/年龄阈值/keepNewest 语义、重复文件选择策略、清理计划入口与执行前复验、部分清空后的清单保留、路径校验、持久化故障、历史哈希链、规则更新签名信任链（Ed25519 RFC 8032 验证）、AI 适配器全部故障矩阵（假 HTTP），以及清理/还原/清空汇总审计在独立进程中断后的补记。中断遗留临时清单会保留并报告 partial；移动路径的检查-移动间隙由句柄锚定关闭（ADR 0003）；凭据来源认证在同权限攻击者模型下不可达成，按 ADR 0002 明确为已知边界。性能 SLO 已在测量机范围冻结（冷启动 p95<2s、规则扫描 p95<15s 等，跨日复跑无漂移），见 `docs/performance-baseline.md`。
 
-当前路线与发布闸门见 [docs/goals.md](docs/goals.md)：先完成清理授权、审计与事务性的 Phase 0，再考虑功能扩展。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
+当前路线与阶段结论见 [docs/goals.md](docs/goals.md)（Phase 0–4 全部收口；后续工作为单张工单推进，下一批实施候选见 [docs/phase4-tool-assessment.md](docs/phase4-tool-assessment.md) backlog）。规则贡献见 [CONTRIBUTING.md](CONTRIBUTING.md)（三关流程：权威来源 → 安全边界 → 真机验证）。
 
 ## 开发
 
