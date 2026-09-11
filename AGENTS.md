@@ -27,8 +27,10 @@
 |---|---|
 | 增删规则、改 schema、动 `safetyNotes` / `verified` / `maintainer` / `lastEvidenceCheck` / `keepNewest` | `docs/rules.md` |
 | 动治理指标口径、目标值、误伤信号、维护统计 | `docs/rule-governance.md` |
-| 评估新功能候选（先证明与"安全释放空间"直接相关） | `docs/phase4-tool-assessment.md` + goals.md 宪法第 8 条 |
+| 评估新功能候选（先证明与「安全释放空间」直接相关） | `docs/phase4-tool-assessment.md` + goals.md 宪法第 8 条 |
 | 动隔离区、还原、manifest、history、CLI 安全契约、提权 | `docs/deletion-path.md` |
+| 发版：定版本号、打包、产物校验、安装矩阵 | `docs/release-checklist.md` |
+| 动扫描/分析性能、跑基准、动 SLO 口径 | `docs/performance-baseline.md` + `scripts/bench.ps1` |
 | 找某个类在哪、判断新代码该放哪个工程、改 csproj 依赖 | `docs/architecture.md` |
 | 术语拿不准、同一个词在不同处含义冲突 | `docs/context.md` |
 | 写提交信息、写注释、新增界面文案、改代码风格配置 | `docs/conventions.md` |
@@ -38,6 +40,8 @@
 - 构建、测试、运行命令以 `README.md`「开发」节为准，此处不复述。
 - .NET 装在非默认位置时，框架依赖启动需设 `DOTNET_ROOT` 指向运行时目录。启动报"找不到运行时"先查这个。
 - `Kleaner.App.exe` 运行中会锁构建产物（MSB3027）——重建前先通过 UI 关闭运行中的实例。
+- `git push` 常被本机全局代理拦截（代理端口会漂移）：按次用 `git -c http.proxy= -c https.proxy= push` 绕过，不要永久改动用户的代理配置。
+- 测试里创建目录联结用 `cmd /c mklink /J`，不要起 powershell.exe——其 5.1 冷启动在 CI runner 上会撞超时（曾致 CI 连续 11 次失败，见 QuarantineManifestTests.CreateJunction 注释）。
 - 真机走查/验收产生的临时环境（settings.json 改写、假服务端口、规则库 override）用完必须完整还原并核验真实数据未受影响；走查取证用 UIA 无障碍树（该应用像素捕获不可靠）。
 
 ## 与上层 AGENTS.md 的关系

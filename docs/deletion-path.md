@@ -60,7 +60,7 @@
 
 `RestoreBatch` 整批还原。原路径已存在同名文件时，还原为 `{原路径}.restore-{batchId}`，**绝不覆盖现有文件**。每成功还原一项就原子更新 manifest；只在所有条目均已恢复后删除空批次目录。任何缺失、被占用或移动失败都会保留整个批次与尚存隔离文件，并在 `RestoreReport` / `restore` 历史中报告 `partial`。
 
-*坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；GUI 层与 CLI 调用方需自行处理异常。
+*坑*：`RestoreBatch` 直接 `File.ReadAllText(manifest)`，对缺失或损坏的清单没有 try-catch；调用方需自行处理异常。GUI 层自 v1.1.0 起已兜底（`QuarantineWindow.OnRestore` 转为警告提示），**CLI 调用方仍必须自行 try-catch**。
 
 收尾仅移除空目录与本批次 `manifest.json`。发现未登记文件、reparse point 或目录处理异常时保留清单，禁止删除未知内容；最终 `restore` 历史在收尾之后记录，收尾失败也是 `partial`。
 

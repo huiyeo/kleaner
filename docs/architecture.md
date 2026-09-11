@@ -36,7 +36,7 @@
 | `RuleModels.cs` | `Rule` / `RuleSet` 记录、`RuleCategory` / `RiskLevel` 枚举 |
 | `RuleSetLoader.cs` | JSON → 模型；`Validate` 语义校验；`EffectiveAgeDays` 阈值回退 |
 | `RuleSelector.cs` | 对候选集应用 `keepNewest` 或年龄阈值（二者互斥） |
-| `GlobScanner.cs` | `%ENV%` 展开、`*` / `**` 通配枚举、reparse point 排除 |
+| `GlobScanner.cs` | `%ENV%` 展开、`*` / `**` 通配枚举、单趟枚举（属性取查找数据缓存，勿退回逐条目 `File.GetAttributes`——真机扫描曾因此慢 39 倍）、reparse point 排除 |
 | `ScanEngine.cs` | 按规则枚举候选 → exclude → 选择，产出 `ScanReport`。**只读** |
 | `CleanupPlan.cs` | 将规则快照、本次扫描与用户选择收束为不可伪造的清理授权；执行前重新核对候选 |
 | `RuleUpdateService.cs` | 规则在线更新：下载 → SHA512 校验 → 语义校验 → 落用户目录 |
@@ -115,7 +115,7 @@
 ## 已知问题
 
 - **CLI 定位内置规则的.path 很脆**：`BundledRulesPath()` 从 `AppContext.BaseDirectory` 向上跳 5 级再拼 `rules/rules.v1.json`。输出目录层级一变就失效。
-- **`StartupWindow` 的表头未完全走本地化**：XAML 里硬编码了列头，再在 `LoadStrings()` 里按列索引覆盖。列顺序一旦调整，文案就会错位。（`MainWindow`/`ToolboxWindow`/`QuarantineWindow` 同样按列索引设表头——列顺序调整时需同步，见各窗口 `LoadStrings()`。）
+- **`StartupWindow` 的表头未完全走本地化**：XAML 里硬编码了列头，再在 `LoadStrings()` 里按列索引覆盖。列顺序一旦调整，文案就会错位。（`MainWindow`/`ToolboxWindow` 同样按列索引在 `LoadStrings()` 设表头；`QuarantineWindow` 则在构造函数里按列索引设置——列顺序调整时都需同步。）
 - **`RuleUpdateService` 的本地覆盖会静默生效**：`%APPDATA%\Kleaner\rules\rules.v1.json` 存在时优先于内置规则库。排查"改了 rules.v1.json 却没生效"时先看这里。
 - **WPF 层零控件测试**：虽然 `Kleaner.Core.Tests` 为清理计划协调契约引用 App，仍未自动化点击或截图验证窗口控件。可剥离的纯逻辑会下沉到 `Kleaner.Analysis`/`Kleaner.Core` 并补测试（例：`DuplicateSelectionPolicy`、`ScanEngine.Scan` 的取消语义）。
 
@@ -131,4 +131,5 @@
     - 窗口构造函数里**不要用字段初始化器创建 ViewModel**——字段初始化器早于构造函数体执行，会导致 ViewModel 在 `S.Load()` 之前构造，界面文字整体变英文（`MainWindow` 已按此修正）。
   - **仍有遗留**：`MessageBox` 直接出现在 ViewModel 内（`MainWindowViewModel.LoadRules`/`ScanAsync`/`CleanAsync`），可测性打折，后续可抽 `IDialogService`；`MainWindow` 的 `LoadStrings` 仍按列索引设 DataGrid 表头。
 - **扫描支持取消**：`ScanEngine.Scan(RuleSet, CancellationToken)` 在规则与文件循环中检查取消。`MainWindow` 提供「取消扫描」按钮并禁止重入（`_scanCts` 非空时忽略重复触发）；`ToolboxWindow` 每次扫描前取消并释放旧 `_cts`。
+- **引擎重操作一律不占 UI 线程**：扫描、清理计划构建（内部完整重扫所选规则）、隔离区写入均经 `Task.Run`——v1.1.0 前计划构建在 UI 线程同步执行曾致真机 AppHang（事件日志 1002）。`QuarantineWindow` 写操作期间以 `TryBeginOperation`/`EndOperation` 禁用全部按钮，与引擎层 `.operation.lock` 的操作互斥互补。
 - **永久删除的确认强度**：`QuarantineManager.DeleteBatch`/`PurgeOlderThan` 是全仓仅有的永久删除出口（`TryDeleteDir` 递归删除），GUI 已要求二次确认并明示「不可还原」，强度高于可还原的清理流程。
