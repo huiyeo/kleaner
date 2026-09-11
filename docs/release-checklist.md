@@ -6,7 +6,7 @@
 
 - [ ] `dotnet build Kleaner.slnx -c Release`：0 警告 0 错误
 - [ ] `dotnet test Kleaner.slnx -c Release`：全绿；用例数与 README「质量」段一致
-- [ ] 版本号确定：版本唯一来源是 `scripts/release.sh <版本号>` 的参数（工程文件不含 Version 属性）；同步更新 README「状态」段与 `docs/release-notes-v<版本>.md`
+- [ ] 版本号确定：Velopack 包版本唯一来源是 `scripts/release.sh <版本号>` 的参数；`src/Kleaner.App/Kleaner.App.csproj` 的 `AssemblyVersion`/`InformationalVersion` 需同步手工改为同一版本（v1.1.0 打包时曾遗漏，安装后文件属性版本错为旧版）；同步更新 README「状态」段与 `docs/release-notes-v<版本>.md`
 - [ ] 文档同步核对：README、architecture、context、deletion-path、performance-baseline 与实际代码一致（命令清单、限制声明、测试计数）
 - [ ] 待发布行为与 `docs/goals.md` 安全宪法无冲突；Phase 0 发布阻断指标成立（零未授权清理、零未审计文件状态变化、部分失败零数据丢失）
 
