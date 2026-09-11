@@ -6,6 +6,25 @@ namespace Kleaner.Core;
 /// <summary>含通配符路径模式的枚举与匹配：* 匹配单段内任意字符，** 匹配任意层级（含零层）；支持 %VAR% 环境变量；一律跳过 reparse point（OneDrive/云盘占位、junction）。</summary>
 public static class GlobScanner
 {
+    // 单趟枚举的两个关键点：属性直接取自查找数据（不再对每个条目补 GetAttributes），
+    // reparse point 由枚举器排除且不深入。AttributesToSkip 只排除 reparse——隐藏/系统文件
+    // 历史上一直参与匹配，不能落到默认值（默认会额外排除 Hidden|System）。
+    private static readonly EnumerationOptions FlatOptions = new()
+    {
+        RecurseSubdirectories = false,
+        IgnoreInaccessible = true,
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        ReturnSpecialDirectories = false
+    };
+
+    private static readonly EnumerationOptions RecursiveOptions = new()
+    {
+        RecurseSubdirectories = true,
+        IgnoreInaccessible = true,
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        ReturnSpecialDirectories = false
+    };
+
     public static string Normalize(string pattern) =>
         Environment.ExpandEnvironmentVariables(pattern).Replace('/', '\\');
 
@@ -45,13 +64,21 @@ public static class GlobScanner
     /// <summary>按模式枚举磁盘上的文件。模式必须是以环境变量或盘符开头的绝对路径。</summary>
     public static IEnumerable<string> EnumerateFiles(string pattern)
     {
+        foreach (var file in EnumerateFileInfos(pattern))
+            yield return file.FullName;
+    }
+
+    /// <summary>同 <see cref="EnumerateFiles"/>，但返回枚举条目本身：Length / LastWriteTimeUtc 取自查找数据缓存，调用方无需再补 stat。</summary>
+    public static IEnumerable<FileInfo> EnumerateFileInfos(string pattern)
+    {
         var normalized = Normalize(pattern);
         var segments = normalized.Split('\\', StringSplitOptions.RemoveEmptyEntries);
         var firstWild = Array.FindIndex(segments, s => s.Contains('*'));
         if (firstWild < 0)
         {
-            if (File.Exists(normalized) && !IsReparsePoint(normalized))
-                yield return normalized;
+            var exact = new FileInfo(normalized);
+            if (exact.Exists && !exact.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                yield return exact;
             yield break;
         }
         if (firstWild == 0)
@@ -65,7 +92,20 @@ public static class GlobScanner
             yield return file;
     }
 
-    private static IEnumerable<string> Match(string dir, string[] segments, int index)
+    /// <summary>单趟读出目录的直接子项并按引擎契约排除 reparse point 与不可访问目录。</summary>
+    private static (List<FileInfo> Files, List<DirectoryInfo> Dirs) ReadChildren(string dir)
+    {
+        var files = new List<FileInfo>();
+        var dirs = new List<DirectoryInfo>();
+        foreach (var entry in new DirectoryInfo(dir).EnumerateFileSystemInfos("*", FlatOptions))
+        {
+            if (entry is DirectoryInfo d) dirs.Add(d);
+            else files.Add((FileInfo)entry);
+        }
+        return (files, dirs);
+    }
+
+    private static IEnumerable<FileInfo> Match(string dir, string[] segments, int index)
     {
         var segment = segments[index];
         var isLast = index == segments.Length - 1;
@@ -80,17 +120,14 @@ public static class GlobScanner
             else if (segment.Contains('*'))
             {
                 var re = SegmentRegex(segment);
-                string[] files;
-                try { files = Directory.GetFiles(dir); }
-                catch { files = Array.Empty<string>(); }
-                foreach (var f in files)
-                    if (re.IsMatch(Path.GetFileName(f)) && !IsReparsePoint(f))
+                foreach (var f in ReadChildren(dir).Files)
+                    if (re.IsMatch(Path.GetFileName(f.FullName)))
                         yield return f;
             }
             else
             {
-                var p = Path.Combine(dir, segment);
-                if (File.Exists(p) && !IsReparsePoint(p))
+                var p = new FileInfo(Path.Combine(dir, segment));
+                if (p.Exists && !p.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     yield return p;
             }
             yield break;
@@ -108,51 +145,27 @@ public static class GlobScanner
         else if (segment.Contains('*'))
         {
             var re = SegmentRegex(segment);
-            string[] subs;
-            try { subs = Directory.GetDirectories(dir); }
-            catch { subs = Array.Empty<string>(); }
-            foreach (var s in subs)
+            foreach (var s in ReadChildren(dir).Dirs)
             {
-                if (IsReparsePoint(s) || !re.IsMatch(Path.GetFileName(s)))
+                if (!re.IsMatch(Path.GetFileName(s.FullName)))
                     continue;
-                foreach (var f in Match(s, segments, index + 1))
+                foreach (var f in Match(s.FullName, segments, index + 1))
                     yield return f;
             }
         }
         else
         {
-            var p = Path.Combine(dir, segment);
-            if (Directory.Exists(p) && !IsReparsePoint(p))
-                foreach (var f in Match(p, segments, index + 1))
+            var p = new DirectoryInfo(Path.Combine(dir, segment));
+            if (p.Exists && !p.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                foreach (var f in Match(p.FullName, segments, index + 1))
                     yield return f;
         }
     }
 
-    private static IEnumerable<string> AllFilesRecursive(string root)
+    private static IEnumerable<FileInfo> AllFilesRecursive(string root)
     {
-        var stack = new Stack<string>();
-        stack.Push(root);
-        while (stack.Count > 0)
-        {
-            var dir = stack.Pop();
-            string[] files;
-            string[] dirs;
-            try
-            {
-                files = Directory.GetFiles(dir);
-                dirs = Directory.GetDirectories(dir);
-            }
-            catch
-            {
-                continue;
-            }
-            foreach (var f in files)
-                if (!IsReparsePoint(f))
-                    yield return f;
-            foreach (var d in dirs)
-                if (!IsReparsePoint(d))
-                    stack.Push(d);
-        }
+        foreach (var f in new DirectoryInfo(root).EnumerateFiles("*", RecursiveOptions))
+            yield return f;
     }
 
     private static IEnumerable<string> AllDirsRecursive(string root)
@@ -162,15 +175,10 @@ public static class GlobScanner
         while (stack.Count > 0)
         {
             var dir = stack.Pop();
-            string[] dirs;
-            try { dirs = Directory.GetDirectories(dir); }
-            catch { continue; }
-            foreach (var d in dirs)
+            foreach (var d in ReadChildren(dir).Dirs)
             {
-                if (IsReparsePoint(d))
-                    continue;
-                yield return d;
-                stack.Push(d);
+                yield return d.FullName;
+                stack.Push(d.FullName);
             }
         }
     }

@@ -45,29 +45,19 @@ public sealed class ScanEngine
                 foreach (var pattern in rule.Paths)
                 {
                     token.ThrowIfCancellationRequested();
-                    foreach (var path in GlobScanner.EnumerateFiles(pattern))
+                    foreach (var file in GlobScanner.EnumerateFileInfos(pattern))
                     {
                         token.ThrowIfCancellationRequested();
+                        var path = file.FullName;
                         if (!seen.Add(path))
                             continue;
                         if (excludes.Any(re => re.IsMatch(path)))
                             continue;
                         if (_quarantineRoot is not null && IsUnderRoot(path, _quarantineRoot))
                             continue;
-
-                        long size;
-                        DateTime mtime;
-                        try
-                        {
-                            var fi = new FileInfo(path);
-                            size = fi.Length;
-                            mtime = fi.LastWriteTimeUtc;
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                        candidates.Add(new FileCandidate(path, size, mtime));
+                        // 大小与修改时间取枚举缓存的查找数据，不再补 stat；
+                        // 此后文件消失的场景由移动前的复验与 File.Move 跳过机制兜底
+                        candidates.Add(new FileCandidate(path, file.Length, file.LastWriteTimeUtc));
                     }
                 }
 
