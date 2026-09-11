@@ -1,0 +1,140 @@
+﻿{
+    "environment":  {
+                        "machine":  "HUIYEO_COMPUTER",
+                        "os":  "Microsoft Windows 11 专业版",
+                        "osBuild":  "26100",
+                        "cpu":  "12th Gen Intel(R) Core(TM) i5-12500H",
+                        "cores":  12,
+                        "memoryGb":  15.7,
+                        "dotnetSdk":  "10.0.400",
+                        "timestampUtc":  "2026-09-11T10:59:21.8484461Z"
+                    },
+    "dataset":  {
+                    "kind":  "kleaner-synthetic-dataset",
+                    "Seed":  20260906,
+                    "FileCount":  2000,
+                    "DirectoryDepth":  3,
+                    "Branching":  4,
+                    "DuplicateGroups":  20,
+                    "TotalBytes":  624572537,
+                    "DirectoryCount":  84,
+                    "generatedUtc":  "2026-09-11T10:58:56.3754414Z"
+                },
+    "scenarios":  [
+                      {
+                          "name":  "rules-scan",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            1176.3738,
+                                            1351.4974,
+                                            1666.0865,
+                                            2340.7191,
+                                            2684.6046
+                                        ],
+                          "p50Ms":  1666.09,
+                          "p95Ms":  2684.6,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  285765632,
+                          "cpuTimeMs":  9765.6,
+                          "diskReadBytes":  647455,
+                          "diskWriteBytes":  0
+                      },
+                      {
+                          "name":  "usage",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            48.4057,
+                                            54.6829,
+                                            55.7502,
+                                            57.5095,
+                                            68.9174
+                                        ],
+                          "p50Ms":  55.75,
+                          "p95Ms":  68.92,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  37433344,
+                          "cpuTimeMs":  390.6,
+                          "diskReadBytes":  27679,
+                          "diskWriteBytes":  0
+                      },
+                      {
+                          "name":  "large-files",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            48.9737,
+                                            51.3255,
+                                            55.7453,
+                                            66.1563,
+                                            86.6079
+                                        ],
+                          "p50Ms":  55.75,
+                          "p95Ms":  86.61,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  40128512,
+                          "cpuTimeMs":  375,
+                          "diskReadBytes":  0,
+                          "diskWriteBytes":  0
+                      },
+                      {
+                          "name":  "duplicates",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            75.2536,
+                                            78.437,
+                                            83.7558,
+                                            99.4305,
+                                            111.2321
+                                        ],
+                          "p50Ms":  83.76,
+                          "p95Ms":  111.23,
+                          "firstProgressMs":  null,
+                          "cancelLatencyMs":  null,
+                          "peakWorkingSetBytes":  52150272,
+                          "cpuTimeMs":  500,
+                          "diskReadBytes":  57829705,
+                          "diskWriteBytes":  0
+                      },
+                      {
+                          "name":  "cancel",
+                          "iterations":  5,
+                          "elapsedMs":  [
+                                            50.1435,
+                                            54.2689,
+                                            56.3329,
+                                            153.1534,
+                                            226.7885
+                                        ],
+                          "p50Ms":  56.33,
+                          "p95Ms":  226.79,
+                          "firstProgressMs":  [
+                                                  62.22,
+                                                  49.08,
+                                                  148.61,
+                                                  45.85,
+                                                  52.73
+                                              ],
+                          "cancelLatencyMs":  [
+                                                  3.79,
+                                                  0.25,
+                                                  0.23,
+                                                  0.21,
+                                                  0.22
+                                              ],
+                          "peakWorkingSetBytes":  64319488,
+                          "cpuTimeMs":  671.9,
+                          "diskReadBytes":  647455,
+                          "diskWriteBytes":  0
+                      }
+                  ],
+    "coldStartMs":  [
+                        2034,
+                        1009,
+                        967,
+                        1124,
+                        1099
+                    ],
+    "coldStartP95":  2034
+}
