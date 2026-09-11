@@ -521,3 +521,15 @@
 
 - **Windows 缩略图缓存**（system，风险 low）Windows 系统组件缓存，由系统按需重建。参考：https://learn.microsoft.com/en-us/windows/win32/api/thumbcache/nn-thumbcache-ithumbnailcache仅清理限定目录内容，被占用文件自动跳过并提示。
 - 验证状态：官方文档来源，本机未验证，默认不勾选。
+
+## kernel-dumps
+
+- **目录用途**：内核崩溃转储——`C:\Windows\MEMORY.DMP`（完整/内核转储）与 `C:\Windows\Minidump\`（蓝屏小型转储）。仅事后调试排查材料。
+- **删除影响**：仅丢失事后分析蓝屏的材料，系统与用户数据不受影响；官方"磁盘清理→系统错误内存转储文件/系统错误小型转储文件"为同类对象；新转储按系统设置重新生成。14 天阈值。
+- **验证方式**：路径与可达性本机核实（2026-09-12：MEMORY.DMP 不存在、Minidump 存在且为空、未提权扫描 0 命中无异常）；命中与删除场景本机暂无可测样本（无转储文件，不伪造内核转储）——诚实标注"官方文档来源，本机未验证"。权威来源：learn.microsoft.com 内存转储文件与磁盘清理条目文档。
+
+## delivery-optimization-cache
+
+- **目录用途**：Windows 传递优化（DO）P2P 分发下载缓存——现行位置 `%SystemRoot%\ServiceProfiles\NetworkService\...\DeliveryOptimization\Cache`（Win11 实测位置），旧版位置 `%SystemRoot%\SoftwareDistribution\DeliveryOptimization\Cache`。仅限 Cache 子目录，不触碰传递优化配置与状态。
+- **删除影响**：微软官方定位为可随时清理的下载缓存（Delete-DeliveryOptimizationCache cmdlet、存储感知、磁盘清理同类）；删除后按需重新分发下载，不影响已安装更新与系统功能。14 天阈值。
+- **验证方式**：本机核实（2026-09-12）：现行位置存在但未提权不可读（ACL 限 NetworkService/SYSTEM，Test-Path 拒绝访问），旧版位置不存在；未提权扫描 0 命中、无异常（目录不可达被引擎静默跳过）。提权可达性与实际清理场景待真机验证窗口——诚实标注"官方文档来源，本机未验证"。权威来源：learn.microsoft.com 传递优化文档与 Delete-DeliveryOptimizationCache。

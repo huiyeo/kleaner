@@ -2426,6 +2426,40 @@
    "verified": "本机实测 2026-08-29（扫描命中 13 项）",
    "maintainer": "huiyeo",
    "lastEvidenceCheck": "2026-09-11"
+  },
+  {
+   "id": "kernel-dumps",
+   "name": "系统内存转储文件",
+   "category": "system",
+   "risk": "low",
+   "paths": [
+    "%SystemRoot%\\MEMORY.DMP",
+    "%SystemRoot%\\Minidump\\**"
+   ],
+   "requiresElevation": true,
+   "enabled": true,
+   "safetyNotes": "Windows 内核崩溃转储（MEMORY.DMP 与 Minidump 小型转储），仅事后调试排查材料；官方磁盘清理含「系统错误内存转储文件」同类条目。删除后丢失蓝屏分析依据，系统与用户数据不受影响，新转储按系统设置重新生成。",
+   "safetyDoc": "docs/safety-notes.md#kernel-dumps",
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-12"
+  },
+  {
+   "id": "delivery-optimization-cache",
+   "name": "传递优化缓存",
+   "category": "system",
+   "risk": "low",
+   "paths": [
+    "%SystemRoot%\\ServiceProfiles\\NetworkService\\AppData\\Local\\Microsoft\\Windows\\DeliveryOptimization\\Cache\\**",
+    "%SystemRoot%\\SoftwareDistribution\\DeliveryOptimization\\Cache\\**"
+   ],
+   "requiresElevation": true,
+   "enabled": true,
+   "safetyNotes": "Windows 传递优化（P2P 分发）下载缓存，官方 Delete-DeliveryOptimizationCache 与存储感知/磁盘清理的同类清理对象；删除后按需重新分发下载，不影响已安装更新与系统功能。仅限 Cache 子目录，不触碰传递优化配置与状态。",
+   "safetyDoc": "docs/safety-notes.md#delivery-optimization-cache",
+   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "maintainer": "huiyeo",
+   "lastEvidenceCheck": "2026-09-12"
   }
  ]
 }
