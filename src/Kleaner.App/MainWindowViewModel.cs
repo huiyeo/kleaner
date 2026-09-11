@@ -229,30 +229,35 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
 
         var settings = AppSettings.Load();
-        var plan = CleanupPlanBuilder.Create(
-            _ruleSet,
-            _lastScanReport,
-            selected.Select(row => row.Id),
-            settings.EffectiveQuarantineRoot);
-        if (plan.Items.Count == 0)
-        {
-            MessageBox.Show(S.Get("NothingSelected"), Title);
-            return;
-        }
+        var ruleSet = _ruleSet!;
+        var scanReport = _lastScanReport!;
+        var selectedIds = selected.Select(row => row.Id).ToList();
+        var quarantineRoot = settings.EffectiveQuarantineRoot;
 
-        var totalFiles = plan.Items.Count;
-        var totalBytes = plan.Items.Sum(item => item.File.SizeBytes);
-        if (MessageBox.Show(S.Format("ConfirmCleanBody", totalFiles, Helpers.FormatBytes(totalBytes)),
-                S.Get("ConfirmCleanTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Question)
-            != MessageBoxResult.OK)
-            return;
-
-        var manager = new QuarantineManager(settings.EffectiveQuarantineRoot, new HistoryManager());
+        // 计划构建内部会完整重扫所选规则，耗时与首次扫描同量级；在 UI 线程执行会冻结整个界面
         IsBusy = true;
-        StatusText = S.Get("StatusCleaning");
+        StatusText = S.Get("StatusScanning");
+        var executed = false;
         try
         {
+            var plan = await Task.Run(() => CleanupPlanBuilder.Create(ruleSet, scanReport, selectedIds, quarantineRoot));
+            if (plan.Items.Count == 0)
+            {
+                MessageBox.Show(S.Get("NothingSelected"), Title);
+                return;
+            }
+
+            var totalFiles = plan.Items.Count;
+            var totalBytes = plan.Items.Sum(item => item.File.SizeBytes);
+            if (MessageBox.Show(S.Format("ConfirmCleanBody", totalFiles, Helpers.FormatBytes(totalBytes)),
+                    S.Get("ConfirmCleanTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Question)
+                != MessageBoxResult.OK)
+                return;
+
+            StatusText = S.Get("StatusCleaning");
+            var manager = new QuarantineManager(quarantineRoot, new HistoryManager());
             var report = await Task.Run(() => manager.Execute(plan));
+            executed = true;
             MessageBox.Show(
                 S.Format("CleanDoneBody", report.MovedCount, Helpers.FormatBytes(report.MovedBytes),
                     report.Skipped.Count, report.QuarantineDir),
@@ -266,7 +271,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             IsBusy = false;
         }
-        _ = ScanAsync();
+        if (executed)
+            _ = ScanAsync();
     }
 
     [RelayCommand]

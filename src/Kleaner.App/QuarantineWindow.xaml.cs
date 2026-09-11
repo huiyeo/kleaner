@@ -61,21 +61,56 @@ public partial class QuarantineWindow : Window
         await RefreshPendingAuditBanner();
     }
 
-    private void OnRestore(object sender, RoutedEventArgs e)
+    private bool _busy;
+
+    // 清空/还原属于写操作，期间禁用全部按钮：引擎层的操作锁会拒绝并发，但不该让用户撞上去才发现
+    private bool TryBeginOperation()
     {
-        if (BatchesGrid.SelectedItem is not BatchRow row)
+        if (_busy) return false;
+        _busy = true;
+        RestoreButton.IsEnabled = false;
+        DeleteButton.IsEnabled = false;
+        PurgeButton.IsEnabled = false;
+        RecoverAuditButton.IsEnabled = false;
+        return true;
+    }
+
+    private void EndOperation()
+    {
+        _busy = false;
+        RestoreButton.IsEnabled = true;
+        DeleteButton.IsEnabled = true;
+        PurgeButton.IsEnabled = true;
+        RecoverAuditButton.IsEnabled = true;
+    }
+
+    private async void OnRestore(object sender, RoutedEventArgs e)
+    {
+        if (BatchesGrid.SelectedItem is not BatchRow row || !TryBeginOperation())
             return;
-        var report = _manager.RestoreBatch(row.Batch.BatchId);
-        var message = report.IsComplete
-            ? S.Format("RestoreDone", report.RestoredCount)
-            : S.Format("RestorePartial", report.RestoredCount, string.Join("\n", report.Skipped.Concat(report.Failed)));
-        MessageBox.Show(message, Title, MessageBoxButton.OK, report.IsComplete ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        try
+        {
+            var report = await Task.Run(() => _manager.RestoreBatch(row.Batch.BatchId));
+            var message = report.IsComplete
+                ? S.Format("RestoreDone", report.RestoredCount)
+                : S.Format("RestorePartial", report.RestoredCount, string.Join("\n", report.Skipped.Concat(report.Failed)));
+            MessageBox.Show(message, Title, MessageBoxButton.OK, report.IsComplete ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            // RestoreBatch 对缺失或损坏的清单直接抛出（见 docs/deletion-path.md 的坑），此处兜底防止进程崩溃
+            MessageBox.Show(ex.Message, S.Get("Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            EndOperation();
+        }
         Refresh();
     }
 
-    private void OnDelete(object sender, RoutedEventArgs e)
+    private async void OnDelete(object sender, RoutedEventArgs e)
     {
-        if (BatchesGrid.SelectedItem is not BatchRow row)
+        if (BatchesGrid.SelectedItem is not BatchRow row || _busy)
             return;
         // 永久删除路径，确认强度必须高于可还原的清理
         if (MessageBox.Show(
@@ -83,21 +118,49 @@ public partial class QuarantineWindow : Window
                 S.Get("ConfirmDeleteBatchTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
             != MessageBoxResult.Yes)
             return;
-        var report = _manager.DeleteBatch(row.Batch.BatchId);
-        if (!report.Deleted)
-            MessageBox.Show(S.Format("DeleteBatchFailed", string.Join("\n", report.Failed)), Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (!TryBeginOperation())
+            return;
+        try
+        {
+            var report = await Task.Run(() => _manager.DeleteBatch(row.Batch.BatchId));
+            if (!report.Deleted)
+                MessageBox.Show(S.Format("DeleteBatchFailed", string.Join("\n", report.Failed)), Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, S.Get("Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            EndOperation();
+        }
         Refresh();
     }
 
-    private void OnPurge(object sender, RoutedEventArgs e)
+    private async void OnPurge(object sender, RoutedEventArgs e)
     {
+        if (_busy)
+            return;
         if (MessageBox.Show(
                 S.Get("ConfirmPurgeBody"),
                 S.Get("ConfirmPurgeTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning)
             != MessageBoxResult.Yes)
             return;
-        var purged = _manager.PurgeOlderThan(TimeSpan.FromDays(7));
-        MessageBox.Show(S.Format("PurgeDone", purged), Title);
+        if (!TryBeginOperation())
+            return;
+        try
+        {
+            var purged = await Task.Run(() => _manager.PurgeOlderThan(TimeSpan.FromDays(7)));
+            MessageBox.Show(S.Format("PurgeDone", purged), Title);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, S.Get("Error"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        finally
+        {
+            EndOperation();
+        }
         Refresh();
     }
 }
