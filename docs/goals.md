@@ -131,6 +131,8 @@ Phase 0 发布阻断指标：**零未授权清理、零未审计文件状态变�
 
 ## 进度记录
 
+- 2026-09-11：**v1.1.0 发布并完成本机升级**：扫描引擎单趟枚举（真机全规则扫描 97.6s → 2.5s，逐规则结果一致）+ 清理计划构建/隔离区操作移出 UI 线程（修复真机 AppHang 两次，事件日志佐证）+ 隔离区窗口清单异常兜底；发布前置 221/221、Release 0/0，CI 绿；GitHub Release 四附件 SHA512 与发布说明一致；本机 1.0.0→1.1.0 静默覆盖升级真机验证（current 文件属性 1.1.0、卸载项 DisplayVersion 1.1.0、审计历史与哈希链头升级前后逐字节一致、启动+扫描正常）。过程中修复发布缺陷：csproj 程序集版本未随包版本同步（检查单已补条目）。遗留：SLO 表重新冻结（内存口径异常记录见 performance-baseline.md）、安装/回退/卸载矩阵仅覆盖升级行重验（全矩阵 5/5 为 v1.0.0 记录）。
+
 - 2026-09-11：**文档同步修正**：核对高级模式「系统大件」实现（`SystemToolGuide.cs`）确认关闭休眠（powercfg）与 WinSxS 清理（DISM StartComponentCleanup，不带 /ResetBase）引导**已实现**——Phase 4 评估初版误列为候选，已修正 `docs/phase4-tool-assessment.md`（B1/B2 → 已覆盖，移出 backlog；实施 backlog 修正为 B3 Windows.old → K2/K1 规则扩张）。同步更新 `docs/rules.md`（维护字段）、`docs/rule-governance.md`（误伤口径/目标值/维护标注状态）、`README.md`（v1.0.0 现状）。
 
 - 2026-09-11：**Phase 4 收口审计补全 goals 最后遗留项**：①Phase 2「维护责任/证据更新时间」实施（工单 rule-governance 06）——Rule 增 maintainer/lastEvidenceCheck 可选字段（v1 不升版）、非法日期严格解析 fail-closed、治理报告新增维护标注/超龄统计（>180 天）与 CheckTargets 警告、CLI 输出扩展；真实规则库 101 条回填（基线=治理基线审计日 2026-09-11），governance-report 实测：维护标注 101/101、证据超龄 0。签名渠道重新发布留待下次规则更新窗口。②Phase 1 标题与「工单 05 待执行」过时标注修正为 ✅。完整测试 218/218、Release 0/0。至此 goals.md 各阶段目标项无遗留待办（演进项：验证覆盖率提升、误伤口径深化、推荐准确率口径随遥测边界演进）。
