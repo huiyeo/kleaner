@@ -51,17 +51,17 @@
 
 ### 规则库扩张候选（走既有验证→签名更新流程，非新功能）
 
-#### K1. 系统内存转储 — 候选（system 类规则）
+#### K1. 系统内存转储 — 已实施（2026-09-12，工单 `.scratch/phase4/issues/04-k1-memory-dump.md`）
 
 - 相关性：直接。`C:\Windows\MEMORY.DMP`（可达数百 MB–数 GB）与 `C:\Windows\Minidump\`。
 - 宪法：✅ 调试数据非用户数据；需管理员（requiresElevation 已支持）；进隔离区可还原。
-- 前置：真机验证（转储文件占用/被占用场景）+ safetyNotes ≥20 字符 + 签名清单发布。默认不勾选（未验证不得默认选——验证通过后按治理目标评估是否默认选）。
+- 实施：规则 `kernel-dumps`（`%SystemRoot%\MEMORY.DMP` + `%SystemRoot%\Minidump\**`，ageDays 继承 system=14）。本机核实路径可达性并验证未提权扫描行为（0 命中无异常）；**命中与删除场景本机无转储样本可测，verified 诚实标注「官方文档来源，本机未验证，默认不勾选」**，待有真实转储的机器补验转正。规则库随附（103 条），签名清单 v1.1.0 已本地演练，渠道发布待所有者确认。
 
-#### K2. 传递优化缓存 — 候选（system 类规则）
+#### K2. 传递优化缓存 — 已实施（2026-09-12，工单 `.scratch/phase4/issues/03-k2-delivery-optimization.md`）
 
-- 相关性：直接。Windows 更新 P2P 分发缓存（`C:\Windows\SoftwareDistribution\DeliveryOptimization\...` / DOSVC），与已验证的「Windows 更新下载残留」相邻。
-- 宪法：✅ 同上；官方缓存语义，重建无害。
-- 前置：同 K1 验证流程；注意与现有规则的路径不相交（无重复计费）。
+- 相关性：直接。Windows 更新 P2P 分发缓存（Win11 现行位置 `C:\Windows\ServiceProfiles\NetworkService\...\DeliveryOptimization\Cache`，旧版位置 `C:\Windows\SoftwareDistribution\DeliveryOptimization\Cache`），与已验证的「Windows 更新下载残留」路径不相交。
+- 宪法：✅ 官方缓存语义，重建无害；官方 Delete-DeliveryOptimizationCache / 存储感知 / 磁盘清理为同类对象。
+- 实施：规则 `delivery-optimization-cache`（两位置 `Cache\**`，requiresElevation=true，ageDays 继承 system=14）。本机核实：现行位置未提权 ACL 拒绝访问、旧版位置不存在；未提权扫描 0 命中无异常。**提权可达性与实际清理场景待真机验证窗口，verified 诚实标注「官方文档来源，本机未验证，默认不勾选」**。规则库随附（103 条），签名清单 v1.1.0 已本地演练，渠道发布待所有者确认。
 
 ### 排除（宪法/定位冲突，记录依据防止后续重复提案）
 
@@ -94,6 +94,6 @@
 
 ## Phase 4 结论
 
-- **进入实施 backlog（按序）**：~~B3（Windows.old 只读检测+引导官方）~~ ✅ 已实施收口（2026-09-11）→ K2/K1（规则扩张，走签名更新流程，已拆票 `.scratch/phase4/issues/03/04`）。B1/B2 复核后确认为已覆盖，移出 backlog。
+- **进入实施 backlog（按序）**：~~B3（Windows.old 只读检测+引导官方）~~ ✅ 已实施收口（2026-09-11）→ ~~K2/K1（规则扩张）~~ ✅ 已实施入库（2026-09-12，工单 03/04；verified 诚实未验证、默认不勾选；本地签名演练 v1.1.0 完成，**渠道推送与提权真机验证需所有者输入，两票 blocked**）。B1/B2 复核后确认为已覆盖，移出 backlog。
 - 实施前置：每项独立拆票、TDD、真机验收（引导类验证文案与检测准确性；规则类走验证→签名→治理指标流程；签名渠道发布需所有者私钥窗口）。
 - 本阶段（Phase 4）完成定义满足：候选盘点、标准对照、结论分级、backlog 排序均已成文。

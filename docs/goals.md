@@ -108,7 +108,7 @@ Phase 0 发布阻断指标：**零未授权清理、零未审计文件状态变�
 仅评估不会破坏普通用户主流程、安全宪法和性能预算的能力。任何新功能先证明与“安全释放空间”的核心任务直接相关。
 
 - 评估结论（2026-09-11 文档同步时复核修正）：候选 3（B3 Windows.old 只读检测+引导官方；K1 系统内存转储、K2 传递优化缓存走验证→签名→治理流程）；**B1 休眠文件与 B2 WinSxS 引导复核确认已实现于高级模式「系统大件」（初版误列为候选，已移出 backlog）**；排除 9 项（回收站清空、后台自动清理、Cookie、注册表清理等，均附宪法第 8 条依据）；观察 2 项（多盘支持、CompactOS——需所有者定位决策）。
-- 实施 backlog（评估通过，按序独立拆票）：~~B3 Windows.old 检测~~（✅ 2026-09-11 实施收口，工单 02）→ K2/K1 规则扩张（✅ 2026-09-11 已拆票，工单 03/04，签名渠道发布待所有者私钥窗口）。
+- 实施 backlog（评估通过，按序独立拆票）：~~B3 Windows.old 检测~~（✅ 2026-09-11 实施收口，工单 02）→ ~~K2/K1 规则扩张~~（✅ 2026-09-12 实施入库 + 本地签名演练 v1.1.0，工单 03/04 blocked：提权真机验证与渠道推送需所有者输入）。
 
 ## 自主推进规则
 
@@ -130,6 +130,8 @@ Phase 0 发布阻断指标：**零未授权清理、零未审计文件状态变�
 - 真机、视觉或发布要求有对应验收记录，不能由编译通过代替。
 
 ## 进度记录
+
+- 2026-09-12：**K1/K2 规则扩张实施入库**（工单 03/04，B3 后最后两项 Phase 4 backlog）：新增 `kernel-dumps`（`%SystemRoot%\MEMORY.DMP` + `%SystemRoot%\Minidump\**`）与 `delivery-optimization-cache`（Win11 现行 DOSVC Cache + 旧版位置，仅 Cache 子目录），均 system 类、requiresElevation=true、ageDays 继承 14、维护字段齐备，与相邻规则（windows-update-download / crash-dumps）路径无重叠。真机侦察：MEMORY.DMP 不存在、Minidump 空目录；DOSVC 现行位置未提权 ACL 拒绝访问（引擎静默跳过）、旧版位置不存在——**两规则 verified 诚实标注「官方文档来源，本机未验证，默认不勾选」**，命中/删除/提权场景留待真机窗口补验转正。验证证据：完整测试 230/230（随库规则测试覆盖 103 条）、governance-report 证据覆盖率 103/103、维护标注 103/103、超龄 0、默认勾选数 24 不变、全库扫描 103 条零错误。**本地签名演练通过**：v1.1.0 清单（含 maintainer 回填 + K1/K2，共 103 条）Ed25519 签名经公钥独立验证、SHA512 与副本一致——产物在 `releases/`（gitignore）。剩余两关需所有者输入：①提权 UAC 会话下的真机验证窗口；②确认后把 `releases/rules-manifest.json` + `rules.v1.json` 推送 rules-channel（对外发布）。工单 03/04 标记 blocked。
 
 - 2026-09-11：**所有者决策四项落定 + B3 实施收口**：①ADR 0004 转 accepted（适配器选型追认 OpenAI 兼容回环/默认 Ollama 端点；AI 解释界面追认扫描结果页内嵌形态），实现保持现状，真实本地模型端到端验收仍待用户环境。②Phase 4 backlog 正式拆票：02 B3（即做）/03 K2 传递优化缓存/04 K1 系统内存转储（后两者 ready-for-agent，签名渠道发布需所有者私钥窗口）。③B3 Windows.old 只读检测+引导官方实施：`Kleaner.SpecialOps/WindowsOldInspector`（零遍历存在性检测 + 有界流式占用测量，reparse 纪律与引擎一致，上限 20 万文件截断显式提示）+ 高级模式「Windows.old」Tab（加载即检测、测量显式触发后台执行、官方入口仅打开 ms-settings 存储页与 cleanmgr、回滚期限以官方界面为准）；测试 230/230（新增 6 项回归）。真机 UIA 走查通过（全程只读）：本机无 Windows.old，未检测到状态、按钮禁用逻辑、警示文案、重新检测均正确，主流程零影响。④真实规则库扫描峰值内存（245–295MB，超出 200MB SLO 但该 SLO 范围为合成数据集）立观察票 `.scratch/scan-memory-observation`（wontfix，附升级条件）。
 
