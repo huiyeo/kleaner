@@ -146,5 +146,15 @@
   "HistColBytes": "大小",
   "HistColResult": "结果",
   "BtnOpenFile": "打开记录文件",
-  "HistoryEmpty": "暂无操作记录"
+  "HistoryEmpty": "暂无操作记录",
+  "TabWindowsOld": "Windows.old",
+  "WinOldDetectBtn": "重新检测",
+  "WinOldNone": "未检测到 Windows.old（系统盘根目录没有旧系统安装残留）。",
+  "WinOldFoundPath": "检测到旧系统安装残留：{0}",
+  "WinOldMeasureBtn": "测量占用",
+  "WinOldSizeResult": "占用约 {0}（{1} 个文件）。",
+  "WinOldSizeTruncated": "已达到测量上限，实际占用更大。",
+  "WinOldWarn": "Windows.old 保存着旧系统，删除后将无法回退到之前的 Windows 版本；可回退期限以系统官方界面的提示为准。Kleaner 不提供删除，请使用下方官方入口自行操作。",
+  "WinOldOpenSettings": "打开「设置 > 存储」",
+  "WinOldOpenCleanmgr": "打开磁盘清理（cleanmgr）"
 }

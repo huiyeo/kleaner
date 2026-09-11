@@ -50,6 +50,27 @@
                 <ItemsControl x:Name="BigItemsList" />
             </ScrollViewer>
         </TabItem>
+        <TabItem x:Name="WindowsOldTab" Header="WindowsOld">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Button x:Name="WinOldDetectButton" Click="OnDetectWindowsOld" Style="{StaticResource KleanerPrimaryButton}" />
+                    </StackPanel>
+                    <Border Style="{StaticResource KleanerCard}" Padding="16">
+                        <StackPanel>
+                            <TextBlock x:Name="WinOldStatusText" FontWeight="Bold" TextWrapping="Wrap" />
+                            <TextBlock x:Name="WinOldSizeText" Foreground="#666" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            <TextBlock x:Name="WinOldWarnText" Foreground="#8A6D3B" TextWrapping="Wrap" Margin="0,8,0,0" />
+                            <StackPanel x:Name="WinOldActions" Orientation="Horizontal" Margin="0,12,0,0">
+                                <Button x:Name="WinOldMeasureButton" Click="OnMeasureWindowsOld" Style="{StaticResource KleanerSecondaryButton}" />
+                                <Button x:Name="WinOldSettingsButton" Click="OnOpenStorageSettings" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" />
+                                <Button x:Name="WinOldCleanmgrButton" Click="OnOpenDiskCleanup" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
         <TabItem x:Name="RegistryTab" Header="Registry">
             <DockPanel Margin="8">
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
