@@ -90,15 +90,13 @@ public sealed class QuarantineManifestTests : IDisposable
     private void CreateJunction(string path, string target)
     {
         // 所有链接及目标均由本测试的 GUID 临时目录构造；退出时先移除链接本身。
-        var start = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"))
+        // junction 创建不需要特权；选 cmd 而非 powershell，是后者 5.1 冷启动在 CI runner 上会超过下方超时阈值。
+        var start = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"))
         {
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            Arguments = $"/d /c mklink /J \"{path}\" \"{target}\""
         };
-        start.ArgumentList.Add("-NoProfile");
-        start.ArgumentList.Add("-NonInteractive");
-        start.ArgumentList.Add("-Command");
-        start.ArgumentList.Add($"$ErrorActionPreference = 'Stop'; New-Item -ItemType Junction -Path '{path.Replace("'", "''")}' -Target '{target.Replace("'", "''")}' | Out-Null");
         using var process = Process.Start(start)!;
         if (!process.WaitForExit(10000))
         {
