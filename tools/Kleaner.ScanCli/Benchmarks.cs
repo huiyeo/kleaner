@@ -74,7 +74,10 @@ public static class Benchmarks
             {
                 var set = RuleSetLoader.LoadFromFile(rulesPath ?? BundledRulesPath());
                 RuleSetLoader.Validate(set);
-                var report = new ScanEngine(root).Scan(set);
+                // --rules 提供的是数据集作用域规则，root 不能再作为隔离区排除根（否则数据集候选全被排除）；
+                // 回退捆绑真实规则库时保留旧语义：root 用于防止 user-temp 类规则把合成数据集扫进结果
+                var quarantine = rulesPath is null ? root : null;
+                var report = new ScanEngine(quarantine).Scan(set);
                 clock.Stop();
                 if (report.Errors.Count > 0)
                     throw new InvalidOperationException("扫描出现错误，测量无效：" + report.Errors[0]);
@@ -122,7 +125,9 @@ public static class Benchmarks
                 {
                     try
                     {
-                        return new ScanEngine(root).Scan(set, source.Token, progress);
+                        // 排除根语义与 rules-scan 一致：数据集作用域规则下 root 不是排除根
+                        var quarantine = rulesPath is null ? root : null;
+                        return new ScanEngine(quarantine).Scan(set, source.Token, progress);
                     }
                     catch (OperationCanceledException)
                     {

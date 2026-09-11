@@ -169,6 +169,7 @@ try
                 Branching: int.TryParse(Opt("--branching"), out var br) ? br : 4,
                 DuplicateGroups: int.TryParse(Opt("--dup-groups"), out var dg) ? dg : 20);
             var report = SyntheticDataset.Generate(root, options);
+            var benchRulesPath = SyntheticBenchRules.Write(root, options, report);
             var manifest = new
             {
                 kind = "kleaner-synthetic-dataset",
@@ -179,6 +180,7 @@ try
                 options.DuplicateGroups,
                 report.TotalBytes,
                 report.DirectoryCount,
+                benchRulesPath,
                 generatedUtc = DateTime.UtcNow,
             };
             File.WriteAllText(Path.Combine(root, "dataset.json"),
@@ -206,7 +208,10 @@ try
             {
                 if (!Benchmarks.AllScenarios.Contains(scenario))
                     return Fail(json, new[] { $"未知场景：{scenario}（可用：{string.Join(",", Benchmarks.AllScenarios)}）" });
-                var psi = new ProcessStartInfo(self, $"bench-single {scenario} --root \"{root}\" --iterations {iterations}")
+                var psiArgs = $"bench-single {scenario} --root \"{root}\" --iterations {iterations}";
+                if (rulesOverride is not null)
+                    psiArgs += $" --rules \"{rulesOverride}\"";
+                var psi = new ProcessStartInfo(self, psiArgs)
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -251,6 +256,8 @@ try
                     timestampUtc = DateTime.UtcNow,
                 },
                 dataset,
+                // 记录规则来源：传 --rules 即合成数据集作用域；缺失表示回退捆绑真实规则库（扫真实目录，跨日不可比）
+                rulesPath = rulesOverride,
                 scenarios = scenariosOut,
             };
             var text = JsonSerializer.Serialize(payload, JsonIndented());

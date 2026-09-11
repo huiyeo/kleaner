@@ -24,7 +24,9 @@ if ($LASTEXITCODE -ne 0) { throw "数据集生成失败" }
 
 Write-Host "== 运行基准（每场景 $Iterations 轮） =="
 $benchResult = Join-Path $root "bench-result.json"
-& $cli bench --root $root --iterations $Iterations --out $benchResult | Out-Null
+$benchRules = Join-Path $root "bench-rules.json"
+# --rules 把 rules-scan / cancel 锚定在合成数据集上；不传则回退真实规则库扫描真实目录（跨日不可比）
+& $cli bench --root $root --rules $benchRules --iterations $Iterations --out $benchResult | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "基准运行失败" }
 
 Write-Host "== 冷启动测量（$ColdStarts 次，口径：进程启动到主窗口句柄出现） =="
@@ -71,6 +73,7 @@ $environment = [ordered]@{
 $summary = [ordered]@{
     environment  = $environment
     dataset      = $bench.dataset
+    rulesPath    = $bench.rulesPath
     scenarios    = $bench.scenarios
     coldStartMs  = $coldStartMs
     coldStartP95 = $coldP95
@@ -79,7 +82,8 @@ $summary = [ordered]@{
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMdd-HHmmss")
 $outFile = Join-Path $OutDir "performance-run-$stamp.json"
-$summary | ConvertTo-Json -Depth 6 | Set-Content $outFile -Encoding UTF8
+# UTF-8 无 BOM：PS 5.1 的 Set-Content -Encoding UTF8 会写 BOM，干扰部分 JSON 消费方
+[IO.File]::WriteAllText($outFile, ($summary | ConvertTo-Json -Depth 6), (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host ""
 Write-Host "== 摘要 =="
