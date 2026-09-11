@@ -19,6 +19,7 @@ public partial class SettingsWindow : Window
 
         var settings = AppSettings.Load();
         QuarantinePathBox.Text = settings.QuarantineRoot ?? string.Empty;
+        AiEnabledCheck.IsChecked = settings.AiEnabled;
         // 官方源是内嵌常量，用户不可输入 URL 或摘要——那是工单 12 移除的不可信更新途径。
         RuleUpdateSourceText.Text = RuleTrust.OfficialManifestUrl;
         RuleUpdateStateText.Text = RuleUpdateService.DescribeLocalState();
@@ -55,6 +56,7 @@ public partial class SettingsWindow : Window
     {
         var settings = AppSettings.Load();
         settings.QuarantineRoot = string.IsNullOrWhiteSpace(QuarantinePathBox.Text) ? null : QuarantinePathBox.Text.Trim();
+        settings.AiEnabled = AiEnabledCheck.IsChecked == true;
         settings.Save();
         MessageBox.Show(S.Get("Saved"), Title);
         Close();

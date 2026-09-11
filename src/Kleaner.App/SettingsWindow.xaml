@@ -9,6 +9,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -17,12 +19,16 @@
             <Button x:Name="BrowseButton" Click="OnBrowse" DockPanel.Dock="Right" Style="{StaticResource KleanerSecondaryButton}" Margin="8,0,0,0" />
             <TextBox x:Name="QuarantinePathBox" Height="34" VerticalContentAlignment="Center" />
         </DockPanel>
-        <TextBlock x:Name="RuleUpdateLabel" Grid.Row="2" Margin="0,0,0,4" FontWeight="SemiBold" />
-        <StackPanel Grid.Row="3" Margin="0,0,0,10">
+        <StackPanel Grid.Row="2" Margin="0,0,0,14">
+            <CheckBox x:Name="AiEnabledCheck" Content="启用 AI 解释（本机模型，默认关闭）" />
+            <TextBlock Text="仅连接本机回环地址上的本地模型服务（如 Ollama）；扫描数据的脱敏聚合（分类/文件数/大小）将发送给它；AI 解释不构成安全保证。" FontSize="11" Foreground="#747682" TextWrapping="Wrap" Margin="0,4,0,0" />
+        </StackPanel>
+        <TextBlock x:Name="RuleUpdateLabel" Grid.Row="3" Margin="0,0,0,4" FontWeight="SemiBold" />
+        <StackPanel Grid.Row="4" Margin="0,0,0,10">
             <TextBlock x:Name="RuleUpdateSourceText" Foreground="#666" TextTrimming="CharacterEllipsis" Margin="0,0,0,6" />
             <TextBlock x:Name="RuleUpdateStateText" Foreground="#666" />
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Grid.Row="5" Margin="0,12,0,0" HorizontalAlignment="Right">
+        <StackPanel Orientation="Horizontal" Grid.Row="6" Margin="0,12,0,0" HorizontalAlignment="Right">
             <Button x:Name="CheckUpdateButton" Click="OnCheckUpdate" Style="{StaticResource KleanerSecondaryButton}" Margin="0,0,8,0" />
             <Button x:Name="SaveButton" Click="OnSave" Style="{StaticResource KleanerPrimaryButton}" />
         </StackPanel>

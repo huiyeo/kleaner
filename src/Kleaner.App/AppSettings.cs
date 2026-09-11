@@ -8,6 +8,10 @@ public sealed class AppSettings
 {
     public string? QuarantineRoot { get; set; }
 
+    // Phase 3 / ADR 0004：AI 解释默认关闭，用户显式启用；端点留空用 ADR 默认（本机 Ollama）。
+    public bool AiEnabled { get; set; }
+    public string? AiEndpoint { get; set; }
+
     // 规则更新的 URL 与摘要不再属于设置：官方源与公钥内嵌于 RuleTrust（工单 12）。
     // 旧 settings.json 里的 RuleUpdateUrl/RuleUpdateSha512 字段在加载时被静默忽略。
 

@@ -42,6 +42,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
         SettingsText = S.Get("BtnSettings");
         CancelText = S.Get("BtnCancel");
         SafetyHeader = S.Get("SafetyNotesHeader");
+        AiExplainButtonText = S.Get("AiExplainButton");
+        AiDisclaimerText = S.Get("AiDisclaimer");
+        AiVisible = AppSettings.Load().AiEnabled;
     }
 
     /// <summary>请求 View 打开指定子窗口（View 负责设置 Owner 并 ShowDialog）。</summary>
@@ -54,6 +57,18 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private string scanText = string.Empty;
+
+    [ObservableProperty]
+    private bool aiVisible;
+
+    [ObservableProperty]
+    private string aiExplainButtonText = string.Empty;
+
+    [ObservableProperty]
+    private string aiDisclaimerText = string.Empty;
+
+    [ObservableProperty]
+    private string aiOutputText = string.Empty;
 
     [ObservableProperty]
     private string cleanText = string.Empty;

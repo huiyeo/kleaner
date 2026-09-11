@@ -1,4 +1,5 @@
 using System.Windows;
+using Kleaner.App.Services;
 
 namespace Kleaner.App;
 
@@ -14,7 +15,16 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
         LoadStrings();
         _viewModel.OpenWindowRequested += OpenWindow;
-        Loaded += (_, _) => _viewModel.LoadRules();
+        Loaded += (_, _) =>
+        {
+            _viewModel.LoadRules();
+            // AI 解释默认关闭：设置启用后才显示入口（ADR 0004 可选解释层）。
+            if (AppSettings.Load().AiEnabled)
+            {
+                AiSection.Visibility = Visibility.Visible;
+                AiExplainButton.Visibility = Visibility.Visible;
+            }
+        };
     }
 
     private void LoadStrings()
@@ -44,6 +54,42 @@ public partial class MainWindow : Window
             return;
         window.Owner = this;
         window.ShowDialog();
+    }
+
+    private async void OnAiExplain(object sender, RoutedEventArgs e)
+    {
+        var selected = _viewModel.SelectedRow;
+        if (selected is null)
+        {
+            AiOutputText.Text = S.Get("AiNoSelection");
+            AiOutputText.Visibility = Visibility.Visible;
+            return;
+        }
+        var settings = AppSettings.Load();
+        var endpoint = string.IsNullOrWhiteSpace(settings.AiEndpoint)
+            ? AiExplainService.DefaultEndpoint
+            : settings.AiEndpoint;
+        AiExplainButton.IsEnabled = false;
+        AiOutputText.Text = S.Get("AiPending");
+        AiOutputText.Visibility = Visibility.Visible;
+        try
+        {
+            var buckets = new[]
+            {
+                new AiExplainService.Bucket(selected.CategoryDisplay, selected.FileCount, selected.Result?.TotalBytes ?? 0),
+            };
+            using var http = new System.Net.Http.HttpClient();
+            var service = new AiExplainService(http, endpoint);
+            var result = await service.ExplainAsync(buckets);
+            // 注入降权：疑似提示注入时加显式前缀；输出仅为展示文本，永不进清理链路。
+            AiOutputText.Text = result.Ok
+                ? (result.Suspicious ? S.Get("AiSuspiciousPrefix") + result.Text : result.Text)
+                : result.Error;
+        }
+        finally
+        {
+            AiExplainButton.IsEnabled = true;
+        }
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) =>
