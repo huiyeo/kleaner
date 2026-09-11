@@ -131,6 +131,8 @@ Phase 0 发布阻断指标：**零未授权清理、零未审计文件状态变�
 
 ## 进度记录
 
+- 2026-09-11：**SLO 重新冻结完成 + 内存口径异常定位**：bench 的 rules-scan / cancel 场景此前回退捆绑真实规则库**未提权扫描真实用户目录**（`--root` 实为隔离区排除根，数据集从未被这两个场景扫描），「合成数据集口径」标注自 09-06 起不成立——09-08 记录 59.8MB/2.7s 与 09-11 记录 252.6/295.2MB 是不同文件系统状态下的读数，不可比（受控复现：旧引擎今日 245.1MB/89–116s，与 09-11 真机 97.6s 互证；差分证据：数据集绑定场景两天峰值内存稳定）。修正：`gen-dataset` 生成数据集作用域规则夹具 `bench-rules.json`（`SyntheticBenchRules`，覆盖 GlobScanner 全分支）、bench 链路透传 `--rules`、数据集作用域下数据集根不再当排除根、结果 JSON 自描述 `rulesPath`。重冻结：优化后引擎两次独立同参数复跑（`performance-run-20260911-145913/150719.json`），峰值内存逐场景偏差 ≤0.4%、时延 p95 偏差 ≤6%，SLO 表按数据集作用域口径重新冻结（rules-scan p95 95.6ms、峰值内存最大 51.0MB、冷启动热 p95 1.12s）；真实规则库真机口径（~2.5s / 3275 文件 / 611.5MB，峰值工作集 245–295MB）以背景数据点保留在 performance-baseline.md，不进冻结表。完整测试 224/224（新增夹具回归 3 项）、Release 0 警告 0 错误。
+
 - 2026-09-11：**v1.1.0 发布并完成本机升级**：扫描引擎单趟枚举（真机全规则扫描 97.6s → 2.5s，逐规则结果一致）+ 清理计划构建/隔离区操作移出 UI 线程（修复真机 AppHang 两次，事件日志佐证）+ 隔离区窗口清单异常兜底；发布前置 221/221、Release 0/0，CI 绿；GitHub Release 四附件 SHA512 与发布说明一致；本机 1.0.0→1.1.0 静默覆盖升级真机验证（current 文件属性 1.1.0、卸载项 DisplayVersion 1.1.0、审计历史与哈希链头升级前后逐字节一致、启动+扫描正常）。过程中修复发布缺陷：csproj 程序集版本未随包版本同步（检查单已补条目）。遗留：SLO 表重新冻结（内存口径异常记录见 performance-baseline.md）、安装/回退/卸载矩阵仅覆盖升级行重验（全矩阵 5/5 为 v1.0.0 记录）。
 
 - 2026-09-11：**文档同步修正**：核对高级模式「系统大件」实现（`SystemToolGuide.cs`）确认关闭休眠（powercfg）与 WinSxS 清理（DISM StartComponentCleanup，不带 /ResetBase）引导**已实现**——Phase 4 评估初版误列为候选，已修正 `docs/phase4-tool-assessment.md`（B1/B2 → 已覆盖，移出 backlog；实施 backlog 修正为 B3 Windows.old → K2/K1 规则扩张）。同步更新 `docs/rules.md`（维护字段）、`docs/rule-governance.md`（误伤口径/目标值/维护标注状态）、`README.md`（v1.0.0 现状）。
