@@ -1,7 +1,7 @@
 {
-    "version":  "1.0.0",
-    "publishedUtc":  "2026-09-08T12:26:50Z",
+    "version":  "1.1.0",
+    "publishedUtc":  "2026-09-11T16:25:58Z",
     "minAppVersion":  "0.2.4",
-    "rulesSha512":  "63e8e72e85ad556f5bff8c1718be40e2fa3a57834b7c4915082a412388f004b0633fa90195be30ebdaa098ca3531834cd870813ec1b7d3d1c0e6751d8bb552ae",
-    "signature":  "QH+F1FE35+6Z0CnufBxvXqG/ogAUjZFddAcIIYFiGr6UlQr84Wd2o5Ad8fAw8lV5BF4Fqnv4h3j/eeO97yLhCg=="
+    "rulesSha512":  "58916df6c6dc7744053618bceb93df25398f2032a09ec48784a10d010519181a4ddc86d70e8bada01bc34f0e967b3c3e01e0d239522e2169167fa7d83bdae8c7",
+    "signature":  "Nc65uUZ9Acc9WSr46KrjNY4beLX0+mGHDG4Mob/c6HmG8uX5btxz+1B4E9DHu+b0qIiIj0EDPWSnd5KS2prSCA=="
 }
