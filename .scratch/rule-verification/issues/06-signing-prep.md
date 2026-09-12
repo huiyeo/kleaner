@@ -4,7 +4,7 @@
 
 **Blocked by:** 03（决策包）+ 所有者对 D1/D2/D4 的裁决。
 
-**Status:** ready-for-agent（实施等待裁决，物料脚本化可先行）
+**Status:** complete（其目标已由工单 07 的流程提前实现：v1.2.0 已签发并发布；本票的「物料脚本化」部分由 sign-rules.ps1 的 LF 归一化加固承接）
 
 **边界：** 未获 D3 确认不推送 rules-channel；签名私钥使用遵循 `rules-signing-workflow`。
 
