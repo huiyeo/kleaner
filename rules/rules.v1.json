@@ -24,7 +24,7 @@
    "safetyDoc": "docs/safety-notes.md#user-temp",
    "verified": "本机实测 2026-08-29（扫描命中 14 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "chrome-http-cache",
@@ -56,7 +56,7 @@
    "safetyDoc": "docs/safety-notes.md#chrome-http-cache",
    "verified": "本机实测 2026-08-29（扫描命中 1968 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "edge-http-cache",
@@ -88,7 +88,7 @@
    "safetyDoc": "docs/safety-notes.md#edge-http-cache",
    "verified": "本机实测 2026-08-29（扫描命中 49 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "npm-cache",
@@ -104,7 +104,7 @@
    "safetyDoc": "docs/safety-notes.md#npm-cache",
    "verified": "本机实测 2026-08-29（扫描命中 5697 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "pip-cache",
@@ -119,7 +119,7 @@
    "safetyDoc": "docs/safety-notes.md#pip-cache",
    "verified": "本机实测 2026-08-29（扫描命中 1022 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "kimi-desktop-updater",
@@ -136,7 +136,7 @@
    "safetyDoc": "docs/safety-notes.md#kimi-desktop-updater",
    "verified": "本机实测 2026-08-29（扫描命中 1 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "workbuddy-desktop-updater",
@@ -153,7 +153,7 @@
    "safetyDoc": "docs/safety-notes.md#workbuddy-desktop-updater",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "qoder-updater",
@@ -170,7 +170,7 @@
    "safetyDoc": "docs/safety-notes.md#qoder-updater",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "zcode-desktop-updater",
@@ -187,7 +187,7 @@
    "safetyDoc": "docs/safety-notes.md#zcode-desktop-updater",
    "verified": "本机实测 2026-08-29（扫描命中 1 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "quark-updater",
@@ -204,7 +204,7 @@
    "safetyDoc": "docs/safety-notes.md#quark-updater",
    "verified": "本机实测 2026-08-29（扫描命中 1 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "windows-temp",
@@ -217,9 +217,9 @@
    "requiresElevation": true,
    "safetyNotes": "Windows 系统级临时目录，官方磁盘清理/存储感知同样清理此位置。仅清理 14 天未修改的文件；需要管理员权限，未提权时不扫描。",
    "safetyDoc": "docs/safety-notes.md#windows-temp",
-   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "verified": "本机实测 2026-09-12（真实清理演练：35 项移入隔离区、1 项被占用正确跳过）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "windows-update-download",
@@ -234,7 +234,7 @@
    "safetyDoc": "docs/safety-notes.md#windows-update-download",
    "verified": "本机实测 2026-08-29（扫描命中 1 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "uv-cache",
@@ -249,7 +249,7 @@
    "safetyDoc": "docs/safety-notes.md#uv-cache",
    "verified": "本机实测 2026-08-29（扫描命中 13088 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "playwright-browsers",
@@ -269,7 +269,7 @@
    "safetyDoc": "docs/safety-notes.md#playwright-browsers",
    "verified": "本机实测 2026-08-29（扫描命中 310 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "cargo-registry",
@@ -286,7 +286,7 @@
    "safetyDoc": "docs/safety-notes.md#cargo-registry",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "go-build-cache",
@@ -301,7 +301,7 @@
    "safetyDoc": "docs/safety-notes.md#go-build-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "gradle-caches",
@@ -319,7 +319,7 @@
    "safetyDoc": "docs/safety-notes.md#gradle-caches",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "maven-repository",
@@ -334,7 +334,7 @@
    "safetyDoc": "docs/safety-notes.md#maven-repository",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "crash-dumps",
@@ -350,7 +350,7 @@
    "safetyDoc": "docs/safety-notes.md#crash-dumps",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "wer-reports",
@@ -368,9 +368,9 @@
    "requiresElevation": true,
    "safetyNotes": "Windows 错误报告（WER）待上报与已归档的报告队列，微软官方磁盘清理的「系统错误内存转储文件/报告」同类对象。删除不影响系统运行，仅丢失向微软反馈历史问题的材料。",
    "safetyDoc": "docs/safety-notes.md#wer-reports",
-   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "verified": "本机实测 2026-09-12（真实清理演练：16 项移入隔离区可还原）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "ai-huggingface-xet-cache",
@@ -388,7 +388,7 @@
    "safetyDoc": "docs/safety-notes.md#ai-huggingface-xet-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-adobe-media-cache",
@@ -405,7 +405,7 @@
    "safetyDoc": "docs/safety-notes.md#app-adobe-media-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-battlenet-cache",
@@ -431,7 +431,7 @@
    "safetyDoc": "docs/safety-notes.md#app-battlenet-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-chatgpt-cache",
@@ -474,7 +474,7 @@
    "safetyDoc": "docs/safety-notes.md#app-chatgpt-cache",
    "verified": "本机实测 2026-08-29（扫描命中 549 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-discord-cache",
@@ -500,7 +500,7 @@
    "safetyDoc": "docs/safety-notes.md#app-discord-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-douyin-live-updater-cache",
@@ -518,7 +518,7 @@
    "safetyDoc": "docs/safety-notes.md#app-douyin-live-updater-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-dropbox-rendering-cache",
@@ -550,7 +550,7 @@
    "safetyDoc": "docs/safety-notes.md#app-dropbox-rendering-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-ea-rendering-cache",
@@ -575,7 +575,7 @@
    "safetyDoc": "docs/safety-notes.md#app-ea-rendering-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-cache-slack",
@@ -612,7 +612,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-slack",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-cache-microsoft-teams",
@@ -649,7 +649,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-microsoft-teams",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-cache-figma",
@@ -686,7 +686,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-figma",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-cache-obsidian",
@@ -723,7 +723,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-obsidian",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-cache-insomnia",
@@ -760,7 +760,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-insomnia",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-cache-claude",
@@ -797,7 +797,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-claude",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-cache-github-desktop",
@@ -834,7 +834,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-cache-github-desktop",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-electron-updater-cache",
@@ -856,7 +856,7 @@
    "safetyDoc": "docs/safety-notes.md#app-electron-updater-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-flashvoice-cache",
@@ -889,7 +889,7 @@
    "safetyDoc": "docs/safety-notes.md#app-flashvoice-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-game-launcher-cache",
@@ -910,7 +910,7 @@
    "safetyDoc": "docs/safety-notes.md#app-game-launcher-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-gitmind-rendering-cache",
@@ -948,7 +948,7 @@
    "safetyDoc": "docs/safety-notes.md#app-gitmind-rendering-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-netease-cloud-music-cache",
@@ -974,7 +974,7 @@
    "safetyDoc": "docs/safety-notes.md#app-netease-cloud-music-cache",
    "verified": "本机实测 2026-08-29（扫描命中 64 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-notion-cache",
@@ -1009,7 +1009,7 @@
    "safetyDoc": "docs/safety-notes.md#app-notion-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-obs-diagnostic-cache",
@@ -1031,7 +1031,7 @@
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "ageDays": 14,
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-postman-cache",
@@ -1065,7 +1065,7 @@
    "safetyDoc": "docs/safety-notes.md#app-postman-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-qq-rendering-cache",
@@ -1100,7 +1100,7 @@
    "safetyDoc": "docs/safety-notes.md#app-qq-rendering-cache",
    "verified": "本机实测 2026-08-29（扫描命中 106 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-signal-cache",
@@ -1126,7 +1126,7 @@
    "safetyDoc": "docs/safety-notes.md#app-signal-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-sogou-input-cache",
@@ -1143,7 +1143,7 @@
    "safetyDoc": "docs/safety-notes.md#app-sogou-input-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-spotify-rendering-cache",
@@ -1173,7 +1173,7 @@
    "safetyDoc": "docs/safety-notes.md#app-spotify-rendering-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-steam-rendering-cache",
@@ -1197,7 +1197,7 @@
    "safetyDoc": "docs/safety-notes.md#app-steam-rendering-cache",
    "verified": "本机实测 2026-08-29（扫描命中 1375 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-teams-msix-cache",
@@ -1224,7 +1224,7 @@
    "safetyDoc": "docs/safety-notes.md#app-teams-msix-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-telegram-temporary-cache",
@@ -1249,7 +1249,7 @@
    "safetyDoc": "docs/safety-notes.md#app-telegram-temporary-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-tencent-meeting-cache",
@@ -1279,7 +1279,7 @@
    "safetyDoc": "docs/safety-notes.md#app-tencent-meeting-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-vlc-cache",
@@ -1312,7 +1312,7 @@
    "safetyDoc": "docs/safety-notes.md#app-vlc-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-wechat-diagnostic-cache",
@@ -1335,7 +1335,7 @@
    "safetyDoc": "docs/safety-notes.md#app-wechat-diagnostic-cache",
    "verified": "本机实测 2026-08-29（扫描命中 13 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-wechat-rendering-cache",
@@ -1370,7 +1370,7 @@
    "safetyDoc": "docs/safety-notes.md#app-wechat-rendering-cache",
    "verified": "本机实测 2026-08-29（扫描命中 676 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-wecom-diagnostic-cache",
@@ -1386,7 +1386,7 @@
    "safetyDoc": "docs/safety-notes.md#app-wecom-diagnostic-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-whatsapp-rendering-cache",
@@ -1418,7 +1418,7 @@
    "safetyDoc": "docs/safety-notes.md#app-whatsapp-rendering-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-wps-cache",
@@ -1434,7 +1434,7 @@
    "safetyDoc": "docs/safety-notes.md#app-wps-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-wps-diagnostic-cache",
@@ -1451,7 +1451,7 @@
    "safetyDoc": "docs/safety-notes.md#app-wps-diagnostic-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-wps-rendering-cache",
@@ -1468,7 +1468,7 @@
    "safetyDoc": "docs/safety-notes.md#app-wps-rendering-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-zenaion-cache",
@@ -1498,7 +1498,7 @@
    "safetyDoc": "docs/safety-notes.md#app-zenaion-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "app-zoom-diagnostic-cache",
@@ -1515,7 +1515,7 @@
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "ageDays": 14,
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-2345-cache",
@@ -1539,7 +1539,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-2345-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-360-safe-cache",
@@ -1562,7 +1562,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-360-safe-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-360-speed-cache",
@@ -1585,7 +1585,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-360-speed-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-arc-cache",
@@ -1613,7 +1613,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-arc-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-brave-cache",
@@ -1644,7 +1644,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-brave-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-chromium-cache",
@@ -1675,7 +1675,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-chromium-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-duckduckgo-cache",
@@ -1708,7 +1708,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-duckduckgo-cache",
    "verified": "本机实测 2026-08-29（扫描命中 158 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-firefox-cache",
@@ -1726,7 +1726,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-firefox-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-gecko-family-cache",
@@ -1753,7 +1753,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-gecko-family-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-opera-cache",
@@ -1786,7 +1786,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-opera-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-sogou-cache",
@@ -1808,7 +1808,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-sogou-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-uc-cache",
@@ -1836,7 +1836,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-uc-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "browser-vivaldi-cache",
@@ -1867,7 +1867,7 @@
    "safetyDoc": "docs/safety-notes.md#browser-vivaldi-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "container-docker-desktop-rendering-cache",
@@ -1891,7 +1891,7 @@
    "safetyDoc": "docs/safety-notes.md#container-docker-desktop-rendering-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-android-cache",
@@ -1909,7 +1909,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-android-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-android-user-cache",
@@ -1924,9 +1924,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://developer.android.com/studio/command-line/variables仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-android-user-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "verified": "本机实测 2026-09-12（真实清理演练：42 项移入隔离区可还原）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-build-accelerator-cache",
@@ -1943,7 +1943,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-build-accelerator-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-ccache-cache",
@@ -1962,7 +1962,7 @@
     "%APPDATA%\\ccache\\ccache.conf"
    ],
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-copilot-cli-cache",
@@ -1978,7 +1978,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-copilot-cli-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-dart-analysis-cache",
@@ -1994,7 +1994,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-dart-analysis-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-editor-cache-code",
@@ -2023,7 +2023,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-code",
    "verified": "本机实测 2026-08-29（扫描命中 167 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-editor-cache-cursor",
@@ -2052,7 +2052,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-cursor",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-editor-cache-windsurf",
@@ -2081,7 +2081,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-windsurf",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-editor-cache-vscodium",
@@ -2110,7 +2110,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-editor-cache-vscodium",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-go-module-cache",
@@ -2126,7 +2126,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-go-module-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-hex-cache",
@@ -2142,7 +2142,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-hex-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-jetbrains-cache",
@@ -2167,7 +2167,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-jetbrains-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-jvm-tooling-cache",
@@ -2185,7 +2185,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-jvm-tooling-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-node-tooling-cache",
@@ -2203,7 +2203,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-node-tooling-cache",
    "verified": "本机实测 2026-08-29（扫描命中 1945 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-nuget-cache",
@@ -2222,7 +2222,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-nuget-cache",
    "verified": "本机实测 2026-08-29（扫描命中 1077 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-package-manager-cache",
@@ -2240,7 +2240,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-package-manager-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-pnpm-cache",
@@ -2254,9 +2254,9 @@
    "enabled": true,
    "safetyNotes": "开发工具链的下载/编译缓存，删除后由工具按需重建，不影响已安装的工具本身与项目源码。参考：https://pnpm.io/cli/store仅清理限定目录内容，被占用文件自动跳过并提示。",
    "safetyDoc": "docs/safety-notes.md#dev-pnpm-cache",
-   "verified": "官方文档来源，本机未验证，默认不勾选",
+   "verified": "本机实测 2026-09-12（真实清理演练：2902 项 858.8MB 移入隔离区可还原，pnpm 健康抽查通过）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-python-tooling-cache",
@@ -2274,7 +2274,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-python-tooling-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-sccache-cache",
@@ -2290,7 +2290,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-sccache-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-user-tool-cache",
@@ -2314,7 +2314,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-user-tool-cache",
    "verified": "本机实测 2026-08-29（扫描命中 309 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-visual-studio-cache",
@@ -2334,7 +2334,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-visual-studio-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "dev-yarn-cache",
@@ -2351,7 +2351,7 @@
    "safetyDoc": "docs/safety-notes.md#dev-yarn-cache",
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "system-directx-shader-cache",
@@ -2376,7 +2376,7 @@
    "safetyDoc": "docs/safety-notes.md#system-directx-shader-cache",
    "verified": "本机实测 2026-08-29（扫描命中 75 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "system-stale-partial-downloads",
@@ -2408,7 +2408,7 @@
    "verified": "官方文档来源，本机未验证，默认不勾选",
    "ageDays": 7,
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "system-thumbnail-cache",
@@ -2425,7 +2425,7 @@
    "safetyDoc": "docs/safety-notes.md#system-thumbnail-cache",
    "verified": "本机实测 2026-08-29（扫描命中 13 项）",
    "maintainer": "huiyeo",
-   "lastEvidenceCheck": "2026-09-11"
+   "lastEvidenceCheck": "2026-09-12"
   },
   {
    "id": "kernel-dumps",
