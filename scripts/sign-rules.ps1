@@ -15,7 +15,13 @@ Set-Location (Join-Path $PSScriptRoot "..")
 
 if (-not (Test-Path $KeyPath)) { throw "私钥不存在：$KeyPath" }
 $published = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
-$sha = (Get-FileHash -Algorithm SHA512 $RulesPath).Hash.ToLower()
+
+# 摘要与发布副本一律使用 LF 形式：仓库 blob 与 raw 下载都是 LF，CRLF 工作区直接签名会导致
+# 线上摘要永远对不上（2026-09-12 v1.2.0 首发踩坑重签）。先归一化到临时 LF 文件再参与签名。
+$rulesText = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($RulesPath)).Replace("`r`n", "`n")
+$lfFile = Join-Path ([IO.Path]::GetTempPath()) ("kleaner-rules-lf-" + [guid]::NewGuid().ToString("N") + ".json")
+[IO.File]::WriteAllText($lfFile, $rulesText, [Text.UTF8Encoding]::new($false))
+$sha = (Get-FileHash -Algorithm SHA512 $lfFile).Hash.ToLower()
 
 $canonical = "kleaner-rules-manifest v1`n$Version`n$published`n$MinAppVersion`n$sha"
 $tmp = New-Item -ItemType Directory -Force -Path (Join-Path $env:TEMP ("kleaner-sign-" + [guid]::NewGuid().ToString("N")))
@@ -41,6 +47,7 @@ $outFile = Join-Path $OutDir "rules-manifest.json"
 Write-Host "清单已签名并写入：$outFile"
 Write-Host "  版本 $Version / 最低应用 $MinAppVersion"
 Write-Host "  规则 SHA512：$sha"
-Copy-Item $RulesPath (Join-Path $OutDir "rules.v1.json") -Force
+Copy-Item $lfFile (Join-Path $OutDir "rules.v1.json") -Force
+Remove-Item $lfFile -Force
 Write-Host "发布：将 $outFile 与 $(Join-Path $OutDir 'rules.v1.json') 上传到 rules-channel 分支（见 docs/release-checklist.md）。"
 Remove-Item $tmp.FullName -Recurse -Force
