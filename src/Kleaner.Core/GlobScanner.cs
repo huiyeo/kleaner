@@ -68,23 +68,36 @@ public static class GlobScanner
             yield return file.FullName;
     }
 
-    /// <summary>同 <see cref="EnumerateFiles"/>，但返回枚举条目本身：Length / LastWriteTimeUtc 取自查找数据缓存，调用方无需再补 stat。</summary>
-    public static IEnumerable<FileInfo> EnumerateFileInfos(string pattern)
+    /// <summary>
+    /// 通配符模式的枚举起点（与 <see cref="EnumerateFileInfos"/> 内部一致），供普查等只读探测复用。
+    /// 无通配符（精确路径模式）返回 null；首段含通配符属非法模式，抛 <see cref="FormatException"/>。
+    /// </summary>
+    public static string? TryGetStartDir(string pattern) => Decompose(pattern).StartDir;
+
+    private static (string? StartDir, string[] Segments, int FirstWild) Decompose(string pattern)
     {
         var normalized = Normalize(pattern);
         var segments = normalized.Split('\\', StringSplitOptions.RemoveEmptyEntries);
         var firstWild = Array.FindIndex(segments, s => s.Contains('*'));
         if (firstWild < 0)
+            return (null, segments, -1);
+        if (firstWild == 0)
+            throw new FormatException($"模式必须以环境变量或盘符开头的绝对路径：{pattern}");
+        return (string.Join("\\", segments, 0, firstWild), segments, firstWild);
+    }
+
+    /// <summary>同 <see cref="EnumerateFiles"/>，但返回枚举条目本身：Length / LastWriteTimeUtc 取自查找数据缓存，调用方无需再补 stat。</summary>
+    public static IEnumerable<FileInfo> EnumerateFileInfos(string pattern)
+    {
+        var normalized = Normalize(pattern);
+        var (startDir, segments, firstWild) = Decompose(pattern);
+        if (startDir is null)
         {
             var exact = new FileInfo(normalized);
             if (exact.Exists && !exact.Attributes.HasFlag(FileAttributes.ReparsePoint))
                 yield return exact;
             yield break;
         }
-        if (firstWild == 0)
-            throw new FormatException($"模式必须以环境变量或盘符开头的绝对路径：{pattern}");
-
-        var startDir = string.Join("\\", segments, 0, firstWild);
         if (!Directory.Exists(startDir))
             yield break;
 

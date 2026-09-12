@@ -183,4 +183,35 @@ public sealed class GlobScannerTests : IDisposable
         Assert.Equal(10, info.Length);
         Assert.Equal(expected, info.LastWriteTimeUtc);
     }
+
+    [Fact]
+    public void TryGetStartDir_通配符模式返回前缀起始目录()
+    {
+        var dir = Path.Combine(_root, "start");
+        Directory.CreateDirectory(dir);
+        Environment.SetEnvironmentVariable("KLEANER_TEST_VAR", dir, EnvironmentVariableTarget.Process);
+        try
+        {
+            // 语义：第一个通配符之前的完整前缀（与枚举起点一致）
+            Assert.Equal(Path.Combine(dir, "sub"), GlobScanner.TryGetStartDir("%KLEANER_TEST_VAR%\\sub\\**"));
+            Assert.Equal(dir, GlobScanner.TryGetStartDir("%KLEANER_TEST_VAR%\\*.log"));
+            Assert.Equal(dir, GlobScanner.TryGetStartDir("%KLEANER_TEST_VAR%\\**"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("KLEANER_TEST_VAR", null, EnvironmentVariableTarget.Process);
+        }
+    }
+
+    [Fact]
+    public void TryGetStartDir_无通配符返回null()
+    {
+        Assert.Null(GlobScanner.TryGetStartDir("C:\\exact\\path\\file.bin"));
+    }
+
+    [Fact]
+    public void TryGetStartDir_首段通配符抛格式异常()
+    {
+        Assert.Throws<FormatException>(() => GlobScanner.TryGetStartDir("*\\illegal"));
+    }
 }

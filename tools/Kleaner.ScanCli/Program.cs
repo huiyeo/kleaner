@@ -54,6 +54,34 @@ try
             Output(json, report, set);
             return 0;
         }
+        case "rule-census":
+        {
+            // Phase 5 真机普查（rule-verification 01）：只读证据档案，零写入，不产出任何升级结论
+            var censusRulesPath = rulesOverride ?? BundledRulesPath();
+            var set = rulesOverride is null
+                ? RuleUpdateService.LoadEffective(censusRulesPath).Set
+                : RuleSetLoader.LoadFromFile(censusRulesPath);
+            var errors = RuleSetLoader.Validate(set);
+            if (errors.Count > 0)
+                return Fail(json, errors);
+            var report = new ScanEngine(quarantineOverride ?? EffectiveQuarantineRoot()).Scan(set);
+            var census = RuleCensus.Build(set, report);
+            if (json)
+                System.Console.WriteLine(JsonSerializer.Serialize(census, JsonIndented()));
+            else
+            {
+                System.Console.WriteLine($"规则普查（{census.TotalRules} 条）：Present {census.Present}（命中 {census.PresentWithHits} / 无命中 {census.PresentNoHits}），AbsentOrDenied {census.AbsentOrDenied}");
+                System.Console.WriteLine();
+                System.Console.WriteLine("—— 验证转正候选（Present 且命中 > 0；升级需清理演练授权，属决策项）——");
+                foreach (var e in census.Entries.Where(e => e.Verdict == CensusVerdict.Present && e.ScanFileCount > 0).OrderByDescending(e => e.ScanTotalBytes))
+                    System.Console.WriteLine($"  {e.RuleId,-34} {e.ScanFileCount,6} 个文件  {Fmt(e.ScanTotalBytes),10}  verified={e.Verified}");
+                System.Console.WriteLine();
+                System.Console.WriteLine("—— AbsentOrDenied（撤回候选 vs ACL 提权重核候选，按 requiresElevation 解读）——");
+                foreach (var e in census.Entries.Where(e => e.Verdict == CensusVerdict.AbsentOrDenied).OrderBy(e => e.RequiresElevation).ThenBy(e => e.RuleId))
+                    System.Console.WriteLine($"  {e.RuleId,-34} elev={e.RequiresElevation}  ({e.Name})");
+            }
+            return 0;
+        }
         case "clean":
         {
             var ruleIds = (Opt("--rule") ?? string.Empty)
@@ -473,6 +501,7 @@ static void Usage()
     System.Console.WriteLine("  bench --root R [--iterations 5] [--scenarios csv] [--out F]");
     System.Console.WriteLine("                                规则扫描/空间分析/大文件/重复哈希/取消延迟 基准（JSON 输出）");
     System.Console.WriteLine("  governance-report [--rules P] 治理指标只读测量（证据/验证覆盖率、目标根等）");
+    System.Console.WriteLine("  rule-census [--rules P]       规则真机普查（只读证据档案：路径存在性 × 扫描命中）");
     System.Console.WriteLine("  通用：--format text|json   --yes");
     System.Console.WriteLine("  位置覆盖：--rules P（直接加载，绕过更新通道）  --quarantine-root R  --history-path F");
 }
