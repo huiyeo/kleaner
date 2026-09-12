@@ -156,5 +156,7 @@
   "WinOldSizeTruncated": "已达到测量上限，实际占用更大。",
   "WinOldWarn": "Windows.old 保存着旧系统，删除后将无法回退到之前的 Windows 版本；可回退期限以系统官方界面的提示为准。Kleaner 不提供删除，请使用下方官方入口自行操作。",
   "WinOldOpenSettings": "打开「设置 > 存储」",
-  "WinOldOpenCleanmgr": "打开磁盘清理（cleanmgr）"
+  "WinOldOpenCleanmgr": "打开磁盘清理（cleanmgr）",
+  "AiCancelBtn": "取消",
+  "AiCancelled": "已取消本次 AI 解释。"
 }

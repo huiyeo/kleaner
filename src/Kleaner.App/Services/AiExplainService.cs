@@ -34,7 +34,7 @@ public sealed class AiExplainService
         public static AiExplainResult Fail(string error) => new(false, null, error, false);
     }
 
-    public async Task<AiExplainResult> ExplainAsync(IReadOnlyList<Bucket> buckets, string model = "local")
+    public async Task<AiExplainResult> ExplainAsync(IReadOnlyList<Bucket> buckets, string model = "local", CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(buckets);
         if (buckets.Count == 0) return AiExplainResult.Fail("没有可解释的扫描结果");
@@ -73,11 +73,17 @@ public sealed class AiExplainService
         try
         {
             using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-            using var cts = new CancellationTokenSource(RequestTimeout);
+            // 外部取消（用户手动取消）与 30s 超时共用一条链路，语义按触发方区分
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(RequestTimeout);
             using var resp = await _http.PostAsync(_endpoint, content, cts.Token);
             if (!resp.IsSuccessStatusCode)
                 return AiExplainResult.Fail($"AI 服务返回 {(int)resp.StatusCode}，已降级为无 AI 模式");
             body = await resp.Content.ReadAsStringAsync(cts.Token);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return AiExplainResult.Fail("已取消本次 AI 解释。");
         }
         catch (OperationCanceledException)
         {

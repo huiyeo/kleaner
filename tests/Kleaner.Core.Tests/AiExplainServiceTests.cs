@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -150,5 +151,42 @@ public sealed class AiExplainServiceTests
         Assert.StartsWith(AiExplainService.DefaultEndpoint, fake.LastRequest.RequestUri!.ToString());
         Assert.Contains("temp", fake.LastBody);
         Assert.Contains("browser-cache", fake.LastBody);
+    }
+
+    /// <summary>挂起到外部取消的假服务：验证取消令牌沿请求传递。</summary>
+    private sealed class PendingUntilCancelledHandler : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+            throw new UnreachableException("取消后不应到达此处");
+        }
+    }
+
+    [Fact]
+    public async Task 外部取消返回取消结果而非超时语义()
+    {
+        using var cts = new CancellationTokenSource();
+        var service = Service(new PendingUntilCancelledHandler());
+        var pending = service.ExplainAsync(Buckets, "local", cts.Token);
+        cts.CancelAfter(300);
+
+        var result = await pending;
+
+        Assert.False(result.Ok);
+        Assert.Contains("已取消", result.Error);
+        Assert.DoesNotContain("超时", result.Error);
+    }
+
+    [Fact]
+    public async Task 未取消时取消令牌不影响正常路径()
+    {
+        var fake = OkHandler("正常完成。");
+        using var cts = new CancellationTokenSource();
+
+        var result = await Service(fake).ExplainAsync(Buckets, "local", cts.Token);
+
+        Assert.True(result.Ok);
+        Assert.Equal("正常完成。", result.Text);
     }
 }

@@ -14,6 +14,7 @@ public partial class MainWindow : Window
         _viewModel = new MainWindowViewModel();
         DataContext = _viewModel;
         LoadStrings();
+        AiCancelButton.Content = S.Get("AiCancelBtn");
         _viewModel.OpenWindowRequested += OpenWindow;
         Loaded += (_, _) =>
         {
@@ -56,6 +57,8 @@ public partial class MainWindow : Window
         window.ShowDialog();
     }
 
+    private CancellationTokenSource? _aiCts;
+
     private async void OnAiExplain(object sender, RoutedEventArgs e)
     {
         var selected = _viewModel.SelectedRow;
@@ -70,8 +73,10 @@ public partial class MainWindow : Window
             ? AiExplainService.DefaultEndpoint
             : settings.AiEndpoint;
         AiExplainButton.IsEnabled = false;
+        AiCancelButton.Visibility = Visibility.Visible;
         AiOutputText.Text = S.Get("AiPending");
         AiOutputText.Visibility = Visibility.Visible;
+        _aiCts = new CancellationTokenSource();
         try
         {
             var buckets = new[]
@@ -80,7 +85,7 @@ public partial class MainWindow : Window
             };
             using var http = new System.Net.Http.HttpClient();
             var service = new AiExplainService(http, endpoint);
-            var result = await service.ExplainAsync(buckets);
+            var result = await service.ExplainAsync(buckets, "local", _aiCts.Token);
             // 注入降权：疑似提示注入时加显式前缀；输出仅为展示文本，永不进清理链路。
             AiOutputText.Text = result.Ok
                 ? (result.Suspicious ? S.Get("AiSuspiciousPrefix") + result.Text : result.Text)
@@ -88,8 +93,19 @@ public partial class MainWindow : Window
         }
         finally
         {
+            AiCancelButton.Visibility = Visibility.Collapsed;
+            AiCancelButton.IsEnabled = true;
             AiExplainButton.IsEnabled = true;
+            _aiCts.Dispose();
+            _aiCts = null;
         }
+    }
+
+    private void OnAiCancel(object sender, RoutedEventArgs e)
+    {
+        // 仅取消挂起的解释请求（服务层降级为取消结果），不触碰扫描/清理链路
+        _aiCts?.Cancel();
+        AiCancelButton.IsEnabled = false;
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) =>

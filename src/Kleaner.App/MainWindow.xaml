@@ -97,6 +97,7 @@
                         <TextBlock Grid.Row="1" Text="{Binding SafetyNotesText}" TextWrapping="Wrap" MaxHeight="72" TextTrimming="CharacterEllipsis" Foreground="#666873" Margin="26,8,0,0" />
                         <StackPanel x:Name="AiSection" Grid.Row="2" Orientation="Horizontal" Margin="26,10,0,0" Visibility="Collapsed">
                             <Button x:Name="AiExplainButton" Click="OnAiExplain" Style="{StaticResource KleanerSecondaryButton}" Visibility="Collapsed"><StackPanel Orientation="Horizontal"><materialDesign:PackIcon Kind="StarFourPointsOutline" Width="16" Height="16" /><TextBlock Text="{Binding AiExplainButtonText}" Margin="7,0,0,0" /></StackPanel></Button>
+                            <Button x:Name="AiCancelButton" Click="OnAiCancel" Style="{StaticResource KleanerSecondaryButton}" Visibility="Collapsed" Margin="8,0,0,0" />
                             <TextBlock Text="{Binding AiDisclaimerText}" FontSize="12" Foreground="#747682" VerticalAlignment="Center" Margin="12,0,0,0" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <TextBlock Grid.Row="3" x:Name="AiOutputText" TextWrapping="Wrap" MaxHeight="110" TextTrimming="CharacterEllipsis" Foreground="#44464E" Margin="26,8,0,0" Visibility="Collapsed" />
