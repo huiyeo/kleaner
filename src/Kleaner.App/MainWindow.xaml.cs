@@ -16,6 +16,14 @@ public partial class MainWindow : Window
         LoadStrings();
         AiCancelButton.Content = S.Get("AiCancelBtn");
         _viewModel.OpenWindowRequested += OpenWindow;
+        // 无障碍（工单 08）：屏幕阅读器对行发出的激活（AXPress）只把焦点移到行首单元格，
+        // 不会触发 DataGrid 行选中——把当前单元格所在行同步为选中行，让安全性说明与 AI
+        // 解释跟随键盘/读屏焦点。真实鼠标点击本就选中行，此同步无副作用。
+        RulesGrid.CurrentCellChanged += (_, _) =>
+        {
+            if (RulesGrid.CurrentItem is RuleRow row)
+                _viewModel.SelectedRow = row;
+        };
         Loaded += (_, _) =>
         {
             _viewModel.LoadRules();

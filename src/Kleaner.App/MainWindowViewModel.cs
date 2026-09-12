@@ -127,7 +127,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
             _rows.Clear();
             foreach (var rule in _ruleSet.Rules)
-                _rows.Add(new RuleRow(rule));
+                AddRow(new RuleRow(rule));
             StatusText = S.Format("StatusRulesLoaded", _ruleSet.Rules.Count, _rulesPath);
             _ = ScanAsync();
         }
@@ -135,6 +135,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             MessageBox.Show(ex.Message, S.Get("Error"));
         }
+    }
+
+    /// <summary>加入规则行并挂接勾选→选中同步（订阅在加入之后，构造期的默认勾选不会抢占行选中）。测试与视图均可用。</summary>
+    public void AddRow(RuleRow row)
+    {
+        row.PropertyChanged += OnRowPropertyChanged;
+        _rows.Add(row);
+    }
+
+    /// <summary>无障碍（工单 08）：屏幕阅读器对行首复选框的激活只改勾选、不改 DataGrid 选中，
+    /// 导致安全性说明与 AI 解释作用对象脱节——把勾选行为同步为行选中，保持作用对象与操作行一致。</summary>
+    private void OnRowPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(RuleRow.IsSelected) && sender is RuleRow row)
+            SelectedRow = row;
     }
 
     private bool CanScan => !IsBusy;
