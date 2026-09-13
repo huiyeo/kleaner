@@ -1,6 +1,6 @@
 # 发布检查单（Phase 0 发布门禁）
 
-每个公开版本发布前逐项执行。本检查单汇总工单 16 的矩阵与治理要求；签名信任（工单 12）落地前的校验均为人工哈希核对。v0.1.0 的历史发布操作记录保留在 `docs/publish.md`，后续发布以本文件为准。
+每个公开版本发布前逐项执行。本检查单汇总工单 16 的矩阵与治理要求，并覆盖**规则渠道（rules-channel）的独立发布流程**（与应用版本发布解耦）。v0.1.0 的历史发布操作记录保留在 `docs/publish.md`，后续发布以本文件为准。
 
 ## 1. 发布前置（不通过不得打包）
 
@@ -15,11 +15,22 @@
 - [ ] `scripts/release.sh <版本号>`（自包含单文件发布 → Velopack Setup / Portable / 更新清单）
 - [ ] 产物四件齐全：`releases/Kleaner-win-Setup.exe`、`Kleaner-win-Portable.zip`、`RELEASES`、`Kleaner-<版本>-full.nupkg`
 
-## 3. 产物校验（签名体系落地前为人工哈希核对）
+## 3. 产物校验（应用产物为人工哈希核对）
 
 - [ ] 对四个产物逐一记录 SHA512 并写入发布说明：`sha512sum releases/*`
 - [ ] 与独立通道（另一台机器或干净目录重新打包）比对新产生的 `full.nupkg` 哈希一致性
 - [ ] Setup.exe 首次运行预期触发 SmartScreen「未知发布者」提示——发布说明须包含绕行指引（README 许可证段已有口径）
+
+## 3b. 规则清单发布（rules-channel，独立于应用版本）
+
+- [ ] 规则变更已在 main 提交并推送；完整测试全绿；`governance-report` 覆盖率指标不回退（验证覆盖率摊薄需在发布说明/工单中说明）
+- [ ] `powershell -File scripts/sign-rules.ps1 -Version <semver> -MinAppVersion 0.2.4`——脚本内置 **LF 归一化**（2026-09-12 v1.2.0 首发曾因工作区 CRLF 摘要与线上 LF blob 不符被线上核验拦下重签，勿绕过脚本）
+- [ ] 产物两件：`releases/rules-manifest.json` + `releases/rules.v1.json`；核对 manifest 的 `rulesSha512` 与副本文件一致
+- [ ] 切 `rules-channel` 分支：拷贝两件到分支根、提交、快进推送（**推送属对外发布，需所有者确认**）
+- [ ] **线上核验（绕 CDN）**：`gh api repos/huiyeo/kleaner/contents/<file>?ref=rules-channel` 取回字节 → SHA512 与 manifest 一致 → 以内嵌公钥独立验签（Ed25519）→ 规则条数与变更内容抽查
+- [ ] 私钥只在所有者机器 `~/.kleaner-signing/`（丢失须换钥并发新应用版本，见 `rules-signing-workflow` 记忆与工单 12）
+
+**已发布记录**：v1.0.0（2026-09-10，101 条）、v1.1.0（2026-09-12，103 条含 K1/K2）、v1.2.0（2026-09-12，4 条演练转正 + 全库证据复核回填）。
 
 ## 4. 安装 / 升级 / 回退 / 卸载矩阵（真机手工执行并记录）
 
@@ -31,12 +42,12 @@
 | 回退 | 重装旧版 Setup（0.3.1） | 应用可启动；1.0.0 写入的数据（哈希链 head/rules/历史）完整保留且可读 | ✅ 2026-09-10（v1.0.0↔0.3.1 双向真机验证） |
 | 卸载 | `Update.exe --uninstall` | AppData\Local\Kleaner 完全移除、快捷方式移除；Roaming 用户数据保留 | ✅ 2026-09-10（0.3.1，本机） |
 
-**矩阵执行发现并修复的缺陷（2026-09-10）**：`PublishSingleFile=true` 单文件发布经 Velopack 安装后 current 缺失 WPF 本机依赖（wpfgfx/D3DCompiler/PenImc/vcruntime140），应用启动即死。已将 `release.sh` 改回散文件 + `--self-contained`（0.2.6 已验证形态）并重打包验证。**后续发布严禁启用 PublishSingleFile。** 五行矩阵于 v1.0.0 发布时全部真机验证通过（回退行以 v1.0.0↔0.3.1 双向覆盖）。
+**矩阵执行发现并修复的缺陷（2026-09-10）**：`PublishSingleFile=true` 单文件发布经 Velopack 安装后 current 缺失 WPF 本机依赖（wpfgfx/D3DCompiler/PenImc/vcruntime140），应用启动即死。已将 `release.sh` 改回散文件 + `--self-contained`（0.2.6 已验证形态）并重打包验证。**后续发布严禁启用 PublishSingleFile。** 五行矩阵于 v1.0.0 发布时全部真机验证通过（回退行以 v1.0.0↔0.3.1 双向覆盖）；v1.1.0 重验「覆盖升级」行（2026-09-11，本机 1.0.0→1.1.0 静默升级，审计历史与哈希链头升级前后逐字节一致）；**全矩阵五行于下次发版窗口整体重验**（所有者裁决 D7b，2026-09-12）。
 
 **已知门禁缺口（发布说明必须如实声明，不得粉饰）：**
 
 - **应用内自动更新未接线**：`Program.Main` 只有 `VelopackApp.Build().Run()` 钩子，无 `UpdateManager` 检查逻辑；`RELEASES`/`full.nupkg` 当前仅是 Velopack 打包产物，不构成可用更新通道。升级路径=手动运行新版 Setup。
-- **规则更新签名信任未落地**（工单 12）：设置页的规则更新为「用户输入 URL + SHA512」，不构成发布方身份认证；发布说明不得表述为「官方签名更新」。
+- ~~规则更新签名信任未落地~~ **已落地（工单 12，2026-09-10）**：设置页走官方 Ed25519 签名清单（回环获取、全链校验、抗降级 + last-good 回退）；规则渠道 v1.2.0 已发布并线上核验（2026-09-12）。注意 raw.githubusercontent CDN 缓存可能延迟分钟到小时级，核验用 `gh api` 绕行。
 - 应用未签名（无代码签名证书），SmartScreen 提示属预期。
 
 ## 5. 依赖治理

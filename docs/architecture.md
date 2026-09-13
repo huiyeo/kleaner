@@ -36,10 +36,12 @@
 | `RuleModels.cs` | `Rule` / `RuleSet` 记录、`RuleCategory` / `RiskLevel` 枚举 |
 | `RuleSetLoader.cs` | JSON → 模型；`Validate` 语义校验；`EffectiveAgeDays` 阈值回退 |
 | `RuleSelector.cs` | 对候选集应用 `keepNewest` 或年龄阈值（二者互斥） |
-| `GlobScanner.cs` | `%ENV%` 展开、`*` / `**` 通配枚举、单趟枚举（属性取查找数据缓存，勿退回逐条目 `File.GetAttributes`——真机扫描曾因此慢 39 倍）、reparse point 排除 |
+| `GlobScanner.cs` | `%ENV%` 展开、`*` / `**` 通配枚举、单趟枚举（属性取查找数据缓存，勿退回逐条目 `File.GetAttributes`——真机扫描曾因此慢 39 倍）、reparse point 排除；`TryGetStartDir` 暴露枚举起点供普查等只读探测复用 |
 | `ScanEngine.cs` | 按规则枚举候选 → exclude → 选择，产出 `ScanReport`。**只读** |
 | `CleanupPlan.cs` | 将规则快照、本次扫描与用户选择收束为不可伪造的清理授权；执行前重新核对候选 |
 | `RuleUpdateService.cs` | 规则在线更新：下载 → SHA512 校验 → 语义校验 → 落用户目录 |
+| `RuleCensus.cs` | 规则真机普查（只读证据档案：路径存在性 × 扫描命中；requiresElevation 语境必读——ACL 拒绝会被静默判 Absent） |
+| `RuleSelectionPolicy.cs` | 默认勾选策略：仅「本机实测」开头的验证状态可默认勾选 |
 
 *注意*：README 称 Core 是"纯逻辑、无 UI 依赖"，方向正确但不完全——`RuleUpdateService` 做了 HTTP 下载与文件写入。它无 UI 依赖，但不是无 IO。
 
@@ -53,6 +55,7 @@
 | `DiskUsageAnalyzer.cs` | 空间占用排行 |
 | `TreemapLayout.cs` | Squarified 矩形图布局（`TreemapLayout.Squarify`） |
 | `SyntheticDataset.cs` | 确定性合成数据集生成（性能基准用，同种子逐字节可复现） |
+| `SyntheticBenchRules.cs` | 数据集作用域基准规则夹具（bench 的 rules-scan/cancel 必须经 `--rules` 使用，见 performance-baseline.md「测量口径修正」） |
 
 不依赖 Core，也不依赖 Windows API 之外的任何东西，可独立复用与测试。
 
@@ -72,6 +75,7 @@
 |---|---|
 | `WslInspector.cs` | WSL vhdx 检测与压缩指引 |
 | `SystemToolGuide.cs` | 大件跳转到系统工具 |
+| `WindowsOldInspector.cs` | Windows.old 只读检测（零遍历存在性 + 有界占用测量，reparse 排除）——永不提供删除，仅引导官方工具 |
 | `RegistryInspector.cs` | 注册表卸载残留**只读**扫描 |
 
 按设计不直接改动系统项。
@@ -80,13 +84,13 @@
 
 窗口：`MainWindow`（主界面）、`ToolboxWindow`（工具箱）、`AdvancedWindow`（高级模式）、`QuarantineWindow`（隔离区）、`HistoryWindow`（操作历史）、`SettingsWindow`、`StartupWindow`（启动项）。
 
-支撑：`App.xaml.cs`、`Program.cs`（`StartupObject`）、`AppSettings.cs`、`RuleRow.cs`（规则行的展示与默认勾选策略）、`Helpers.cs`（`IsElevated` / `RestartElevated`）、`S.cs`（本地化）、`Services/AiExplainService.cs`（AI 解释适配器——回环-only OpenAI 兼容，故障全降级；输出仅展示，永不进清理链路，见 `docs/adr/0004`）。
+支撑：`App.xaml.cs`、`Program.cs`（`StartupObject`）、`AppSettings.cs`、`RuleRow.cs`（规则行的展示与默认勾选策略）、`Helpers.cs`（`IsElevated` / `RestartElevated`）、`S.cs`（本地化）、`Services/AiExplainService.cs`（AI 解释适配器——回环-only OpenAI 兼容，故障全降级；输出仅展示，永不进清理链路，支持挂起期手动取消，见 `docs/adr/0004`）。
 
 本地化文案集中在 `Resources/Strings.zh-CN.json`，**不硬编码在 XAML 里**（`StartupWindow` 有局部例外，见文末已知问题）。
 
 ### Kleaner.ScanCli — 命令行
 
-单文件顶层语句 `Program.cs`。子命令：`scan`、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`、`governance-report`（治理指标只读测量，见 `docs/rule-governance.md`）；性能基准另有 `gen-dataset` / `bench` / `bench-single`（`Benchmarks.cs`，见 `docs/performance-baseline.md`）。
+单文件顶层语句 `Program.cs`。子命令：`scan`、`clean`、`large-files`、`duplicates`、`usage`、`startup`、`startup-test`、`governance-report`（治理指标只读测量，见 `docs/rule-governance.md`）、`rule-census`（规则真机普查，见 `docs/rule-governance.md` 与 `.scratch/rule-verification/`）；性能基准另有 `gen-dataset` / `bench` / `bench-single`（`Benchmarks.cs`，见 `docs/performance-baseline.md`）。
 
 ## 入口点
 

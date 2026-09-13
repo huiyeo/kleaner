@@ -42,6 +42,9 @@
 - `Kleaner.App.exe` 运行中会锁构建产物（MSB3027）——重建前先通过 UI 关闭运行中的实例。
 - `git push` 常被本机全局代理拦截（代理端口会漂移）：按次用 `git -c http.proxy= -c https.proxy= push` 绕过，不要永久改动用户的代理配置。
 - 测试里创建目录联结用 `cmd /c mklink /J`，不要起 powershell.exe——其 5.1 冷启动在 CI runner 上会撞超时（曾致 CI 连续 11 次失败，见 QuarantineManifestTests.CreateJunction 注释）。
+- `dotnet test` **静默 exit 0 且无任何输出** = NuGet 全局缓存骨架损坏（已复发两次）：`dotnet nuget locals global-packages --clear` 后 restore 重试；本机该缓存脆弱，遇到先查这里。
+- 真机走查时**所有者可能正在使用机器**：弹出的应用窗口可能被手动关闭（良性），被遮挡/后台窗口的 UIA 树会出现幽灵元素（已消失的控件仍在树里）——判定应用行为以插桩日志等进程内证据为准，勿凭树下结论；走查弹窗前先说明，结束完整还原临时环境。
+- 编辑工具可能把仓库内 LF 文件写成 CRLF：规则清单签名一律走 `scripts/sign-rules.ps1`（已内置 LF 归一化，2026-09-12 v1.2.0 首发曾因 CRLF 摘要与线上 blob 不符被线上核验拦下重签），勿绕过脚本手改签名流程。
 - 真机走查/验收产生的临时环境（settings.json 改写、假服务端口、规则库 override）用完必须完整还原并核验真实数据未受影响；走查取证用 UIA 无障碍树（该应用像素捕获不可靠）。
 
 ## 与上层 AGENTS.md 的关系
