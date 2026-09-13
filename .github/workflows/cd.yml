@@ -77,7 +77,7 @@ jobs:
           sha512sum Kleaner-win-Setup.exe Kleaner-win-Portable.zip RELEASES Kleaner-*-full.nupkg > SHA512.txt
           cat SHA512.txt
 
-      - name: 发布 GitHub Release
+      - name: 发布 GitHub Release（失败自动重试，规避 API 偶发 5xx）
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -86,8 +86,16 @@ jobs:
         run: |
           PRERELEASE=""
           case "$VERSION" in *-*) PRERELEASE="--prerelease";; esac
-          gh release create "$TAG" \
-            --title "Kleaner $VERSION" \
-            --notes "自动构建（CD）。SHA512 见附件 SHA512.txt。发布说明与验证记录由维护者依据 docs/release-checklist.md 补充。应用未签名，SmartScreen「未知发布者」提示属预期。" \
-            $PRERELEASE \
-            releases/Kleaner-win-Setup.exe releases/Kleaner-win-Portable.zip releases/RELEASES releases/Kleaner-*-full.nupkg releases/SHA512.txt
+          for attempt in 1 2 3; do
+            if gh release create "$TAG" \
+              --title "Kleaner $VERSION" \
+              --notes "自动构建（CD）。SHA512 见附件 SHA512.txt。发布说明与验证记录由维护者依据 docs/release-checklist.md 补充。应用未签名，SmartScreen「未知发布者」提示属预期。" \
+              $PRERELEASE \
+              releases/Kleaner-win-Setup.exe releases/Kleaner-win-Portable.zip releases/RELEASES releases/Kleaner-*-full.nupkg releases/SHA512.txt; then
+              exit 0
+            fi
+            echo "第 $attempt 次创建 Release 失败，15 秒后重试…"
+            gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+            sleep 15
+          done
+          exit 1
