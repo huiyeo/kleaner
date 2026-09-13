@@ -12,8 +12,10 @@
 
 ## 2. 打包
 
-- [ ] `scripts/release.sh <版本号>`（自包含单文件发布 → Velopack Setup / Portable / 更新清单）
+- [ ] `scripts/release.sh <版本号>`（自包含散文件发布 → Velopack Setup / Portable / 更新清单）
 - [ ] 产物四件齐全：`releases/Kleaner-win-Setup.exe`、`Kleaner-win-Portable.zip`、`RELEASES`、`Kleaner-<版本>-full.nupkg`
+
+**CD（2026-09-13 起可用）**：推送 `v*` 标签（或在 Actions 页手动触发并填版本号）即自动完成——csproj 版本同步（自动改 AssemblyVersion/InformationalVersion，消除 v1.1.0 的手工同步坑）→ 发布门禁完整测试 → `release.sh` 打包 → SHA512 清单 → 创建 GitHub Release 并上传五件（四件产物 + SHA512.txt）。版本号带 `-` 后缀（如 `1.1.1-rc.1`）自动标记预发布。见 `.github/workflows/cd.yml`。注意：CD 在干净 runner 上构建，只产出 full 包（无 delta——应用内自动更新未接线，无影响）；规则渠道发布不走 CD（私钥只在所有者机器，见 3b 节）。
 
 ## 3. 产物校验（应用产物为人工哈希核对）
 
