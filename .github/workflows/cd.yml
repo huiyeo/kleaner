@@ -74,7 +74,7 @@ jobs:
         shell: bash
         run: |
           cd releases
-          sha512sum Kleaner-win-Setup.exe Kleaner-win-Portable.zip RELEASES Kleaner-*.full.nupkg > SHA512.txt
+          sha512sum Kleaner-win-Setup.exe Kleaner-win-Portable.zip RELEASES Kleaner-*-full.nupkg > SHA512.txt
           cat SHA512.txt
 
       - name: 发布 GitHub Release
@@ -90,4 +90,4 @@ jobs:
             --title "Kleaner $VERSION" \
             --notes "自动构建（CD）。SHA512 见附件 SHA512.txt。发布说明与验证记录由维护者依据 docs/release-checklist.md 补充。应用未签名，SmartScreen「未知发布者」提示属预期。" \
             $PRERELEASE \
-            releases/Kleaner-win-Setup.exe releases/Kleaner-win-Portable.zip releases/RELEASES releases/Kleaner-*.full.nupkg releases/SHA512.txt
+            releases/Kleaner-win-Setup.exe releases/Kleaner-win-Portable.zip releases/RELEASES releases/Kleaner-*-full.nupkg releases/SHA512.txt
